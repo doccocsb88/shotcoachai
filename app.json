@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "AI Photo Coach",
+    "slug": "shotcoach-ai",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.shotcoach.ai",
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow AI Photo Coach to pick photos for analysis.",
+          "cameraPermission": "Allow AI Photo Coach to take photos for analysis."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow AI Photo Coach to save guide images.",
+          "savePhotosPermission": "Allow AI Photo Coach to save guide images."
+        }
+      ]
+    ],
+    "extra": {
+      "openAiModel": "gpt-4.1-mini"
+    }
+  }
+}
