@@ -1,14 +1,4 @@
-import { AnalysisResult, OverlayData, ScoreCategory, Suggestion } from '../../models/analysis';
-
-const allowedScoreCategories: ScoreCategory[] = [
-  'composition',
-  'pose',
-  'camera_angle',
-  'background',
-  'lighting',
-  'framing',
-  'scene_balance'
-];
+import { AnalysisResult, Suggestion } from '../../models/analysis';
 
 export function extractJsonTextFromResponse(raw: unknown): string {
   const typed = raw as { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> };
@@ -31,73 +21,51 @@ export function extractJsonTextFromResponse(raw: unknown): string {
   throw new Error('No output text returned from OpenAI');
 }
 
-export function parseAnalysisResponse(raw: unknown, originalImageUri: string): AnalysisResult {
+export function parseAnalysisResponse(
+  raw: unknown,
+  originalImageUri: string,
+  originalImageMimeType = 'image/jpeg'
+): AnalysisResult {
   const jsonText = extractJsonTextFromResponse(raw).replace(/^```json\s*|\s*```$/g, '');
   const parsed = JSON.parse(jsonText) as Record<string, unknown>;
-  const subscores = normalizeSubscores(parsed.subscores);
 
   return {
     analysisId: `${Date.now()}`,
-    overallScore: clampScore(asNumber(parsed.overall_score, 0)),
-    subscores,
-    summary: asString(parsed.summary),
-    strengths: asStringArray(parsed.strengths).slice(0, 3),
-    issues: asStringArray(parsed.issues).slice(0, 3),
+    overallAssessment: asString(parsed.overall_assessment),
     suggestions: normalizeSuggestions(parsed.suggestions).slice(0, 3),
-    overlayData: normalizeOverlayData(parsed.overlay_data),
     visualOutput: {
       type: 'overlay_only'
     },
     createdAt: new Date().toISOString(),
-    originalImageUri
+    originalImageUri,
+    originalImageMimeType
   };
-}
-
-function normalizeSubscores(value: unknown): Partial<Record<ScoreCategory, number>> {
-  const input = (value ?? {}) as Record<string, unknown>;
-  return allowedScoreCategories.reduce<Partial<Record<ScoreCategory, number>>>((acc, key) => {
-    if (input[key] !== undefined) {
-      acc[key] = clampScore(asNumber(input[key], 0));
-    }
-    return acc;
-  }, {});
 }
 
 function normalizeSuggestions(value: unknown): Suggestion[] {
   if (!Array.isArray(value)) return [];
   return value
     .map(item => item as Record<string, unknown>)
-    .filter(item => typeof item.title === 'string' || typeof item.description === 'string')
+    .filter(item => typeof item.title === 'string' && typeof item.image_prompt === 'string')
     .map(item => ({
       title: asString(item.title),
-      description: asString(item.description)
+      concept: asString(item.concept),
+      composition: asString(item.composition),
+      camera_angle: asString(item.camera_angle),
+      changes: asStringArray(item.changes),
+      image_prompt: asString(item.image_prompt)
     }))
-    .filter(item => item.title.length > 0 || item.description.length > 0);
-}
-
-function normalizeOverlayData(value: unknown): OverlayData | undefined {
-  if (!value || typeof value !== 'object') return undefined;
-  const input = value as OverlayData;
-  return {
-    grid: Boolean(input.grid),
-    cropRect: input.cropRect,
-    arrows: Array.isArray(input.arrows) ? input.arrows : [],
-    notes: Array.isArray(input.notes) ? input.notes : []
-  };
-}
-
-function asNumber(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+    .filter(item => item.title.length > 0);
 }
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+function asMarkdownString(value: unknown): string {
+  return asString(value).replace(/\\n/g, '\n').trim();
 }
 
-function clampScore(score: number): number {
-  return Math.min(10, Math.max(0, Math.round(score * 10) / 10));
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }

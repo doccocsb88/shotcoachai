@@ -10,25 +10,36 @@ import { useAnalyzePhoto } from './useAnalyzePhoto';
 interface Props {
   onComplete: () => void;
   onBack: () => void;
+  onCancel: () => void;
 }
 
-const statuses = ['Uploading photo', 'Reviewing composition', 'Generating feedback', 'Preparing AI guide'];
+const statuses = [
+  'Uploading photo',
+  'Scoring composition',
+  'Writing suggestions',
+  'Preparing generation prompt',
+  'Generating AI version',
+  'Saving AI version'
+];
 
-export function AnalyzingScreen({ onComplete, onBack }: Props) {
+export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
   const error = useAnalysisStore(state => state.error);
   const setError = useAnalysisStore(state => state.setError);
   const { analyze } = useAnalyzePhoto();
   const [step, setStep] = useState(0);
+  const [attempt, setAttempt] = useState(0);
 
   const status = useMemo(() => statuses[Math.min(step, statuses.length - 1)], [step]);
 
   useEffect(() => {
+    if (error) return undefined;
+
     const timer = setInterval(() => {
       setStep(value => Math.min(value + 1, statuses.length - 1));
     }, 1200);
     return () => clearInterval(timer);
-  }, []);
+  }, [error, attempt]);
 
   useEffect(() => {
     if (!photo) return;
@@ -43,7 +54,13 @@ export function AnalyzingScreen({ onComplete, onBack }: Props) {
     return () => {
       mounted = false;
     };
-  }, [analyze, onComplete, photo]);
+  }, [analyze, attempt, onComplete, photo]);
+
+  const retry = () => {
+    setStep(0);
+    setError(undefined);
+    setAttempt(value => value + 1);
+  };
 
   if (!photo) {
     return (
@@ -62,7 +79,11 @@ export function AnalyzingScreen({ onComplete, onBack }: Props) {
           <>
             <Text style={styles.title}>Analysis failed</Text>
             <Text style={styles.subtitle}>{error}</Text>
-            <PrimaryButton title="Back to preview" onPress={() => { setError(undefined); onBack(); }} variant="secondary" />
+            <View style={styles.errorActions}>
+              <PrimaryButton title="Try again" onPress={retry} />
+              <PrimaryButton title="Back to preview" onPress={() => { setError(undefined); onBack(); }} variant="secondary" />
+              <PrimaryButton title="Go home" onPress={() => { setError(undefined); onCancel(); }} variant="ghost" />
+            </View>
           </>
         ) : (
           <>
@@ -103,5 +124,9 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     marginBottom: 22,
     textAlign: 'center'
+  },
+  errorActions: {
+    gap: 12,
+    width: '100%'
   }
 });

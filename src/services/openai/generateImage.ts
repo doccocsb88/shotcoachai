@@ -1,0 +1,191 @@
+import * as FileSystem from 'expo-file-system';
+
+import { saveBase64ImageToCache } from '../image/saveBase64Image';
+import { logOpenAIImageEditRequest, logOpenAIImageEditResponse, shouldDebugOpenAIFlow } from './debugOpenAIFlow';
+
+const IMAGE_EDITS_URL = 'https://api.openai.com/v1/images/edits';
+
+const ALLOWED_GPT_IMAGE_SIZES = new Set(['1024x1024', '1024x1536', '1536x1024']);
+
+function resolveImageEditModel(): string {
+  return (process.env.EXPO_PUBLIC_OPENAI_IMAGE_MODEL ?? 'gpt-image-1.5').trim();
+}
+
+function resolveImageEditSize(model: string): string {
+  const requested = (process.env.EXPO_PUBLIC_OPENAI_IMAGE_SIZE ?? '1024x1536').trim();
+  if (model === 'dall-e-2') {
+    return '1024x1024';
+  }
+  if (ALLOWED_GPT_IMAGE_SIZES.has(requested)) {
+    return requested;
+  }
+  return '1024x1536';
+}
+
+function resolveImageEditQuality(): string {
+  return (process.env.EXPO_PUBLIC_OPENAI_IMAGE_EDIT_QUALITY ?? 'medium').trim();
+}
+
+function isDallE2(model: string): boolean {
+  return model === 'dall-e-2';
+}
+
+function isGptImageFamily(model: string): boolean {
+  return model.startsWith('gpt-image') || model === 'chatgpt-image-latest';
+}
+
+function assertModelSupportsImageEdit(model: string): void {
+  if (model === 'dall-e-3' || model.startsWith('dall-e-3')) {
+    throw new Error(
+      'Image edit is not available for dall-e-3. Set EXPO_PUBLIC_OPENAI_IMAGE_MODEL to gpt-image-1.5, gpt-image-1, gpt-image-1-mini, or dall-e-2.'
+    );
+  }
+  if (!isDallE2(model) && !isGptImageFamily(model)) {
+    throw new Error(
+      `Unsupported image edit model "${model}". Use a GPT Image model (e.g. gpt-image-1.5) or dall-e-2.`
+    );
+  }
+}
+
+function inferMimeTypeFromUri(imageUri: string): string {
+  const lower = imageUri.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  return 'image/jpeg';
+}
+
+function resolveMimeType(imageUri: string, explicitMimeType?: string): string {
+  const trimmed = explicitMimeType?.trim();
+  if (trimmed && trimmed.includes('/')) {
+    return trimmed;
+  }
+  return inferMimeTypeFromUri(imageUri);
+}
+
+function uploadFileNameForMime(mimeType: string): string {
+  if (mimeType.includes('png')) return 'photo.png';
+  if (mimeType.includes('webp')) return 'photo.webp';
+  return 'photo.jpg';
+}
+
+function normalizeFileUri(imageUri: string): string {
+  if (imageUri.startsWith('file://')) {
+    return imageUri;
+  }
+  if (imageUri.startsWith('/')) {
+    return `file://${imageUri}`;
+  }
+  return imageUri;
+}
+
+async function persistRemoteImageToCache(imageUrl: string): Promise<string> {
+  const dest = `${FileSystem.cacheDirectory}openai-edit-${Date.now()}.png`;
+  const result = await FileSystem.downloadAsync(imageUrl, dest);
+  if (result.status !== 200) {
+    throw new Error(`Failed to download edited image (HTTP ${result.status}).`);
+  }
+  return result.uri;
+}
+
+export async function generateEditedImage(
+  prompt: string,
+  originalImageUri: string,
+  originalImageMimeType?: string
+): Promise<string> {
+  const provider = process.env.EXPO_PUBLIC_ANALYSIS_PROVIDER;
+  if (provider === 'mock' || provider === 'testing_mockup') {
+    return new Promise(resolve => setTimeout(() => resolve('mock_generated_uri'), 2000));
+  }
+
+  const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    throw new Error('Missing EXPO_PUBLIC_OPENAI_API_KEY');
+  }
+
+  const model = resolveImageEditModel();
+  assertModelSupportsImageEdit(model);
+
+  const size = resolveImageEditSize(model);
+  const mimeType = resolveMimeType(originalImageUri, originalImageMimeType);
+  const fileUri = normalizeFileUri(originalImageUri);
+
+  const form = new FormData();
+  form.append('model', model);
+  form.append('prompt', prompt);
+  form.append('size', size);
+  form.append(
+    'image',
+    // React Native FormData accepts a local file descriptor here (not a web File).
+    { uri: fileUri, type: mimeType, name: uploadFileNameForMime(mimeType) } as unknown as Blob
+  );
+
+  if (isGptImageFamily(model)) {
+    form.append('quality', resolveImageEditQuality());
+    form.append('output_format', 'png');
+  }
+
+  if (isDallE2(model)) {
+    form.append('response_format', 'b64_json');
+  }
+
+  const startedAt = Date.now();
+
+  if (shouldDebugOpenAIFlow()) {
+    logOpenAIImageEditRequest({
+      url: IMAGE_EDITS_URL,
+      model,
+      size,
+      quality: isGptImageFamily(model) ? resolveImageEditQuality() : undefined,
+      outputFormat: isGptImageFamily(model) ? 'png' : undefined,
+      imageUri: fileUri,
+      mimeType,
+      prompt
+    });
+  }
+
+  const response = await fetch(IMAGE_EDITS_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`
+    },
+    body: form
+  });
+
+  const responseText = await response.text();
+  let data: { data?: Array<{ b64_json?: string; url?: string }> };
+  try {
+    data = JSON.parse(responseText) as { data?: Array<{ b64_json?: string; url?: string }> };
+  } catch {
+    data = {};
+  }
+
+  const b64 = data.data?.[0]?.b64_json;
+  const remoteUrl = data.data?.[0]?.url;
+
+  if (shouldDebugOpenAIFlow()) {
+    logOpenAIImageEditResponse({
+      status: response.status,
+      ok: response.ok,
+      elapsedMs: Date.now() - startedAt,
+      generatedBase64Length: b64?.length,
+      revisedPrompt: undefined
+    });
+  }
+
+  if (!response.ok) {
+    const message =
+      (data as { error?: { message?: string } }).error?.message ?? responseText.slice(0, 500);
+    throw new Error(`Failed to edit image: ${response.status} ${message}`);
+  }
+
+  if (b64) {
+    return saveBase64ImageToCache(b64);
+  }
+
+  if (remoteUrl) {
+    return persistRemoteImageToCache(remoteUrl);
+  }
+
+  throw new Error('No image returned from image edit API');
+}

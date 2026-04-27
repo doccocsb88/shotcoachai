@@ -1,78 +1,59 @@
 import { AnalysisResult } from '../../models/analysis';
 
-export function createMockAnalysisResult(originalImageUri: string): AnalysisResult {
+export function createMockAnalysisResult(
+  originalImageUri: string,
+  originalImageMimeType = 'image/jpeg'
+): AnalysisResult {
   return {
     analysisId: `${Date.now()}`,
-    overallScore: 7.6,
-    subscores: {
-      composition: 7.8,
-      pose: 6.9,
-      camera_angle: 7.1,
-      background: 8.0,
-      lighting: 7.4
-    },
-    summary: 'Good scene and light, but the crop and subject placement can be stronger.',
-    strengths: [
-      'The background has useful depth',
-      'Lighting is balanced enough for a clean result',
-      'The frame already has a clear subject'
-    ],
-    issues: [
-      'The subject sits too close to the center',
-      'The camera angle could be slightly lower',
-      'The frame has extra space that weakens the shot'
-    ],
+    overallAssessment:
+      'Strong subject presence; composition reads a bit centered and flat. Lighting is workable but could be shaped for more depth. A reshoot or edit could push toward editorial polish.',
     suggestions: [
       {
         title: 'Cleaner Composition',
-        description: 'Move the subject toward the right third and crop a little tighter.'
+        concept: 'Minimalist and focused',
+        composition: 'Rule of thirds — place subject on right vertical third; add negative space on look direction',
+        camera_angle: 'Eye level, slight step back for context; optional mild telephoto compression',
+        changes: [
+          'Move the subject toward the right third',
+          'Crop tighter vertically (4:5 for social)',
+          'Simplify or blur busy background elements'
+        ],
+        image_prompt:
+          'Edit this photo: same person, same identity. Reposition subject on right third, vertical 4:5 crop, cleaner blurred background, natural eye-level camera, soft natural light, premium Instagram aesthetic, photorealistic.'
       },
       {
         title: 'Look Taller',
-        description: 'Lower the camera slightly and keep the body turned a bit.'
+        concept: 'Empowering low angle',
+        composition: 'Diagonal energy — slight body turn with leading lines from environment toward face',
+        camera_angle: 'Low angle from waist height, lens slightly below chest line',
+        changes: [
+          'Weight on back leg, front knee soft',
+          'Relax shoulders and lengthen neck',
+          'Eyes toward lens or just past camera for confidence'
+        ],
+        image_prompt:
+          'Edit this photo: same person, same identity. Low-angle hero shot from waist height, longer legs in frame, subtle leading lines, crisp premium fashion look, realistic anatomy, photorealistic.'
       },
       {
-        title: 'Simpler Frame',
-        description: 'Keep the brightest background details away from the face area.'
+        title: 'Cinematic Lighting',
+        concept: 'Dramatic and moody',
+        composition: 'Cinematic wide or medium; stronger separation between subject and background',
+        camera_angle: 'Eye level to slight low; avoid dutch tilt unless scene calls for it',
+        changes: [
+          'Soft rim or edge light on hair and shoulders',
+          'Controlled shadow contrast in background',
+          'Warm cinematic color grade, natural skin tones'
+        ],
+        image_prompt:
+          'Edit this photo: same person, same identity. Cinematic lighting with gentle rim light, deeper background shadows, warm premium color grade, natural skin, shallow depth of field, photorealistic.'
       }
     ],
-    overlayData: {
-      grid: true,
-      cropRect: {
-        x: 0.12,
-        y: 0.08,
-        w: 0.76,
-        h: 0.84
-      },
-      arrows: [
-        {
-          from: [0.5, 0.66],
-          to: [0.62, 0.66],
-          label: 'Move slightly right'
-        },
-        {
-          from: [0.48, 0.88],
-          to: [0.48, 0.78],
-          label: 'Lower camera'
-        }
-      ],
-      notes: [
-        {
-          x: 0.55,
-          y: 0.28,
-          text: 'Turn shoulders a bit'
-        },
-        {
-          x: 0.18,
-          y: 0.12,
-          text: 'Crop tighter'
-        }
-      ]
-    },
     visualOutput: {
       type: 'overlay_only'
     },
     createdAt: new Date().toISOString(),
-    originalImageUri
+    originalImageUri,
+    originalImageMimeType
   };
 }

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
+import { toUserMessage } from '../../services/errors/appError';
 import { analyzePhoto as runAnalyzePhoto } from '../../services/openai/analyzePhoto';
 
 export function useAnalyzePhoto() {
@@ -18,8 +19,7 @@ export function useAnalyzePhoto() {
       await addRecentResult(parsed);
       return parsed;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Analysis failed';
-      setError(message);
+      setError(toUserMessage(error));
       throw error;
     } finally {
       setAnalyzing(false);

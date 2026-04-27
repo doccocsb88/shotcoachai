@@ -4,8 +4,7 @@ import { useAnalysisStore } from '../../core/store/analysisStore';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Screen } from '../../components/common/Screen';
 import { colors } from '../../constants/theme';
-import { AnalysisResult } from '../../models/analysis';
-import { formatScore } from '../../utils/score';
+import { AnalysisResult, countStoredSuggestionEdits } from '../../models/analysis';
 
 interface Props {
   onBack: () => void;
@@ -33,16 +32,23 @@ export function HistoryScreen({ onBack, onOpenResult }: Props) {
             data={recentResults}
             keyExtractor={item => item.analysisId}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <Pressable onPress={() => onOpenResult(item)} style={styles.row}>
-                <Image source={{ uri: item.originalImageUri }} style={styles.thumb} />
-                <View style={styles.rowText}>
-                  <Text style={styles.score}>{formatScore(item.overallScore)}</Text>
-                  <Text style={styles.summary} numberOfLines={2}>{item.summary}</Text>
-                  <Text style={styles.date}>{new Date(item.createdAt).toLocaleString()}</Text>
-                </View>
-              </Pressable>
-            )}
+            renderItem={({ item }) => {
+              const savedEditCount = countStoredSuggestionEdits(item);
+              return (
+                <Pressable onPress={() => onOpenResult(item)} style={styles.row}>
+                  <Image source={{ uri: item.originalImageUri }} style={styles.thumb} />
+                  <View style={styles.rowText}>
+                    <Text style={styles.summary} numberOfLines={2}>{item.overallAssessment}</Text>
+                    <Text style={styles.date}>
+                      {new Date(item.createdAt).toLocaleString()}
+                      {savedEditCount > 0
+                        ? ` · ${savedEditCount} saved edit${savedEditCount === 1 ? '' : 's'}`
+                        : ''}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            }}
           />
         )}
       </View>
@@ -89,11 +95,6 @@ const styles = StyleSheet.create({
   rowText: {
     flex: 1,
     justifyContent: 'center'
-  },
-  score: {
-    color: colors.accent,
-    fontSize: 18,
-    fontWeight: '900'
   },
   summary: {
     color: colors.text,

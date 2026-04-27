@@ -2,6 +2,7 @@ node_modules/
 .expo/
 dist/
 web-build/
+.DS_Store
 *.jks
 *.p8
 *.p12
@@ -14,3 +15,5 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+tmp/
+.codex/
