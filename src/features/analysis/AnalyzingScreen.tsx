@@ -4,7 +4,7 @@ import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Screen } from '../../components/common/Screen';
-import { colors } from '../../constants/theme';
+import { colors, radius, typography } from '../../constants/theme';
 import { useAnalyzePhoto } from './useAnalyzePhoto';
 
 interface Props {
@@ -13,13 +13,14 @@ interface Props {
   onCancel: () => void;
 }
 
+/** Cosmetic progress only — advances on a timer. Must match what `analyze()` actually does (see `useAnalyzePhoto` / `analyzePhoto`). */
 const statuses = [
-  'Uploading photo',
-  'Scoring composition',
-  'Writing suggestions',
-  'Preparing generation prompt',
-  'Generating AI version',
-  'Saving AI version'
+  'Preparing your photo',
+  'Running vision analysis',
+  'Scoring composition, lighting, and pose',
+  'Creating creative directions',
+  'Composing image prompts',
+  'Saving analysis'
 ];
 
 export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
@@ -87,7 +88,7 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
           </>
         ) : (
           <>
-            <ActivityIndicator color={colors.accent} size="large" />
+            <ActivityIndicator color={colors.primary} size="large" />
             <Text style={styles.title}>Analyzing photo</Text>
             <Text style={styles.subtitle}>{status}</Text>
           </>
@@ -106,21 +107,23 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     height: 180,
     marginBottom: 28,
     width: 140
   },
   title: {
     color: colors.text,
-    fontSize: 26,
+    fontSize: typography.title,
     fontWeight: '900',
     marginBottom: 10,
     textAlign: 'center'
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 16,
+    fontSize: typography.body,
     lineHeight: 23,
     marginBottom: 22,
     textAlign: 'center'

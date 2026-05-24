@@ -2,8 +2,13 @@ import { AnalysisResult } from '../../models/analysis';
 import { withTimeout } from '../../utils/async';
 import { fileToBase64 } from '../image/fileToBase64';
 import { resizeImageIfNeeded } from '../image/resizeImage';
-import { analyzePhotoWithOpenAI, hasOpenAIKey } from './openaiClient';
-import { parseAnalysisResponse } from './responseParser';
+import {
+  analyzePhotoWithOpenAI,
+  composeGenerationRecipesWithOpenAI,
+  createCreativeDirectionsWithOpenAI,
+  hasOpenAIKey
+} from './openaiClient';
+import { buildAnalysisResultFromProductionFlow, parseAnalysisResponse, parseJsonResponse } from './responseParser';
 import { analyzePhotoWithTestingMockupApi } from './testingMockupApi';
 
 const ANALYSIS_TIMEOUT_MS = 90000;
@@ -33,12 +38,40 @@ export async function analyzePhoto(imageUri: string, mimeType: string): Promise<
       LOCAL_STEP_TIMEOUT_MS,
       'Image read timeout'
     );
-    const raw = await withTimeout(
+
+    const visionRaw = await withTimeout(
       analyzePhotoWithOpenAI(imageBase64, optimizedUri.mimeType, analysisController.signal),
       ANALYSIS_TIMEOUT_MS,
-      'OpenAI request timeout'
+      'OpenAI vision analysis timeout'
     );
-    return parseAnalysisResponse(raw, imageUri, mimeType);
+    const photoAnalysis = parseJsonResponse(visionRaw);
+
+    const directionsRaw = await withTimeout(
+      createCreativeDirectionsWithOpenAI(
+        photoAnalysis,
+        imageBase64,
+        optimizedUri.mimeType,
+        analysisController.signal
+      ),
+      ANALYSIS_TIMEOUT_MS,
+      'OpenAI creative direction timeout'
+    );
+    const directionsPayload = parseJsonResponse(directionsRaw);
+
+    const recipesRaw = await withTimeout(
+      composeGenerationRecipesWithOpenAI(photoAnalysis, directionsPayload, analysisController.signal),
+      ANALYSIS_TIMEOUT_MS,
+      'OpenAI prompt composer timeout'
+    );
+    const recipesPayload = parseJsonResponse(recipesRaw);
+
+    return buildAnalysisResultFromProductionFlow({
+      photoAnalysis,
+      directionsPayload,
+      recipesPayload,
+      originalImageUri: imageUri,
+      originalImageMimeType: mimeType
+    });
   } finally {
     clearTimeout(analysisTimeoutId);
   }

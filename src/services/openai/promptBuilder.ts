@@ -1,104 +1,170 @@
-export const buildPhotoAnalysisPrompt = () => `
-You are a professional photography director, portrait photographer, and visual composition expert.
+export const buildVisionAnalysisPrompt = () => `
+You are a professional photography director and visual analysis engine.
 
-Analyze the uploaded photo and suggest exactly 3 improvement directions to make the photo significantly more beautiful, natural, premium, and visually appealing.
+Analyze the uploaded photo for:
+- composition
+- camera angle
+- lighting
+- pose
+- expression
+- naturalness
+- social media quality
 
-Your analysis must pay special attention to:
+Anti-hallucination rules:
+1. Only describe visible elements.
+2. If uncertain, use "unknown".
+3. Do not invent objects or people.
+4. Preserve identity.
+5. Keep realism.
+6. Follow the schema strictly.
 
-1. SUBJECT / POSE
-- body posture
-- hand placement
-- facial expression
-- eye direction
-- confidence / natural feeling
+Return STRICT JSON only:
+{
+  "schema_version": "1.0",
+  "photo_id": "source_photo",
+  "analysis_id": "uuid-or-short-id",
+  "scene": {
+    "photo_type": "portrait | couple | group | product | landscape | unknown",
+    "environment": "visible environment or unknown",
+    "visible_subjects": "short visible subject description"
+  },
+  "composition": {
+    "quality_score": 0,
+    "notes": "specific composition assessment"
+  },
+  "lighting": {
+    "quality_score": 0,
+    "notes": "specific lighting assessment"
+  },
+  "pose": {
+    "quality_score": 0,
+    "notes": "specific pose/expression assessment"
+  },
+  "aesthetic": {
+    "overall_score": 0,
+    "notes": "short expert review"
+  },
+  "scores": {
+    "composition_score": 0,
+    "lighting_score": 0,
+    "pose_score": 0,
+    "naturalness_score": 0,
+    "social_media_score": 0,
+    "overall_aesthetic_score": 0
+  },
+  "overall_assessment": "short expert review of the current photo"
+}
+`;
 
-2. COMPOSITION
-Identify current composition and recommend stronger alternatives such as:
-- rule of thirds
-- centered symmetry
-- leading lines
-- diagonal composition
-- frame within frame
-- negative space
-- foreground depth layering
-- close-up crop
-- portrait 4:5 crop for social media
-- cinematic wide composition
+export const buildCreativeDirectionPrompt = () => `
+You are an elite photography creative director.
 
-3. CAMERA ANGLE
-Evaluate whether the photo would improve with:
-- low angle shot (powerful / taller look)
-- high angle shot (soft / elegant / cute)
-- eye level shot (natural / premium)
-- dutch angle (dynamic)
-- side angle profile shot
-- close lens perspective
-- telephoto compressed perspective
+Create exactly 3 visually different improvement directions from the provided PhotoAnalysis JSON.
 
-4. LIGHTING
-- natural light direction
-- golden hour
-- soft indoor luxury lighting
-- rim light
-- window light
-- cinematic shadow contrast
-
-5. BACKGROUND / DEPTH
-- simplify distracting background
-- stronger blur / bokeh
-- architectural lines
-- luxury environment
-- cleaner visual hierarchy
-
-6. COLOR / STYLE
-- skin tone improvement
-- premium color grading
-- cinematic mood
-- fashion editorial tone
-- clean Instagram aesthetic
+Focus on:
+- composition
+- pose
+- camera angle
+- lighting
+- realism
 
 Rules:
-- Do NOT change the person's identity.
-- Keep realistic human anatomy.
-- Suggestions must be practical for AI image editing/generation.
-- Each of the 3 suggestions must be clearly different.
-- Avoid generic advice.
-- Think like a professional photographer preparing a reshoot.
+- Do not relocate the subject to a new place.
+- Do not replace face, body shape, hairstyle, clothing, accessories, or outfit colors.
+- Every direction must be a conservative edit of the uploaded/source photo.
+- Keep every recommendation practical for image editing/generation.
+- Return STRICT JSON only.
 
-Return JSON only:
-
+Return this schema:
 {
-  "overall_assessment": "short expert review of current photo including pose, composition, camera angle, lighting",
-  "suggestions": [
+  "directions": [
     {
-      "title": "Luxury Low Angle Editorial",
-      "concept": "Confident premium fashion look",
-      "composition": "rule of thirds with subject on right third, columns as leading lines",
-      "camera_angle": "low angle slightly tilted upward from waist height",
-      "changes": [
-        "relax shoulders",
-        "one leg forward for longer silhouette",
-        "crop vertical 4:5",
-        "soft cinematic light"
-      ],
-      "image_prompt": "full generation prompt"
-    },
-    {
-      "title": "Elegant High Angle Lifestyle",
-      "concept": "Soft feminine social media aesthetic",
-      "composition": "centered with negative space",
-      "camera_angle": "slightly high angle",
-      "changes": [],
-      "image_prompt": "full generation prompt"
-    },
-    {
-      "title": "Dynamic Walking Street Shot",
-      "concept": "Natural movement candid vibe",
-      "composition": "diagonal leading path composition",
-      "camera_angle": "eye level side tracking angle",
-      "changes": [],
-      "image_prompt": "full generation prompt"
+      "title": "Luxury Cinematic Portrait",
+      "concept": "Premium cinematic social media aesthetic",
+      "composition": "specific crop/framing strategy",
+      "camera_angle": "specific camera/lens feel",
+      "changes": {
+        "pose": ["pose refinement"],
+        "lighting": ["lighting refinement"],
+        "composition": ["composition refinement"],
+        "style": ["color/depth/finish refinement"]
+      }
     }
   ]
 }
 `;
+
+export const buildPromptComposerPrompt = () => `
+You are an expert image generation prompt engineer.
+
+Convert each creative direction into a production-ready image-edit prompt.
+
+Include:
+- pose
+- lighting
+- framing
+- depth
+- color grading
+- realism constraints
+
+Rules:
+- The prompt must explicitly preserve the original person's identity, face, hairstyle, clothing, accessories, pose structure, and original environment/background.
+- The prompt must not ask for a new scene, new person, new outfit, or new background.
+- Include a negative prompt that avoids extra fingers, distorted anatomy, plastic skin, changed identity, changed clothing, and replaced background.
+- Return STRICT JSON only.
+
+Return this schema:
+{
+  "recipes": [
+    {
+      "direction_title": "must match the creative direction title",
+      "model": {
+        "provider": "openai",
+        "name": "gpt-image"
+      },
+      "image_prompt": {
+        "positive_prompt": "production image-edit prompt",
+        "negative_prompt": "negative constraints"
+      },
+      "evaluation_targets": {
+        "identity_preservation": 8,
+        "naturalness": 7,
+        "anatomy_score": 8,
+        "overall_score": 7
+      }
+    }
+  ]
+}
+`;
+
+export const buildQualityEvaluationPrompt = () => `
+You are a production image quality evaluator for AI photo edits.
+
+Compare the original source photo with the generated edit.
+
+Evaluate:
+- identity preservation
+- naturalness
+- anatomy
+- realism
+- whether the edit followed the selected creative direction
+
+Retry conditions:
+- identity_preservation < 8
+- naturalness < 7
+- anatomy_score < 8
+- overall_score < 7
+
+Return STRICT JSON only:
+{
+  "identity_preservation": 0,
+  "naturalness": 0,
+  "anatomy_score": 0,
+  "overall_score": 0,
+  "retry_required": false,
+  "retry_reason": "short reason or empty string",
+  "recommended_action": "strengthen identity prompt | add anatomy constraints | reduce edit strength | accept"
+}
+`;
+
+export const buildPhotoAnalysisPrompt = buildVisionAnalysisPrompt;

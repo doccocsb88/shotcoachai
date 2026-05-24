@@ -9,19 +9,81 @@ export interface Suggestion {
   image_prompt: string;
 }
 
-/** Raw JSON shape from OpenAI Vision before normalization (snake_case). */
-export interface PhotoAnalysisVisionSuggestionJson {
-  title?: unknown;
-  concept?: unknown;
-  composition?: unknown;
-  camera_angle?: unknown;
-  changes?: unknown;
-  image_prompt?: unknown;
+export interface ProductionPhotoAnalysis {
+  schema_version: string;
+  photo_id: string;
+  analysis_id: string;
+  scene: {
+    photo_type: string;
+    environment: string;
+    visible_subjects?: string;
+  };
+  composition: {
+    quality_score: number;
+    notes: string;
+  };
+  lighting: {
+    quality_score: number;
+    notes: string;
+  };
+  pose: {
+    quality_score: number;
+    notes: string;
+  };
+  aesthetic: {
+    overall_score: number;
+    notes: string;
+  };
+  scores: {
+    composition_score: number;
+    lighting_score: number;
+    pose_score: number;
+    naturalness_score: number;
+    social_media_score: number;
+    overall_aesthetic_score: number;
+  };
+  overall_assessment: string;
 }
 
-export interface PhotoAnalysisVisionJson {
-  overall_assessment?: unknown;
-  suggestions?: unknown;
+export interface CreativeDirection {
+  title: string;
+  concept: string;
+  composition: string;
+  camera_angle: string;
+  changes: {
+    pose: string[];
+    lighting: string[];
+    composition: string[];
+    style: string[];
+  };
+}
+
+export interface GenerationRecipe {
+  direction_title: string;
+  model: {
+    provider: string;
+    name: string;
+  };
+  image_prompt: {
+    positive_prompt: string;
+    negative_prompt: string;
+  };
+  evaluation_targets: {
+    identity_preservation: number;
+    naturalness: number;
+    anatomy_score: number;
+    overall_score: number;
+  };
+}
+
+export interface ImageQualityEvaluation {
+  identity_preservation: number;
+  naturalness: number;
+  anatomy_score: number;
+  overall_score: number;
+  retry_required: boolean;
+  retry_reason: string;
+  recommended_action: string;
 }
 
 export interface CropRectNormalized {
@@ -62,12 +124,16 @@ export interface VisualOutput {
 export interface SuggestionGenerationEntry {
   suggestionIndex: number;
   generatedImageUri: string;
+  qualityEvaluation?: ImageQualityEvaluation;
 }
 
 export interface AnalysisResult {
   analysisId: string;
   overallAssessment: string;
   suggestions: Suggestion[];
+  productionAnalysis?: ProductionPhotoAnalysis;
+  creativeDirections?: CreativeDirection[];
+  generationRecipes?: GenerationRecipe[];
   createdAt: string;
   originalImageUri: string;
   /** MIME type of the original upload (used for OpenAI image edit multipart). */
@@ -104,7 +170,8 @@ export function countStoredSuggestionEdits(result: AnalysisResult): number {
 export function mergeSuggestionGeneration(
   result: AnalysisResult,
   suggestionIndex: number,
-  generatedImageUri: string
+  generatedImageUri: string,
+  qualityEvaluation?: ImageQualityEvaluation
 ): AnalysisResult {
   let base: SuggestionGenerationEntry[] = [...(result.suggestionGenerations ?? [])];
   if (
@@ -119,7 +186,7 @@ export function mergeSuggestionGeneration(
     });
   }
   base = base.filter(g => g.suggestionIndex !== suggestionIndex);
-  base.push({ suggestionIndex, generatedImageUri });
+  base.push({ suggestionIndex, generatedImageUri, qualityEvaluation });
   return {
     ...result,
     suggestionGenerations: base,

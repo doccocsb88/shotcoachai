@@ -1,7 +1,11 @@
 import * as FileSystem from 'expo-file-system';
 
+import { ImageQualityEvaluation } from '../../models/analysis';
+import { fileToBase64 } from '../image/fileToBase64';
 import { saveBase64ImageToCache } from '../image/saveBase64Image';
 import { logOpenAIImageEditRequest, logOpenAIImageEditResponse, shouldDebugOpenAIFlow } from './debugOpenAIFlow';
+import { evaluateGeneratedImageWithOpenAI } from './openaiClient';
+import { normalizeImageQualityEvaluation, parseJsonResponse } from './responseParser';
 
 const IMAGE_EDITS_URL = 'https://api.openai.com/v1/images/edits';
 
@@ -79,6 +83,29 @@ function normalizeFileUri(imageUri: string): string {
   return imageUri;
 }
 
+function buildConservativeImageEditPrompt(userPrompt: string): string {
+  return `
+Edit the uploaded photo conservatively. The uploaded image is the source of truth.
+
+Preservation requirements:
+- Preserve the exact same person and identity. Do not change the face, facial structure, age, expression identity, skin tone identity, hairstyle, hair color, body shape, or gender presentation.
+- Preserve the original clothing and accessories. Keep the same sweater/outfit, colors, patterns, jewelry, shoes, and visible garment details. Do not replace wardrobe.
+- Preserve the original location and background. Do not move the person to a new train, building, street, room, landscape, sky, or fantasy/editorial set. Do not invent a different scene.
+- Preserve the major composition context and visible objects from the original photo. Any crop/framing change must still look like the same captured moment.
+- Preserve realistic human anatomy, hands, eyes, and facial details.
+
+Allowed edits:
+- Improve lighting, contrast, color grading, skin tone polish, local sharpness, depth of field, and premium photographic finish.
+- Apply subtle crop/framing, window-light emphasis, background blur, and cinematic tone only if they do not erase or replace the original environment.
+- Make small pose/expression refinements only when they remain consistent with the original body position.
+
+Requested direction:
+${userPrompt}
+
+Final output must look like a refined edit of the same source photo, not a new photo shoot or a new generated scene.
+`.trim();
+}
+
 async function persistRemoteImageToCache(imageUrl: string): Promise<string> {
   const dest = `${FileSystem.cacheDirectory}openai-edit-${Date.now()}.png`;
   const result = await FileSystem.downloadAsync(imageUrl, dest);
@@ -112,7 +139,7 @@ export async function generateEditedImage(
 
   const form = new FormData();
   form.append('model', model);
-  form.append('prompt', prompt);
+  form.append('prompt', buildConservativeImageEditPrompt(prompt));
   form.append('size', size);
   form.append(
     'image',
@@ -140,7 +167,7 @@ export async function generateEditedImage(
       outputFormat: isGptImageFamily(model) ? 'png' : undefined,
       imageUri: fileUri,
       mimeType,
-      prompt
+      prompt: buildConservativeImageEditPrompt(prompt)
     });
   }
 
@@ -188,4 +215,44 @@ export async function generateEditedImage(
   }
 
   throw new Error('No image returned from image edit API');
+}
+
+export async function evaluateEditedImageQuality(input: {
+  originalImageUri: string;
+  generatedImageUri: string;
+  originalImageMimeType?: string;
+  selectedDirection: unknown;
+}): Promise<ImageQualityEvaluation | undefined> {
+  const provider = process.env.EXPO_PUBLIC_ANALYSIS_PROVIDER;
+  if (provider === 'mock' || provider === 'testing_mockup') {
+    return {
+      identity_preservation: 9,
+      naturalness: 8,
+      anatomy_score: 9,
+      overall_score: 8,
+      retry_required: false,
+      retry_reason: '',
+      recommended_action: 'accept'
+    };
+  }
+
+  const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+  if (!OPENAI_API_KEY) {
+    return undefined;
+  }
+
+  const generatedMimeType = resolveMimeType(input.generatedImageUri, 'image/png');
+  const [originalImageBase64, generatedImageBase64] = await Promise.all([
+    fileToBase64(normalizeFileUri(input.originalImageUri)),
+    fileToBase64(normalizeFileUri(input.generatedImageUri))
+  ]);
+  const raw = await evaluateGeneratedImageWithOpenAI(
+    originalImageBase64,
+    generatedImageBase64,
+    resolveMimeType(input.originalImageUri, input.originalImageMimeType),
+    generatedMimeType,
+    input.selectedDirection
+  );
+
+  return normalizeImageQualityEvaluation(parseJsonResponse(raw));
 }
