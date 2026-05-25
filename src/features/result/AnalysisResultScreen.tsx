@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '../../components/common/Screen';
 import { ScreenNavBar } from '../../components/common/ScreenNavBar';
@@ -18,20 +18,9 @@ export function AnalysisResultScreen({ result, onBack, onOpenPaywall, onSelectSu
     return Boolean(getStoredGenerationUri(result, index)) || UserManager.canUseSuggestion(index);
   };
 
-  const showSuggestionPaywall = () => {
-    Alert.alert(
-      'Unlock all AI suggestions',
-      'Free users can generate 1 suggestion per photo. Upgrade to ShotCoach Pro to use all 3 directions.',
-      [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Upgrade', onPress: onOpenPaywall }
-      ]
-    );
-  };
-
   const handleSelectSuggestion = (index: number) => {
     if (!canUseSuggestion(index)) {
-      showSuggestionPaywall();
+      onOpenPaywall();
       return;
     }
     onSelectSuggestion(index);

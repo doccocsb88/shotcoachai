@@ -13,12 +13,14 @@ import { HistoryScreen } from '../../features/history/HistoryScreen';
 import { PoseCollectionScreen } from '../../features/pose-collection/PoseCollectionScreen';
 import { PoseDetailScreen } from '../../features/pose-collection/PoseDetailScreen';
 import { PaywallScreen } from '../../features/paywall/PaywallScreen';
-import { PrivacyPolicyScreen } from '../../features/privacy/PrivacyPolicyScreen';
+import { AppWebView } from '../../components/common/AppWebView';
+import { LEGAL_URLS, SUPPORT_EMAIL } from '../../constants/legal';
 import { colors, radius, shadows } from '../../constants/theme';
 import { AnalysisResult } from '../../models/analysis';
 import { PoseSeedItem } from '../../features/pose-collection/types';
 import { PurchaseService } from '../../services/purchase/PurchaseService';
 import { UserManager } from '../../services/user/UserManager';
+import { trackScreenView } from '../../services/tracking/firebaseTracking';
 
 type ScreenName =
   | 'home'
@@ -29,8 +31,12 @@ type ScreenName =
   | 'generatedResult'
   | 'history'
   | 'poseCollection'
-  | 'poseDetail'
-  | 'privacyPolicy';
+  | 'poseDetail';
+
+type LegalDocument = {
+  title: string;
+  url: string;
+};
 
 export function AppNavigator() {
   const [screen, setScreen] = useState<ScreenName>('home');
@@ -40,7 +46,7 @@ export function AppNavigator() {
   const [retakeReferenceUri, setRetakeReferenceUri] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
-  const [privacyPolicyReturnToMenu, setPrivacyPolicyReturnToMenu] = useState(false);
+  const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
   const hydrateHistory = useAnalysisStore(state => state.hydrateHistory);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const currentResult = useAnalysisStore(state => state.currentResult);
@@ -49,6 +55,10 @@ export function AppNavigator() {
     void hydrateHistory();
     void UserManager.refresh();
   }, [hydrateHistory]);
+
+  useEffect(() => {
+    void trackScreenView(screen);
+  }, [screen]);
 
   const goHome = useCallback(() => {
     clearCurrent();
@@ -126,17 +136,6 @@ export function AppNavigator() {
     setPaywallOpen(false);
     void UserManager.refresh();
   }, []);
-  const openPrivacyPolicy = useCallback((returnToMenu = false) => {
-    setPrivacyPolicyReturnToMenu(returnToMenu);
-    setScreen('privacyPolicy');
-  }, []);
-  const closePrivacyPolicy = useCallback(() => {
-    setScreen('home');
-    if (privacyPolicyReturnToMenu) {
-      setMenuOpen(true);
-      setPrivacyPolicyReturnToMenu(false);
-    }
-  }, [privacyPolicyReturnToMenu]);
   const openPoseDetail = useCallback((pose: PoseSeedItem) => {
     setSelectedPose(pose);
     setScreen('poseDetail');
@@ -178,8 +177,6 @@ export function AppNavigator() {
     content = <PoseCollectionScreen onBack={openHome} onOpenPose={openPoseDetail} />;
   } else if (screen === 'poseDetail' && selectedPose) {
     content = <PoseDetailScreen pose={selectedPose} onBack={openPoseCollection} />;
-  } else if (screen === 'privacyPolicy') {
-    content = <PrivacyPolicyScreen onBack={closePrivacyPolicy} />;
   } else {
     content = (
       <HomeScreen
@@ -204,10 +201,13 @@ export function AppNavigator() {
         onOpenPaywall={() => {
           openPaywall();
         }}
-        onOpenPrivacyPolicy={() => {
-          closeMenu();
-          openPrivacyPolicy(true);
-        }}
+        onOpenLegal={setLegalDocument}
+      />
+      <AppWebView
+        title={legalDocument?.title ?? ''}
+        url={legalDocument?.url ?? ''}
+        visible={legalDocument !== null}
+        onClose={() => setLegalDocument(null)}
       />
       <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall}>
         <PaywallScreen onBack={closePaywall} />
@@ -220,12 +220,12 @@ function SideMenu({
   visible,
   onClose,
   onOpenPaywall,
-  onOpenPrivacyPolicy
+  onOpenLegal
 }: {
   visible: boolean;
   onClose: () => void;
   onOpenPaywall: () => void;
-  onOpenPrivacyPolicy: () => void;
+  onOpenLegal: (document: LegalDocument) => void;
 }) {
   const openUrl = async (url: string, fallbackUrl?: string) => {
     try {
@@ -310,9 +310,29 @@ function SideMenu({
 
             <SettingsSection>
               <SettingsRow icon="star" title="Review App" onPress={openReview} />
-              <SettingsRow icon="mail" title="Contact us" onPress={() => openUrl('mailto:support@shotcoach.ai')} />
+              <SettingsRow icon="mail" title="Contact us" onPress={() => openUrl(`mailto:${SUPPORT_EMAIL}`)} />
               <SettingsRow icon="share" title="Share our app with friend" onPress={shareApp} />
-              <SettingsRow icon="shield" title="Privacy policy" onPress={onOpenPrivacyPolicy} isLast />
+              <SettingsRow
+                icon="shield"
+                title="Privacy Policy"
+                onPress={() =>
+                  onOpenLegal({
+                    title: 'Privacy Policy',
+                    url: LEGAL_URLS.privacyPolicy
+                  })
+                }
+              />
+              <SettingsRow
+                icon="document"
+                title="Terms of Use"
+                onPress={() =>
+                  onOpenLegal({
+                    title: 'Terms of Use',
+                    url: LEGAL_URLS.termsOfUse
+                  })
+                }
+                isLast
+              />
             </SettingsSection>
           </ScrollView>
         </SafeAreaView>
@@ -382,6 +402,13 @@ function SettingsIcon({ name }: { name: string }) {
             <Path {...common} d="M8 12h8" />
             <Path {...common} d="M13 7l5 5-5 5" />
             <Path {...common} d="M5 5v14h14" />
+          </>
+        ) : name === 'document' ? (
+          <>
+            <Path {...common} d="M7 3h7l4 4v14H7z" />
+            <Path {...common} d="M14 3v5h5" />
+            <Path {...common} d="M10 12h6" />
+            <Path {...common} d="M10 16h6" />
           </>
         ) : (
           <>

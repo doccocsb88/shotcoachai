@@ -126,7 +126,11 @@
           "familyShareable" : false,
           "groupNumber" : 2,
           "internalID" : "ACE10002",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "internalID" : "9AD9E871",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P3D"
+          },
           "localizations" : [
             {
               "description" : "Start with a trial, then continue monthly.",

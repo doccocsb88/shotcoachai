@@ -13,7 +13,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "co.q7labs.shotcoachai",
-      "appleTeamId": "7C8RLFRN5X"
+      "appleTeamId": "7C8RLFRN5X",
+      "googleServicesFile": "./ios/AIPhotoCoach/GoogleService-Info.plist"
     },
     "android": {
       "package": "co.q7labs.shotcoachai",
@@ -39,10 +40,29 @@
           "photosPermission": "Allow AI Photo Coach to save guide images.",
           "savePhotosPermission": "Allow AI Photo Coach to save guide images."
         }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "This identifier will be used to deliver personalized ads and measure ad performance."
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads and measure ad performance."
+        }
       ]
     ],
     "extra": {
       "openAiModel": "gpt-4.1-mini"
     }
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-3940256099942544~3347511713",
+    "ios_app_id": "ca-app-pub-3940256099942544~1458002511",
+    "user_tracking_usage_description": "This identifier will be used to deliver personalized ads and measure ad performance."
   }
 }

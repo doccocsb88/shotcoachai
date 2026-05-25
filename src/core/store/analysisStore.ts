@@ -19,6 +19,7 @@ interface AnalysisStore {
   setAnalyzing: (value: boolean) => void;
   setCurrentResult: (result: AnalysisResult) => void;
   addRecentResult: (result: AnalysisResult) => Promise<void>;
+  removeRecentResult: (analysisId: string) => Promise<void>;
   setRecentResults: (results: AnalysisResult[]) => void;
   hydrateHistory: () => Promise<void>;
   setError: (message?: string) => void;
@@ -40,6 +41,11 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   addRecentResult: async result => {
     const existing = get().recentResults.filter(item => item.analysisId !== result.analysisId);
     const next = [result, ...existing].slice(0, 20);
+    set({ recentResults: next });
+    await persistHistory(next);
+  },
+  removeRecentResult: async analysisId => {
+    const next = get().recentResults.filter(item => item.analysisId !== analysisId);
     set({ recentResults: next });
     await persistHistory(next);
   },

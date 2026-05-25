@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
+import { ForegroundToast } from '../../components/common/ForegroundToast';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius, typography } from '../../constants/theme';
@@ -91,6 +92,9 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
             <ActivityIndicator color={colors.primary} size="large" />
             <Text style={styles.title}>Analyzing photo</Text>
             <Text style={styles.subtitle}>{status}</Text>
+            <View style={styles.toastDock}>
+              <ForegroundToast />
+            </View>
           </>
         )}
       </View>
@@ -131,5 +135,11 @@ const styles = StyleSheet.create({
   errorActions: {
     gap: 12,
     width: '100%'
+  },
+  toastDock: {
+    bottom: 24,
+    left: 24,
+    position: 'absolute',
+    right: 24
   }
 });

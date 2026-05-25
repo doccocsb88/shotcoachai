@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { AppWebView } from '../../components/common/AppWebView';
+import { LEGAL_URLS } from '../../constants/legal';
 import { colors, radius, shadows, spacing } from '../../constants/theme';
 import {
   PurchaseProduct,
@@ -9,10 +11,16 @@ import {
   PurchaseService,
   purchaseProductIds
 } from '../../services/purchase/PurchaseService';
+import { PurchaseTracking } from '../../services/tracking/purchaseTracking';
 import { UserManager } from '../../services/user/UserManager';
 
 const paywallHeroImage = require('../../../assets/paywall/paywall-hero.png');
 const paywallHeroHeightRatio = 1024 / 1536;
+
+type LegalDocument = {
+  title: string;
+  url: string;
+};
 
 interface Props {
   onBack: () => void;
@@ -21,40 +29,53 @@ interface Props {
 type PaywallPlan = {
   id: PurchaseProductId;
   badge?: string;
+  description?: string;
 };
 
 type DisplayPlan = {
   product: PurchaseProduct;
   badge?: string;
+  description: string;
 };
 
 const configuredPlans: PaywallPlan[] = [
   {
     id: 'co.q7labs.shotcoachai.weekly1',
+    description: 'Full access for a flexible week.'
   },
   {
     id: 'co.q7labs.shotcoachai.monthlytrial1',
-    badge: 'Popular'
+    badge: 'Popular',
+    description: '3 days free, then renews monthly.'
   },
   {
-    id: 'co.q7labs.shotcoachai.lifetime1'
+    id: 'co.q7labs.shotcoachai.lifetime1',
+    description: 'One-time unlock with lifetime access.'
   }
 ];
 const closeButtonTop = Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight ?? 0) + spacing.sm;
 
 export function PaywallScreen({ onBack }: Props) {
   const { width } = useWindowDimensions();
+  const impressionTrackedRef = useRef(false);
   const [products, setProducts] = useState<PurchaseProduct[]>([]);
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [storeUnavailableMessage, setStoreUnavailableMessage] = useState<string | null>(null);
   const [busyProductId, setBusyProductId] = useState<PurchaseProductId | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
+    if (!impressionTrackedRef.current) {
+      impressionTrackedRef.current = true;
+      void PurchaseTracking.paywallImpression();
+    }
+
     PurchaseService.getProducts()
       .then(storeProducts => {
+        void PurchaseTracking.productsLoaded(storeProducts);
         if (mounted) {
           setProducts(storeProducts);
           setProductsLoaded(true);
@@ -66,6 +87,7 @@ export function PaywallScreen({ onBack }: Props) {
         }
       })
       .catch(error => {
+        void PurchaseTracking.productsLoadFailed(error);
         if (mounted) {
           setProductsLoaded(true);
           setStoreUnavailableMessage(error instanceof Error ? error.message : 'Could not load StoreKit products.');
@@ -87,27 +109,35 @@ export function PaywallScreen({ onBack }: Props) {
   const displayPlans = useMemo<DisplayPlan[]>(() => {
     return configuredPlans.flatMap(plan => {
       const product = productById[plan.id];
-      return product ? [{ product, badge: plan.badge }] : [];
+      return product ? [{ product, badge: plan.badge, description: plan.description ?? product.description }] : [];
     });
   }, [productById]);
 
   const defaultPlan = displayPlans.find(plan => plan.product.id === 'co.q7labs.shotcoachai.monthlytrial1') ?? displayPlans[0];
   const processing = busyProductId !== null || restoring;
 
-  const handleSelectPlan = async (plan: DisplayPlan) => {
+  const handleSelectPlan = async (plan: DisplayPlan, source: 'plan_card' | 'primary_cta') => {
+    void PurchaseTracking.itemSelected(plan.product, source);
     setBusyProductId(plan.product.id);
     try {
+      void PurchaseTracking.purchaseStarted(plan.product, source);
       const result = await PurchaseService.purchase(plan.product.id);
 
       if (result.status === 'purchased') {
+        void PurchaseTracking.purchaseCompleted(plan.product, result);
         await UserManager.markPremiumActive();
         Alert.alert('Purchase complete', 'ShotCoach Pro is unlocked on this device.');
       } else if (result.status === 'pending') {
+        void PurchaseTracking.purchaseResolved(plan.product, result);
         Alert.alert('Purchase pending', 'The purchase is waiting for approval or payment completion.');
       } else if (result.status === 'cancelled') {
+        void PurchaseTracking.purchaseResolved(plan.product, result);
         Alert.alert('Purchase cancelled', 'No charge was made.');
+      } else {
+        void PurchaseTracking.purchaseResolved(plan.product, result);
       }
     } catch (error) {
+      void PurchaseTracking.purchaseFailed(plan.product.id, error);
       Alert.alert('Purchase failed', error instanceof Error ? error.message : 'Could not complete purchase.');
     } finally {
       setBusyProductId(null);
@@ -115,9 +145,11 @@ export function PaywallScreen({ onBack }: Props) {
   };
 
   const handleRestore = async () => {
+    void PurchaseTracking.restoreStarted();
     setRestoring(true);
     try {
       const result = await PurchaseService.restore();
+      void PurchaseTracking.restoreCompleted(result);
       if (result.activeEntitlements.length > 0) {
         await UserManager.markPremiumActive();
         Alert.alert('Purchases restored', 'Your active ShotCoach Pro purchase is restored.');
@@ -125,6 +157,7 @@ export function PaywallScreen({ onBack }: Props) {
         Alert.alert('No purchases found', 'No active ShotCoach Pro purchase was found for this Apple ID.');
       }
     } catch (error) {
+      void PurchaseTracking.restoreFailed(error);
       Alert.alert('Restore failed', error instanceof Error ? error.message : 'Could not restore purchases.');
     } finally {
       setRestoring(false);
@@ -136,7 +169,10 @@ export function PaywallScreen({ onBack }: Props) {
       <Pressable
         accessibilityLabel="Close store"
         accessibilityRole="button"
-        onPress={onBack}
+        onPress={() => {
+          void PurchaseTracking.dismissed();
+          onBack();
+        }}
         style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
       >
         <Text style={styles.closeButtonText}>×</Text>
@@ -175,7 +211,7 @@ export function PaywallScreen({ onBack }: Props) {
                   accessibilityRole="button"
                   key={plan.product.id}
                   disabled={disabled}
-                  onPress={() => handleSelectPlan(plan)}
+                  onPress={() => handleSelectPlan(plan, 'plan_card')}
                   style={({ pressed }) => [
                     styles.planCard,
                     plan.badge && styles.planCardFeatured,
@@ -188,7 +224,7 @@ export function PaywallScreen({ onBack }: Props) {
                       <Text style={styles.planTitle}>{plan.product.displayName}</Text>
                       {plan.badge ? <Text style={styles.badge}>{plan.badge}</Text> : null}
                     </View>
-                    <Text style={styles.planSubtitle}>{plan.product.description}</Text>
+                    <Text style={styles.planSubtitle}>{plan.description}</Text>
                   </View>
                   <Text style={styles.planPrice}>{plan.product.displayPrice}</Text>
                 </Pressable>
@@ -202,7 +238,7 @@ export function PaywallScreen({ onBack }: Props) {
           disabled={processing || !defaultPlan}
           onPress={() => {
             if (defaultPlan) {
-              void handleSelectPlan(defaultPlan);
+              void handleSelectPlan(defaultPlan, 'primary_cta');
             }
           }}
           style={({ pressed }) => [styles.primaryCta, !defaultPlan && styles.disabledCta, pressed && styles.pressed]}
@@ -219,10 +255,44 @@ export function PaywallScreen({ onBack }: Props) {
           <Text style={styles.restoreText}>Restore purchases</Text>
         </Pressable>
 
+        <View style={styles.legalLinksRow}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setLegalDocument({
+                title: 'Privacy Policy',
+                url: LEGAL_URLS.privacyPolicy
+              });
+            }}
+            style={({ pressed }) => [styles.legalLinkButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.legalLinkText}>Privacy Policy</Text>
+          </Pressable>
+          <Text style={styles.legalLinkSeparator}>•</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setLegalDocument({
+                title: 'Terms of Use',
+                url: LEGAL_URLS.termsOfUse
+              });
+            }}
+            style={({ pressed }) => [styles.legalLinkButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.legalLinkText}>Terms of Use</Text>
+          </Pressable>
+        </View>
+
         <Text style={styles.termsText}>
           Subscriptions renew automatically unless canceled at least 24 hours before the end of the current period.
         </Text>
       </ScrollView>
+      <AppWebView
+        title={legalDocument?.title ?? ''}
+        url={legalDocument?.url ?? ''}
+        visible={legalDocument !== null}
+        onClose={() => setLegalDocument(null)}
+      />
       {processing ? (
         <View style={styles.progressOverlay} pointerEvents="auto">
           <View style={styles.progressHub}>
@@ -273,20 +343,20 @@ const styles = StyleSheet.create({
   closeButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(8, 18, 34, 0.64)',
-    borderRadius: 22,
-    height: 44,
+    borderRadius: 19,
+    height: 38,
     justifyContent: 'center',
-    left: spacing.lg,
     position: 'absolute',
+    right: spacing.lg,
     top: closeButtonTop,
-    width: 44,
+    width: 38,
     zIndex: 5
   },
   closeButtonText: {
     color: colors.white,
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '500',
-    lineHeight: 36,
+    lineHeight: 32,
     marginTop: -2
   },
   hero: {
@@ -416,6 +486,27 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 15,
     fontWeight: '800'
+  },
+  legalLinksRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    marginTop: -spacing.xs
+  },
+  legalLinkButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  legalLinkText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '800'
+  },
+  legalLinkSeparator: {
+    color: colors.textTertiary,
+    fontSize: 12,
+    fontWeight: '700'
   },
   termsText: {
     color: colors.textMuted,

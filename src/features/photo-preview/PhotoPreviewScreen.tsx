@@ -1,4 +1,4 @@
-import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
@@ -15,7 +15,6 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
   const { width } = useWindowDimensions();
   const imageWidth = width - 40;
-  const imageHeight = photo ? imageWidth * (photo.height / photo.width) : imageWidth * 1.25;
 
   if (!photo) {
     return (
@@ -35,21 +34,16 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
     <Screen scroll={false}>
       <View style={styles.previewRoot}>
         <ScreenNavBar title="Preview Photo" leadingLabel="Back" onLeadingPress={onBack} />
-        <ScrollView
-          style={styles.previewScroll}
-          contentContainerStyle={styles.previewScrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-        >
+        <View style={styles.previewBody}>
           <Text style={styles.subtitle}>Confirm the photo before sending it to AI analysis.</Text>
-          <View style={[styles.imageFrame, { width: imageWidth, height: Math.min(imageHeight, 560) }]}>
+          <View style={[styles.imageFrame, { width: imageWidth }]}>
             <Image source={{ uri: photo.uri }} style={styles.image} resizeMode="cover" />
           </View>
-          <View style={styles.actions}>
-            <PrimaryButton title="Analyze with AI" onPress={onAnalyze} />
-            <PrimaryButton title="Choose another" onPress={onBack} variant="secondary" />
-          </View>
-        </ScrollView>
+        </View>
+        <View style={styles.actions}>
+          <PrimaryButton title="Analyze with AI" onPress={onAnalyze} />
+          <PrimaryButton title="Choose Another Photo" onPress={onBack} variant="secondary" />
+        </View>
       </View>
     </Screen>
   );
@@ -59,11 +53,8 @@ const styles = StyleSheet.create({
   previewRoot: {
     flex: 1
   },
-  previewScroll: {
-    flex: 1
-  },
-  previewScrollContent: {
-    paddingBottom: 28,
+  previewBody: {
+    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 8
   },
@@ -79,6 +70,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.xl,
     borderWidth: 1,
+    flex: 1,
     overflow: 'hidden',
     ...shadows.card
   },
@@ -88,7 +80,9 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 12,
-    marginTop: 24
+    paddingBottom: 28,
+    paddingHorizontal: 20,
+    paddingTop: 16
   },
   emptyState: {
     alignItems: 'center',

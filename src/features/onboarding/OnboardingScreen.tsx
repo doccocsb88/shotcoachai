@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Image,
   NativeScrollEvent,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import { colors, radius, shadows } from '../../constants/theme';
+import { prepareAdsTrackingForOnboarding } from '../../services/ads/mobileAds';
 
 /** Local onboarding art: page1 = Snap any photo, page2 = 3 smart tips, page3 = Before/after preview. */
 const ONBOARDING_ASSETS = [
@@ -42,6 +43,10 @@ export function OnboardingScreen({ onDone }: Props) {
   const { width: windowWidth } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [pageIndex, setPageIndex] = useState(0);
+
+  useEffect(() => {
+    void prepareAdsTrackingForOnboarding();
+  }, []);
 
   const goToPage = useCallback(
     (index: number) => {

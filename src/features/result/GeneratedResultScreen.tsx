@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BeforeAfterSlider } from '../../components/beforeAfter/BeforeAfterSlider';
+import { ForegroundToast } from '../../components/common/ForegroundToast';
 import {
   CameraOutlineIcon,
   ChevronLeftIcon,
@@ -23,6 +24,7 @@ import { useAnalysisStore } from '../../core/store/analysisStore';
 
 const IMAGE_GENERATION_TIMEOUT_MS = 90_000;
 const QUALITY_EVALUATION_TIMEOUT_MS = 20_000;
+const GENERATE_EDIT_ERROR_MESSAGE = 'We could not create your AI edit right now. Please check your connection and try again.';
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -124,12 +126,11 @@ export function GeneratedResultScreen({
       setCurrentResult(updatedResult);
       await addRecentResult(historyResult);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not generate the edited image.';
       setGeneratedImageUri(null);
-      setGenerationError(message);
+      setGenerationError(GENERATE_EDIT_ERROR_MESSAGE);
       setRetrySuggestionIndex(suggestionIndex);
-      Alert.alert('Generation failed', message, [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert('AI Edit failed', GENERATE_EDIT_ERROR_MESSAGE, [
+        { text: 'Close', style: 'cancel' },
         { text: 'Retry', onPress: () => void generateSuggestion(suggestionIndex) }
       ]);
     } finally {
@@ -215,6 +216,12 @@ export function GeneratedResultScreen({
     void generateSuggestion(retrySuggestionIndex);
   };
 
+  const closeGenerationError = () => {
+    setGenerationError(null);
+    setRetrySuggestionIndex(null);
+    onBackToAnalysis();
+  };
+
   return (
     <Screen scroll={false}>
       <View style={styles.resultChromeRoot}>
@@ -263,23 +270,38 @@ export function GeneratedResultScreen({
                     <View style={styles.generationErrorCard}>
                       <Text style={styles.generationErrorTitle}>AI edit failed</Text>
                       <Text style={styles.generationErrorBody}>{generationError}</Text>
-                      <Pressable
-                        accessibilityLabel="Retry AI edit"
-                        accessibilityRole="button"
-                        disabled={isGenerating || retrySuggestionIndex === null}
-                        onPress={retryGeneration}
-                        style={({ pressed }) => [
-                          styles.retryButton,
-                          (isGenerating || retrySuggestionIndex === null) && styles.retryButtonDisabled,
-                          pressed && !isGenerating && styles.pressed
-                        ]}
-                      >
-                        {isGenerating ? (
-                          <ActivityIndicator color={colors.white} size="small" />
-                        ) : (
-                          <Text style={styles.retryButtonText}>Retry</Text>
-                        )}
-                      </Pressable>
+                      <View style={styles.generationErrorActions}>
+                        <Pressable
+                          accessibilityLabel="Close AI edit error"
+                          accessibilityRole="button"
+                          disabled={isGenerating}
+                          onPress={closeGenerationError}
+                          style={({ pressed }) => [
+                            styles.closeErrorButton,
+                            isGenerating && styles.retryButtonDisabled,
+                            pressed && !isGenerating && styles.pressed
+                          ]}
+                        >
+                          <Text style={styles.closeErrorButtonText}>Close</Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityLabel="Retry AI edit"
+                          accessibilityRole="button"
+                          disabled={isGenerating || retrySuggestionIndex === null}
+                          onPress={retryGeneration}
+                          style={({ pressed }) => [
+                            styles.retryButton,
+                            (isGenerating || retrySuggestionIndex === null) && styles.retryButtonDisabled,
+                            pressed && !isGenerating && styles.pressed
+                          ]}
+                        >
+                          {isGenerating ? (
+                            <ActivityIndicator color={colors.white} size="small" />
+                          ) : (
+                            <Text style={styles.retryButtonText}>Retry</Text>
+                          )}
+                        </Pressable>
+                      </View>
                     </View>
                   </View>
                 ) : null}
@@ -288,6 +310,11 @@ export function GeneratedResultScreen({
           </View>
 
           <View style={styles.actionDock}>
+            {isGenerating ? (
+              <View style={styles.toastDock}>
+                <ForegroundToast />
+              </View>
+            ) : null}
             <View style={styles.bottomActionsRow}>
               <Pressable
                 accessibilityLabel="Retake — return home"
@@ -443,14 +470,33 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center'
   },
+  generationErrorActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14
+  },
+  closeErrorButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.pill,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 18
+  },
+  closeErrorButtonText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '900'
+  },
   retryButton: {
     alignItems: 'center',
     backgroundColor: colors.primary,
     borderRadius: radius.pill,
+    flex: 1,
     justifyContent: 'center',
-    marginTop: 14,
     minHeight: 44,
-    paddingHorizontal: 28
+    paddingHorizontal: 18
   },
   retryButtonDisabled: {
     opacity: 0.5
@@ -528,6 +574,9 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     paddingHorizontal: 16,
     paddingTop: 2
+  },
+  toastDock: {
+    marginBottom: 8
   },
   bottomActionsRow: {
     alignItems: 'center',

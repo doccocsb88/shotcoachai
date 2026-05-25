@@ -1,4 +1,5 @@
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Alert, Animated, FlatList, Image, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
@@ -13,6 +14,24 @@ interface Props {
 
 export function HistoryScreen({ onBack, onOpenResult }: Props) {
   const recentResults = useAnalysisStore(state => state.recentResults);
+  const removeRecentResult = useAnalysisStore(state => state.removeRecentResult);
+
+  const confirmDelete = (item: AnalysisResult) => {
+    Alert.alert(
+      'Delete history item?',
+      'This saved result will be removed from your history.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void removeRecentResult(item.analysisId);
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <Screen scroll={false}>
@@ -29,34 +48,120 @@ export function HistoryScreen({ onBack, onOpenResult }: Props) {
               data={recentResults}
               keyExtractor={item => item.analysisId}
               contentContainerStyle={styles.list}
-              renderItem={({ item }) => {
-                const savedEditCount = countStoredSuggestionEdits(item);
-                const selectedSuggestion =
-                  typeof item.selectedSuggestionIndex === 'number'
-                    ? item.suggestions[item.selectedSuggestionIndex]
-                    : undefined;
-                const thumbnailUri = item.generatedImageUri ?? item.originalImageUri;
-                const title = selectedSuggestion?.title ?? item.overallAssessment;
-                const subtitle = selectedSuggestion?.concept ?? item.overallAssessment;
-                return (
-                  <Pressable onPress={() => onOpenResult(item)} style={styles.row}>
-                    <Image source={{ uri: thumbnailUri }} style={styles.thumb} />
-                    <View style={styles.rowText}>
-                      <Text style={styles.summary} numberOfLines={1}>{title}</Text>
-                      <Text style={styles.direction} numberOfLines={1}>{subtitle}</Text>
-                      <Text style={styles.date}>
-                        {new Date(item.createdAt).toLocaleString()}
-                        {savedEditCount > 0 ? ' · saved edit' : ''}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              }}
+              renderItem={({ item }) => (
+                <SwipeableHistoryRow
+                  item={item}
+                  onDelete={() => confirmDelete(item)}
+                  onOpen={() => onOpenResult(item)}
+                />
+              )}
             />
           )}
         </View>
       </View>
     </Screen>
+  );
+}
+
+function SwipeableHistoryRow({
+  item,
+  onDelete,
+  onOpen
+}: {
+  item: AnalysisResult;
+  onDelete: () => void;
+  onOpen: () => void;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const currentX = useRef(0);
+  const deleteRequested = useRef(false);
+  const deleteWidth = 92;
+  const savedEditCount = countStoredSuggestionEdits(item);
+  const selectedSuggestion =
+    typeof item.selectedSuggestionIndex === 'number'
+      ? item.suggestions[item.selectedSuggestionIndex]
+      : undefined;
+  const thumbnailUri = item.generatedImageUri ?? item.originalImageUri;
+  const title = selectedSuggestion?.title ?? item.overallAssessment;
+  const subtitle = selectedSuggestion?.concept ?? item.overallAssessment;
+
+  const animateTo = (toValue: number) => {
+    currentX.current = toValue;
+    Animated.spring(translateX, {
+      toValue,
+      useNativeDriver: true,
+      bounciness: 0,
+      speed: 22
+    }).start();
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        return Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy);
+      },
+      onPanResponderMove: (_, gesture) => {
+        const nextX = Math.max(-deleteWidth * 1.35, Math.min(0, currentX.current + gesture.dx));
+        translateX.setValue(nextX);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        const finalX = currentX.current + gesture.dx;
+        if (finalX <= -deleteWidth * 1.15 && !deleteRequested.current) {
+          deleteRequested.current = true;
+          animateTo(0);
+          onDelete();
+          return;
+        }
+        const shouldOpen = finalX < -deleteWidth / 2 || gesture.vx < -0.6;
+        animateTo(shouldOpen ? -deleteWidth : 0);
+      },
+      onPanResponderTerminate: () => {
+        animateTo(0);
+      }
+    })
+  ).current;
+
+  const handleDelete = () => {
+    deleteRequested.current = true;
+    animateTo(0);
+    onDelete();
+  };
+
+  return (
+    <View style={styles.swipeRow}>
+      <View style={styles.deleteAction}>
+        <Pressable
+          accessibilityLabel="Delete history item"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={handleDelete}
+          style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.deleteText}>Delete</Text>
+        </Pressable>
+      </View>
+      <Animated.View
+        style={[
+          styles.swipeContent,
+          {
+            transform: [{ translateX }]
+          }
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <Pressable onPress={onOpen} style={styles.row}>
+          <Image source={{ uri: thumbnailUri }} style={styles.thumb} />
+          <View style={styles.rowText}>
+            <Text style={styles.summary} numberOfLines={1}>{title}</Text>
+            <Text style={styles.direction} numberOfLines={1}>{subtitle}</Text>
+            <Text style={styles.date}>
+              {new Date(item.createdAt).toLocaleString()}
+              {savedEditCount > 0 ? ' · saved edit' : ''}
+            </Text>
+          </View>
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -74,6 +179,35 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 32,
     paddingTop: 12
+  },
+  swipeRow: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    position: 'relative'
+  },
+  swipeContent: {
+    backgroundColor: colors.background,
+    borderRadius: radius.md
+  },
+  deleteAction: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.danger,
+    borderRadius: radius.md,
+    overflow: 'hidden'
+  },
+  deleteButton: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 92
+  },
+  deleteText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '900'
   },
   row: {
     backgroundColor: colors.card,
@@ -129,5 +263,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
     textAlign: 'center'
+  },
+  pressed: {
+    opacity: 0.72
   }
 });
