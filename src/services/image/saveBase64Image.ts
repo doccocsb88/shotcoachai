@@ -1,11 +1,9 @@
 import * as FileSystem from 'expo-file-system';
 
-export async function saveBase64ImageToCache(base64: string, filePrefix = 'ai-guide'): Promise<string> {
-  const fileUri = `${FileSystem.cacheDirectory}${filePrefix}-${Date.now()}.png`;
+import { writeBase64ImageToPersistentStorage } from './persistentImage';
 
-  await FileSystem.writeAsStringAsync(fileUri, base64, {
-    encoding: FileSystem.EncodingType.Base64
-  });
+export async function saveBase64ImageToCache(base64: string, filePrefix = 'ai-guide'): Promise<string> {
+  const fileUri = await writeBase64ImageToPersistentStorage(base64, filePrefix);
 
   if (process.env.EXPO_PUBLIC_DEBUG_OPENAI_FLOW === '1' || (typeof __DEV__ !== 'undefined' && __DEV__)) {
     const info = await FileSystem.getInfoAsync(fileUri);

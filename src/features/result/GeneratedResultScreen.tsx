@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BeforeAfterSlider } from '../../components/beforeAfter/BeforeAfterSlider';
 import {
@@ -9,12 +9,11 @@ import {
   MoreHorizontalIcon,
   ShareOutlineIcon
 } from '../../components/icons/ResultActionIcons';
-import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Screen } from '../../components/common/Screen';
-import { ScreenNavBar } from '../../components/common/ScreenNavBar';
 import { colors, radius, shadows, typography } from '../../constants/theme';
 import {
   AnalysisResult,
+  createGeneratedHistoryResult,
   getStoredGenerationUri,
   mergeSuggestionGeneration
 } from '../../models/analysis';
@@ -22,78 +21,121 @@ import { evaluateEditedImageQuality, generateEditedImage } from '../../services/
 import { saveImageToLibrary, shareImage } from '../../services/share/shareGuide';
 import { useAnalysisStore } from '../../core/store/analysisStore';
 
-interface Props {
-  result: AnalysisResult;
-  onBack: () => void;
+const IMAGE_GENERATION_TIMEOUT_MS = 90_000;
+const QUALITY_EVALUATION_TIMEOUT_MS = 20_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
 }
 
-export function ResultScreen({ result, onBack }: Props) {
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number | null>(null);
+interface Props {
+  result: AnalysisResult;
+  suggestionIndex: number;
+  onBack: () => void;
+  onBackToAnalysis: () => void;
+  onRetake: (referenceUri: string) => void;
+  openedFromHistory?: boolean;
+}
+
+export function GeneratedResultScreen({
+  result,
+  suggestionIndex,
+  onBack,
+  onBackToAnalysis,
+  onRetake,
+  openedFromHistory = false
+}: Props) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImageUri, setGeneratedImageUri] = useState<string | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [retrySuggestionIndex, setRetrySuggestionIndex] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
 
   useEffect(() => {
-    setSelectedSuggestionIndex(null);
-    setGeneratedImageUri(null);
-    setIsGenerating(false);
-  }, [result.analysisId]);
-
-  const selectSuggestion = (index: number) => {
-    setSelectedSuggestionIndex(index);
-    const stored = getStoredGenerationUri(result, index);
+    setGenerationError(null);
+    setRetrySuggestionIndex(null);
+    const stored = getStoredGenerationUri(result, suggestionIndex);
     if (stored) {
       setGeneratedImageUri(stored);
-    } else {
-      setGeneratedImageUri(null);
+      setIsGenerating(false);
+      return;
     }
-  };
+    void generateSuggestion(suggestionIndex);
+  }, [result.analysisId, suggestionIndex]);
 
-  const handleGenerate = async () => {
-    if (selectedSuggestionIndex === null) return;
-    const selected = result.suggestions[selectedSuggestionIndex];
+  const generateSuggestion = async (suggestionIndex: number) => {
+    const selected = result.suggestions[suggestionIndex];
     if (!selected) return;
-    if (getStoredGenerationUri(result, selectedSuggestionIndex)) {
+    const stored = getStoredGenerationUri(result, suggestionIndex);
+    setGenerationError(null);
+    setRetrySuggestionIndex(null);
+    if (stored) {
+      setGeneratedImageUri(stored);
       return;
     }
 
     try {
+      setGeneratedImageUri(null);
       setIsGenerating(true);
-      const uri = await generateEditedImage(
-        selected.image_prompt,
-        result.originalImageUri,
-        result.originalImageMimeType
+      const uri = await withTimeout(
+        generateEditedImage(
+          selected.image_prompt,
+          result.originalImageUri,
+          result.originalImageMimeType
+        ),
+        IMAGE_GENERATION_TIMEOUT_MS,
+        'The AI edit is taking too long. Please check your connection and try again.'
       );
+      setGeneratedImageUri(uri);
+
       let qualityEvaluation;
       try {
-        qualityEvaluation = await evaluateEditedImageQuality({
-          originalImageUri: result.originalImageUri,
-          generatedImageUri: uri,
-          originalImageMimeType: result.originalImageMimeType,
-          selectedDirection: {
-            suggestion: selected,
-            recipe: result.generationRecipes?.[selectedSuggestionIndex]
-          }
-        });
+        qualityEvaluation = await withTimeout(
+          evaluateEditedImageQuality({
+            originalImageUri: result.originalImageUri,
+            generatedImageUri: uri,
+            originalImageMimeType: result.originalImageMimeType,
+            selectedDirection: {
+              suggestion: selected,
+              recipe: result.generationRecipes?.[suggestionIndex]
+            }
+          }),
+          QUALITY_EVALUATION_TIMEOUT_MS,
+          'Quality evaluation timed out.'
+        );
       } catch {
         qualityEvaluation = undefined;
       }
 
-      const updatedResult = mergeSuggestionGeneration(result, selectedSuggestionIndex, uri, qualityEvaluation);
+      const updatedResult = mergeSuggestionGeneration(result, suggestionIndex, uri, qualityEvaluation);
+      const historyResult = createGeneratedHistoryResult(updatedResult, suggestionIndex, uri, qualityEvaluation);
       setCurrentResult(updatedResult);
-      setGeneratedImageUri(uri);
-      await addRecentResult(updatedResult);
+      await addRecentResult(historyResult);
     } catch (error) {
-      Alert.alert('Generation failed', error instanceof Error ? error.message : 'Could not generate the edited image.');
+      const message = error instanceof Error ? error.message : 'Could not generate the edited image.';
+      setGeneratedImageUri(null);
+      setGenerationError(message);
+      setRetrySuggestionIndex(suggestionIndex);
+      Alert.alert('Generation failed', message, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Retry', onPress: () => void generateSuggestion(suggestionIndex) }
+      ]);
     } finally {
       setIsGenerating(false);
     }
   };
-
-  const showBeforeAfterLayout = generatedImageUri !== null || isGenerating;
 
   const handleSave = async () => {
     if (!generatedImageUri || isGenerating) return;
@@ -120,11 +162,15 @@ export function ResultScreen({ result, onBack }: Props) {
     }
   };
 
-  const hasStoredForSelection =
-    selectedSuggestionIndex !== null && Boolean(getStoredGenerationUri(result, selectedSuggestionIndex));
+  const handleRetake = () => {
+    if (generatedImageUri) {
+      onRetake(generatedImageUri);
+      return;
+    }
+    onBack();
+  };
 
-  const selectedSuggestion =
-    selectedSuggestionIndex !== null ? result.suggestions[selectedSuggestionIndex] : undefined;
+  const selectedSuggestion = result.suggestions[suggestionIndex];
 
   const tipCardTitle = isGenerating ? 'Applying tip…' : 'Tip Applied';
   const tipCardDescription = useMemo(() => {
@@ -145,8 +191,11 @@ export function ResultScreen({ result, onBack }: Props) {
   const headerActionsDisabled = isGenerating;
 
   const returnToSuggestionPicker = () => {
-    setGeneratedImageUri(null);
-    setSelectedSuggestionIndex(null);
+    if (openedFromHistory) {
+      onBack();
+      return;
+    }
+    onBackToAnalysis();
   };
 
   const tipDetailBody = useMemo(() => {
@@ -156,24 +205,22 @@ export function ResultScreen({ result, onBack }: Props) {
   }, [selectedSuggestion, tipCardDescription]);
 
   const openTipDetail = () => {
-    Alert.alert(tipCardTitle, tipDetailBody);
+    Alert.alert(selectedSuggestion?.title ?? tipCardTitle, tipDetailBody);
   };
 
-  const openHeaderMenu = () => {
-    Alert.alert('ShotCoach AI', undefined, [
-      { text: 'Another direction', onPress: returnToSuggestionPicker },
-      { text: 'Go home', onPress: onBack },
-      { text: 'Cancel', style: 'cancel' }
-    ]);
+  const retryGeneration = () => {
+    if (retrySuggestionIndex === null || isGenerating) {
+      return;
+    }
+    void generateSuggestion(retrySuggestionIndex);
   };
 
-  if (showBeforeAfterLayout) {
-    return (
-      <Screen scroll={false}>
-        <View style={styles.resultChromeRoot}>
+  return (
+    <Screen scroll={false}>
+      <View style={styles.resultChromeRoot}>
           <View style={styles.resultHeader}>
             <Pressable
-              accessibilityLabel="Back to creative directions"
+              accessibilityLabel={openedFromHistory ? 'Back to history' : 'Back to creative directions'}
               accessibilityRole="button"
               disabled={headerActionsDisabled}
               onPress={returnToSuggestionPicker}
@@ -189,10 +236,10 @@ export function ResultScreen({ result, onBack }: Props) {
               ShotCoach AI
             </Text>
             <Pressable
-              accessibilityLabel="Open menu"
+              accessibilityLabel="Show tip detail"
               accessibilityRole="button"
               disabled={headerActionsDisabled}
-              onPress={openHeaderMenu}
+              onPress={openTipDetail}
               style={({ pressed }) => [
                 styles.headerIconCircle,
                 headerActionsDisabled && styles.headerIconDisabled,
@@ -211,29 +258,31 @@ export function ResultScreen({ result, onBack }: Props) {
                   afterUri={generatedImageUri}
                   isLoadingAfter={isGenerating && !generatedImageUri}
                 />
-              </View>
-              <View style={styles.tipCardFloat} pointerEvents="box-none">
-                <View style={styles.tipCard}>
-                  <View style={styles.tipCardIconBubble}>
-                    <Text style={styles.tipCardIconSparkle}>✨</Text>
+                {generationError ? (
+                  <View style={styles.generationErrorOverlay}>
+                    <View style={styles.generationErrorCard}>
+                      <Text style={styles.generationErrorTitle}>AI edit failed</Text>
+                      <Text style={styles.generationErrorBody}>{generationError}</Text>
+                      <Pressable
+                        accessibilityLabel="Retry AI edit"
+                        accessibilityRole="button"
+                        disabled={isGenerating || retrySuggestionIndex === null}
+                        onPress={retryGeneration}
+                        style={({ pressed }) => [
+                          styles.retryButton,
+                          (isGenerating || retrySuggestionIndex === null) && styles.retryButtonDisabled,
+                          pressed && !isGenerating && styles.pressed
+                        ]}
+                      >
+                        {isGenerating ? (
+                          <ActivityIndicator color={colors.white} size="small" />
+                        ) : (
+                          <Text style={styles.retryButtonText}>Retry</Text>
+                        )}
+                      </Pressable>
+                    </View>
                   </View>
-                  <View style={styles.tipCardTextBlock}>
-                    <Text style={styles.tipCardTitle}>{tipCardTitle}</Text>
-                    <Text style={styles.tipCardBody} numberOfLines={2}>
-                      {tipCardDescription}
-                    </Text>
-                  </View>
-                  <Pressable
-                    accessibilityLabel="Tip detail"
-                    accessibilityRole="button"
-                    hitSlop={8}
-                    onPress={openTipDetail}
-                    style={({ pressed }) => [styles.tipDetailLink, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.tipDetailLinkText}>Detail</Text>
-                    <Text style={styles.tipDetailChevron}>›</Text>
-                  </Pressable>
-                </View>
+                ) : null}
               </View>
             </View>
           </View>
@@ -244,7 +293,7 @@ export function ResultScreen({ result, onBack }: Props) {
                 accessibilityLabel="Retake — return home"
                 accessibilityRole="button"
                 disabled={headerActionsDisabled}
-                onPress={onBack}
+                onPress={handleRetake}
                 style={({ pressed }) => [
                   styles.sideActionButton,
                   headerActionsDisabled && styles.headerIconDisabled,
@@ -292,89 +341,18 @@ export function ResultScreen({ result, onBack }: Props) {
               </Pressable>
             </View>
 
-            <Pressable
-              accessibilityLabel="Choose another creative direction"
-              accessibilityRole="button"
-              disabled={busy || isGenerating}
-              onPress={returnToSuggestionPicker}
-              style={({ pressed }) => [styles.anotherDirectionRow, pressed && styles.pressed]}
-            >
-              <Text style={styles.anotherDirectionText}>↔ Another direction</Text>
-            </Pressable>
+            {openedFromHistory ? null : (
+              <Pressable
+                accessibilityLabel="Choose another creative direction"
+                accessibilityRole="button"
+                disabled={busy || isGenerating}
+                onPress={returnToSuggestionPicker}
+                style={({ pressed }) => [styles.anotherDirectionRow, pressed && styles.pressed]}
+              >
+                <Text style={styles.anotherDirectionText}>↔ Another direction</Text>
+              </Pressable>
+            )}
           </View>
-        </View>
-      </Screen>
-    );
-  }
-
-  return (
-    <Screen scroll={false}>
-      <View style={styles.analysisRoot}>
-        <ScreenNavBar title="Analysis Result" leadingLabel="Done" onLeadingPress={onBack} />
-
-        <ScrollView
-          style={styles.analysisScroll}
-          contentContainerStyle={styles.analysisScrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-        >
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Assessment</Text>
-            <Text style={styles.body}>{result.overallAssessment}</Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Choose a Creative Direction</Text>
-            {result.suggestions.map((suggestion, index) => {
-              const isSelected = selectedSuggestionIndex === index;
-              const hasSavedEdit = Boolean(getStoredGenerationUri(result, index));
-              return (
-                <Pressable
-                  key={index}
-                  onPress={() => selectSuggestion(index)}
-                  style={[styles.suggestionCard, isSelected && styles.suggestionCardSelected]}
-                >
-                  <View style={styles.suggestionHeader}>
-                    <Text style={[styles.suggestionTitle, isSelected && styles.textSelected]}>{suggestion.title}</Text>
-                    <View style={styles.suggestionHeaderRight}>
-                      {hasSavedEdit ? <Text style={styles.savedBadge}>Saved</Text> : null}
-                      {isSelected ? <Text style={styles.checkmark}>✓</Text> : null}
-                    </View>
-                  </View>
-                  <Text style={styles.suggestionConcept}>{suggestion.concept}</Text>
-                  {(suggestion.composition ?? '').length > 0 ? (
-                    <Text style={styles.suggestionMeta}>
-                      <Text style={styles.suggestionMetaLabel}>Composition: </Text>
-                      {suggestion.composition}
-                    </Text>
-                  ) : null}
-                  {(suggestion.camera_angle ?? '').length > 0 ? (
-                    <Text style={styles.suggestionMeta}>
-                      <Text style={styles.suggestionMetaLabel}>Camera: </Text>
-                      {suggestion.camera_angle}
-                    </Text>
-                  ) : null}
-                  <View style={styles.changesList}>
-                    {suggestion.changes.map((change, cIndex) => (
-                      <Text key={cIndex} style={styles.changeItem}>
-                        • {change}
-                      </Text>
-                    ))}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        </ScrollView>
-
-        <View style={styles.analysisFooter}>
-          <PrimaryButton
-            title="Generate Edit"
-            onPress={handleGenerate}
-            disabled={selectedSuggestionIndex === null || hasStoredForSelection}
-            style={styles.generateEditButton}
-          />
-        </View>
       </View>
     </Screen>
   );
@@ -433,6 +411,54 @@ const styles = StyleSheet.create({
   },
   comparisonSliderHost: {
     ...StyleSheet.absoluteFillObject
+  },
+  generationErrorOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    backgroundColor: 'rgba(8, 18, 34, 0.18)',
+    justifyContent: 'center',
+    padding: 22
+  },
+  generationErrorCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: 18,
+    width: '100%',
+    ...shadows.button
+  },
+  generationErrorTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center'
+  },
+  generationErrorBody: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    marginTop: 8,
+    textAlign: 'center'
+  },
+  retryButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    marginTop: 14,
+    minHeight: 44,
+    paddingHorizontal: 28
+  },
+  retryButtonDisabled: {
+    opacity: 0.5
+  },
+  retryButtonText: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '900'
   },
   tipCardFloat: {
     bottom: 14,
@@ -565,20 +591,9 @@ const styles = StyleSheet.create({
     flex: 1
   },
   analysisScrollContent: {
-    paddingBottom: 12,
+    paddingBottom: 28,
     paddingHorizontal: 20,
     paddingTop: 8
-  },
-  analysisFooter: {
-    backgroundColor: colors.background,
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-    paddingTop: 8
-  },
-  generateEditButton: {
-    alignSelf: 'stretch'
   },
   section: {
     gap: 10,
@@ -607,6 +622,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(47, 107, 255, 0.08)',
     borderColor: colors.primary
   },
+  suggestionCardLocked: {
+    opacity: 0.68
+  },
+  suggestionCardDisabled: {
+    opacity: 0.58
+  },
   suggestionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -626,6 +647,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: 8,
     paddingVertical: 3
+  },
+  premiumBadge: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.pill,
+    height: 30,
+    justifyContent: 'center',
+    width: 30
+  },
+  premiumBadgeIcon: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '900'
   },
   suggestionTitle: {
     color: colors.text,

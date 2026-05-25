@@ -1,0 +1,1124 @@
+[
+  {
+    "title": "Street Walk Candid",
+    "tags": [
+      "street",
+      "full-body",
+      "candid"
+    ],
+    "how_to_pose": "Walk slowly across frame, look away from camera, keep one hand touching jacket.",
+    "camera_angle": "Eye level, slight side angle 30deg.",
+    "sample_image_url": "assets/pose-collection/blurred/001-street-walk-candid.jpg"
+  },
+  {
+    "title": "Crosswalk Pause",
+    "tags": [
+      "street",
+      "city",
+      "full-body"
+    ],
+    "how_to_pose": "Stop mid-crosswalk, one leg forward, shoulder turn back to lens.",
+    "camera_angle": "Low angle, wide 24-28mm.",
+    "sample_image_url": "assets/pose-collection/blurred/002-crosswalk-pause.jpg"
+  },
+  {
+    "title": "Wall Lean Relax",
+    "tags": [
+      "urban",
+      "half-body",
+      "easy"
+    ],
+    "how_to_pose": "Lean one shoulder on wall, cross ankles, keep hands in pockets.",
+    "camera_angle": "Eye level, straight-on.",
+    "sample_image_url": "assets/pose-collection/blurred/003-wall-lean-relax.jpg"
+  },
+  {
+    "title": "Stair Sit Portrait",
+    "tags": [
+      "stairs",
+      "portrait",
+      "calm"
+    ],
+    "how_to_pose": "Sit one step higher, elbows on knees, chin slightly up.",
+    "camera_angle": "Slight high angle, medium focal length.",
+    "sample_image_url": "assets/pose-collection/blurred/004-stair-sit-portrait.jpg"
+  },
+  {
+    "title": "Railway Handrail Lookback",
+    "tags": [
+      "outdoor",
+      "story",
+      "full-body"
+    ],
+    "how_to_pose": "Hold handrail with one hand and look back over shoulder.",
+    "camera_angle": "Behind subject, 45deg follow angle.",
+    "sample_image_url": "assets/pose-collection/blurred/005-railway-handrail-lookback.jpg"
+  },
+  {
+    "title": "Phone Check Natural",
+    "tags": [
+      "candid",
+      "lifestyle",
+      "easy"
+    ],
+    "how_to_pose": "Look down at phone naturally, relax shoulders, soft smile.",
+    "camera_angle": "Eye level, close half-body.",
+    "sample_image_url": "assets/pose-collection/blurred/006-phone-check-natural.jpg"
+  },
+  {
+    "title": "Coffee Cup Side Profile",
+    "tags": [
+      "cafe",
+      "profile",
+      "cozy"
+    ],
+    "how_to_pose": "Hold coffee near face, profile to lens, eyes toward window light.",
+    "camera_angle": "Side 90deg, chest-up framing.",
+    "sample_image_url": "assets/pose-collection/blurred/007-coffee-cup-side-profile.jpg"
+  },
+  {
+    "title": "Table Elbow Rest",
+    "tags": [
+      "indoor",
+      "cafe",
+      "portrait"
+    ],
+    "how_to_pose": "Rest one elbow on table, hand under chin, keep neck long.",
+    "camera_angle": "Slight top-down, 35-50mm.",
+    "sample_image_url": "assets/pose-collection/blurred/008-table-elbow-rest.jpg"
+  },
+  {
+    "title": "Window Light Soft Smile",
+    "tags": [
+      "indoor",
+      "soft-light",
+      "close-up"
+    ],
+    "how_to_pose": "Stand near window, body at 45deg, smile with eyes not teeth.",
+    "camera_angle": "Eye level, tight portrait.",
+    "sample_image_url": "assets/pose-collection/blurred/009-window-light-soft-smile.jpg"
+  },
+  {
+    "title": "Mirror Selfie Minimal",
+    "tags": [
+      "mirror",
+      "selfie",
+      "fashion"
+    ],
+    "how_to_pose": "Phone slightly above chest, weight on back leg, free hand on hip.",
+    "camera_angle": "Mirror reflection, slight downward tilt.",
+    "sample_image_url": "assets/pose-collection/blurred/010-mirror-selfie-minimal.jpg"
+  },
+  {
+    "title": "Mirror Full Body Fit Check",
+    "tags": [
+      "mirror",
+      "full-body",
+      "outfit"
+    ],
+    "how_to_pose": "One foot ahead, angle body 30deg, keep lines straight.",
+    "camera_angle": "Mirror center frame, 1x lens.",
+    "sample_image_url": "assets/pose-collection/blurred/011-mirror-full-body-fit-check.jpg"
+  },
+  {
+    "title": "Hallway Runway",
+    "tags": [
+      "indoor",
+      "fashion",
+      "full-body"
+    ],
+    "how_to_pose": "Walk toward camera with long stride, shoulders open.",
+    "camera_angle": "Low angle from waist level.",
+    "sample_image_url": "assets/pose-collection/blurred/012-hallway-runway.jpg"
+  },
+  {
+    "title": "Neon Night Stand",
+    "tags": [
+      "night",
+      "neon",
+      "mood"
+    ],
+    "how_to_pose": "Stand still, slight chin down, hands relaxed by sides.",
+    "camera_angle": "Eye level, center composition.",
+    "sample_image_url": "assets/pose-collection/blurred/013-neon-night-stand.jpg"
+  },
+  {
+    "title": "Neon Backlight Silhouette",
+    "tags": [
+      "night",
+      "silhouette",
+      "creative"
+    ],
+    "how_to_pose": "Face away from light source, outline profile clearly.",
+    "camera_angle": "Backlight against neon sign.",
+    "sample_image_url": "assets/pose-collection/blurred/014-neon-backlight-silhouette.jpg"
+  },
+  {
+    "title": "Street Lamp Spin",
+    "tags": [
+      "night",
+      "dynamic",
+      "full-body"
+    ],
+    "how_to_pose": "Hold jacket hem and do a gentle spin for motion blur.",
+    "camera_angle": "Tripod eye level, slower shutter.",
+    "sample_image_url": "assets/pose-collection/blurred/015-street-lamp-spin.jpg"
+  },
+  {
+    "title": "Rooftop Skyline Back",
+    "tags": [
+      "rooftop",
+      "travel",
+      "back-shot"
+    ],
+    "how_to_pose": "Back to camera, head turned slightly to side, hands on rail.",
+    "camera_angle": "Behind subject, wide frame.",
+    "sample_image_url": "assets/pose-collection/blurred/016-rooftop-skyline-back.jpg"
+  },
+  {
+    "title": "Rooftop Sit Edge Safe",
+    "tags": [
+      "rooftop",
+      "lifestyle",
+      "safe-pose"
+    ],
+    "how_to_pose": "Sit safely away from edge line, knees bent, one arm over knee.",
+    "camera_angle": "45deg side shot, medium crop.",
+    "sample_image_url": "assets/pose-collection/blurred/017-rooftop-sit-edge-safe.jpg"
+  },
+  {
+    "title": "Park Bench Relax",
+    "tags": [
+      "park",
+      "casual",
+      "easy"
+    ],
+    "how_to_pose": "Sit diagonal on bench, one ankle on opposite knee.",
+    "camera_angle": "Eye level from bench front corner.",
+    "sample_image_url": "assets/pose-collection/blurred/018-park-bench-relax.jpg"
+  },
+  {
+    "title": "Grass Lie Down Sky",
+    "tags": [
+      "outdoor",
+      "creative",
+      "close-up"
+    ],
+    "how_to_pose": "Lie on grass, hands near hair, eyes looking upward.",
+    "camera_angle": "Top-down from above head.",
+    "sample_image_url": "assets/pose-collection/blurred/019-grass-lie-down-sky.jpg"
+  },
+  {
+    "title": "Tree Shadow Portrait",
+    "tags": [
+      "outdoor",
+      "light-shadow",
+      "portrait"
+    ],
+    "how_to_pose": "Stand in patterned shadows, keep face turned to brighter side.",
+    "camera_angle": "Chest-up at eye level.",
+    "sample_image_url": "assets/pose-collection/blurred/020-tree-shadow-portrait.jpg"
+  },
+  {
+    "title": "Beach Walk Barefoot",
+    "tags": [
+      "beach",
+      "travel",
+      "candid"
+    ],
+    "how_to_pose": "Walk along shoreline and hold sandals in one hand.",
+    "camera_angle": "Wide frame, side follow.",
+    "sample_image_url": "assets/pose-collection/blurred/021-beach-walk-barefoot.jpg"
+  },
+  {
+    "title": "Beach Back To Camera",
+    "tags": [
+      "beach",
+      "back-shot",
+      "calm"
+    ],
+    "how_to_pose": "Stand facing ocean, one hand fixing hair.",
+    "camera_angle": "Behind subject, horizon on top third.",
+    "sample_image_url": "assets/pose-collection/blurred/022-beach-back-to-camera.jpg"
+  },
+  {
+    "title": "Sea Wall Sit",
+    "tags": [
+      "coast",
+      "full-body",
+      "travel"
+    ],
+    "how_to_pose": "Sit on sea wall with legs angled to one side.",
+    "camera_angle": "Eye level from 30deg side.",
+    "sample_image_url": "assets/pose-collection/blurred/023-sea-wall-sit.jpg"
+  },
+  {
+    "title": "Couple Hand In Hand Walk",
+    "tags": [
+      "couple",
+      "candid",
+      "street"
+    ],
+    "how_to_pose": "Walk naturally holding hands and look at each other.",
+    "camera_angle": "Follow from behind at waist height.",
+    "sample_image_url": "assets/pose-collection/blurred/024-couple-hand-in-hand-walk.jpg"
+  },
+  {
+    "title": "Couple Forehead Touch",
+    "tags": [
+      "couple",
+      "romantic",
+      "close-up"
+    ],
+    "how_to_pose": "Stand close, forehead touch, eyes closed for a beat.",
+    "camera_angle": "Tight portrait at eye level.",
+    "sample_image_url": "assets/pose-collection/blurred/025-couple-forehead-touch.jpg"
+  },
+  {
+    "title": "Couple Back Hug",
+    "tags": [
+      "couple",
+      "portrait",
+      "cozy"
+    ],
+    "how_to_pose": "One person hugs from behind, both shoulders relaxed.",
+    "camera_angle": "Half-body 45deg.",
+    "sample_image_url": "assets/pose-collection/blurred/026-couple-back-hug.jpg"
+  },
+  {
+    "title": "Friend Group Jump",
+    "tags": [
+      "group",
+      "fun",
+      "dynamic"
+    ],
+    "how_to_pose": "Count down and jump together with knees tucked slightly.",
+    "camera_angle": "Wide low angle, burst mode.",
+    "sample_image_url": "assets/pose-collection/blurred/027-friend-group-jump.jpg"
+  },
+  {
+    "title": "Friend Group Triangle",
+    "tags": [
+      "group",
+      "composition",
+      "street"
+    ],
+    "how_to_pose": "Arrange heights in triangle shape, center person slightly front.",
+    "camera_angle": "Eye level, wide 24-28mm.",
+    "sample_image_url": "assets/pose-collection/blurred/028-friend-group-triangle.jpg"
+  },
+  {
+    "title": "Friend Group Sitting Curb",
+    "tags": [
+      "group",
+      "casual",
+      "urban"
+    ],
+    "how_to_pose": "Sit on curb at different levels and vary hand placement.",
+    "camera_angle": "Front eye level, medium-wide.",
+    "sample_image_url": "assets/pose-collection/blurred/029-friend-group-sitting-curb.jpg"
+  },
+  {
+    "title": "Graduation Cap Toss",
+    "tags": [
+      "event",
+      "group",
+      "celebration"
+    ],
+    "how_to_pose": "Hold cap near chest then throw together on cue.",
+    "camera_angle": "Low angle to capture cap arc.",
+    "sample_image_url": "assets/pose-collection/blurred/030-graduation-cap-toss.jpg"
+  },
+  {
+    "title": "Campus Stair Walk",
+    "tags": [
+      "campus",
+      "youth",
+      "full-body"
+    ],
+    "how_to_pose": "Walk down stairs slowly, look to side, bag over one shoulder.",
+    "camera_angle": "Below stairs, centered lines.",
+    "sample_image_url": "assets/pose-collection/blurred/031-campus-stair-walk.jpg"
+  },
+  {
+    "title": "Library Book Peek",
+    "tags": [
+      "indoor",
+      "student",
+      "portrait"
+    ],
+    "how_to_pose": "Hold book partially covering mouth, eyes to camera.",
+    "camera_angle": "Eye level, close crop.",
+    "sample_image_url": "assets/pose-collection/blurred/032-library-book-peek.jpg"
+  },
+  {
+    "title": "Scooter Side Stand",
+    "tags": [
+      "street",
+      "vehicle",
+      "fashion"
+    ],
+    "how_to_pose": "Stand beside scooter, one hand on handle, one foot pointed out.",
+    "camera_angle": "Three-quarter side frame.",
+    "sample_image_url": "assets/pose-collection/blurred/033-scooter-side-stand.jpg"
+  },
+  {
+    "title": "Bike Ride Push",
+    "tags": [
+      "outdoor",
+      "lifestyle",
+      "candid"
+    ],
+    "how_to_pose": "Walk bike forward while looking down with relaxed smile.",
+    "camera_angle": "Side tracking shot.",
+    "sample_image_url": "assets/pose-collection/blurred/034-bike-ride-push.jpg"
+  },
+  {
+    "title": "Car Window Mood",
+    "tags": [
+      "car",
+      "night",
+      "portrait"
+    ],
+    "how_to_pose": "Lean near open window, one hand touching frame.",
+    "camera_angle": "Outside-in, shallow depth.",
+    "sample_image_url": "assets/pose-collection/blurred/035-car-window-mood.jpg"
+  },
+  {
+    "title": "Rain Umbrella Walk",
+    "tags": [
+      "rain",
+      "street",
+      "story"
+    ],
+    "how_to_pose": "Walk with transparent umbrella, chin slightly down.",
+    "camera_angle": "Front 45deg with reflections.",
+    "sample_image_url": "assets/pose-collection/blurred/036-rain-umbrella-walk.jpg"
+  },
+  {
+    "title": "Umbrella Backlight Neon",
+    "tags": [
+      "rain",
+      "night",
+      "creative"
+    ],
+    "how_to_pose": "Hold umbrella high and face neon backlight.",
+    "camera_angle": "Backlight silhouette.",
+    "sample_image_url": "assets/pose-collection/blurred/037-umbrella-backlight-neon.jpg"
+  },
+  {
+    "title": "Bridge Rail Centered",
+    "tags": [
+      "architecture",
+      "full-body",
+      "symmetry"
+    ],
+    "how_to_pose": "Stand centered between rails, one foot slightly forward.",
+    "camera_angle": "Straight center, leading lines.",
+    "sample_image_url": "assets/pose-collection/blurred/038-bridge-rail-centered.jpg"
+  },
+  {
+    "title": "Tunnel Perspective Walk",
+    "tags": [
+      "urban",
+      "symmetry",
+      "dynamic"
+    ],
+    "how_to_pose": "Walk through tunnel with long stride and relaxed arms.",
+    "camera_angle": "Very low centerline shot.",
+    "sample_image_url": "assets/pose-collection/blurred/039-tunnel-perspective-walk.jpg"
+  },
+  {
+    "title": "Skateboard Sit Cool",
+    "tags": [
+      "street",
+      "trendy",
+      "teen"
+    ],
+    "how_to_pose": "Sit on board edge, elbows on knees, confident look.",
+    "camera_angle": "Low angle close full-body.",
+    "sample_image_url": "assets/pose-collection/blurred/040-skateboard-sit-cool.jpg"
+  },
+  {
+    "title": "Skate Push Motion",
+    "tags": [
+      "action",
+      "street",
+      "youth"
+    ],
+    "how_to_pose": "Push skateboard lightly for motion while body stays stable.",
+    "camera_angle": "Side panning shot.",
+    "sample_image_url": "assets/pose-collection/blurred/041-skate-push-motion.jpg"
+  },
+  {
+    "title": "Basket Court Casual",
+    "tags": [
+      "sporty",
+      "outdoor",
+      "full-body"
+    ],
+    "how_to_pose": "Hold ball at hip, one foot on line, look over shoulder.",
+    "camera_angle": "Eye level, slight wide.",
+    "sample_image_url": "assets/pose-collection/blurred/042-basket-court-casual.jpg"
+  },
+  {
+    "title": "Headphones Street Vibe",
+    "tags": [
+      "music",
+      "street",
+      "portrait"
+    ],
+    "how_to_pose": "Wear headphones, close eyes slightly, hand touching ear cup.",
+    "camera_angle": "Half-body at eye level.",
+    "sample_image_url": "assets/pose-collection/blurred/043-headphones-street-vibe.jpg"
+  },
+  {
+    "title": "Bookstore Aisle Browse",
+    "tags": [
+      "indoor",
+      "lifestyle",
+      "candid"
+    ],
+    "how_to_pose": "Browse shelf naturally, pull one book and glance to lens.",
+    "camera_angle": "Aisle side angle, medium shot.",
+    "sample_image_url": "assets/pose-collection/blurred/044-bookstore-aisle-browse.jpg"
+  },
+  {
+    "title": "Record Store Flip",
+    "tags": [
+      "retro",
+      "indoor",
+      "youth"
+    ],
+    "how_to_pose": "Flip vinyl stack, pause on one cover and smile softly.",
+    "camera_angle": "45deg shoulder view.",
+    "sample_image_url": "assets/pose-collection/blurred/045-record-store-flip.jpg"
+  },
+  {
+    "title": "Arcade Neon Play",
+    "tags": [
+      "indoor",
+      "neon",
+      "fun"
+    ],
+    "how_to_pose": "Hands on arcade controls, laugh naturally toward friend.",
+    "camera_angle": "Side close shot with neon bokeh.",
+    "sample_image_url": "assets/pose-collection/blurred/046-arcade-neon-play.jpg"
+  },
+  {
+    "title": "Food Court Tray Walk",
+    "tags": [
+      "mall",
+      "candid",
+      "lifestyle"
+    ],
+    "how_to_pose": "Carry food tray with both hands, walk and chat naturally.",
+    "camera_angle": "Front follow shot at chest height.",
+    "sample_image_url": "assets/pose-collection/blurred/047-food-court-tray-walk.jpg"
+  },
+  {
+    "title": "Festival Crowd Glow",
+    "tags": [
+      "event",
+      "night",
+      "portrait"
+    ],
+    "how_to_pose": "Face stage light, hands near face, relaxed expression.",
+    "camera_angle": "Close-up with back bokeh lights.",
+    "sample_image_url": "assets/pose-collection/blurred/048-festival-crowd-glow.jpg"
+  },
+  {
+    "title": "Polaroid Cover Face",
+    "tags": [
+      "creative",
+      "close-up",
+      "fun"
+    ],
+    "how_to_pose": "Hold instant photo over one eye and tilt head slightly.",
+    "camera_angle": "Tight portrait eye level.",
+    "sample_image_url": "assets/pose-collection/blurred/049-polaroid-cover-face.jpg"
+  },
+  {
+    "title": "Sunset Over Shoulder",
+    "tags": [
+      "golden-hour",
+      "portrait",
+      "outdoor"
+    ],
+    "how_to_pose": "Stand with sun behind, turn head over shoulder with soft smile.",
+    "camera_angle": "Backlit 45deg portrait.",
+    "sample_image_url": "assets/pose-collection/blurred/050-sunset-over-shoulder.jpg"
+  },
+  {
+    "title": "Golden Hour Hair Flip",
+    "tags": [
+      "golden-hour",
+      "dynamic",
+      "portrait"
+    ],
+    "how_to_pose": "Do a gentle hair flip while keeping chin up.",
+    "camera_angle": "Burst mode side angle.",
+    "sample_image_url": "assets/pose-collection/blurred/051-golden-hour-hair-flip.jpg"
+  },
+  {
+    "title": "Shadow Line Face",
+    "tags": [
+      "artistic",
+      "light-shadow",
+      "close-up"
+    ],
+    "how_to_pose": "Place face across a shadow edge and keep expression neutral.",
+    "camera_angle": "Tight crop eye level.",
+    "sample_image_url": "assets/pose-collection/blurred/052-shadow-line-face.jpg"
+  },
+  {
+    "title": "Street Frame 01",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/053-street-frame-01.jpg"
+  },
+  {
+    "title": "Street Frame 02",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/054-street-frame-02.jpg"
+  },
+  {
+    "title": "Street Frame 03",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/055-street-frame-03.jpg"
+  },
+  {
+    "title": "Street Frame 04",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/056-street-frame-04.jpg"
+  },
+  {
+    "title": "Street Frame 05",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/057-street-frame-05.jpg"
+  },
+  {
+    "title": "Street Frame 06",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/058-street-frame-06.jpg"
+  },
+  {
+    "title": "Street Frame 07",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/059-street-frame-07.jpg"
+  },
+  {
+    "title": "Street Frame 08",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/060-street-frame-08.jpg"
+  },
+  {
+    "title": "Street Frame 09",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/061-street-frame-09.jpg"
+  },
+  {
+    "title": "Street Frame 10",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/062-street-frame-10.jpg"
+  },
+  {
+    "title": "Street Frame 11",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/063-street-frame-11.jpg"
+  },
+  {
+    "title": "Street Frame 12",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/064-street-frame-12.jpg"
+  },
+  {
+    "title": "Street Frame 13",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/065-street-frame-13.jpg"
+  },
+  {
+    "title": "Street Frame 14",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/066-street-frame-14.jpg"
+  },
+  {
+    "title": "Street Frame 15",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/067-street-frame-15.jpg"
+  },
+  {
+    "title": "Street Frame 16",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/068-street-frame-16.jpg"
+  },
+  {
+    "title": "Street Frame 17",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/069-street-frame-17.jpg"
+  },
+  {
+    "title": "Street Frame 18",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/070-street-frame-18.jpg"
+  },
+  {
+    "title": "Street Frame 19",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/071-street-frame-19.jpg"
+  },
+  {
+    "title": "Street Frame 20",
+    "tags": [
+      "street",
+      "youth",
+      "portrait"
+    ],
+    "how_to_pose": "Stand at 30deg body angle, one foot forward, relax shoulders and keep hand action natural.",
+    "camera_angle": "Eye level or slightly low, keep vertical lines straight.",
+    "sample_image_url": "assets/pose-collection/blurred/072-street-frame-20.jpg"
+  },
+  {
+    "title": "Coffee Mood 01",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/073-coffee-mood-01.jpg"
+  },
+  {
+    "title": "Coffee Mood 02",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/074-coffee-mood-02.jpg"
+  },
+  {
+    "title": "Coffee Mood 03",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/075-coffee-mood-03.jpg"
+  },
+  {
+    "title": "Coffee Mood 04",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/076-coffee-mood-04.jpg"
+  },
+  {
+    "title": "Coffee Mood 05",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/077-coffee-mood-05.jpg"
+  },
+  {
+    "title": "Coffee Mood 06",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/078-coffee-mood-06.jpg"
+  },
+  {
+    "title": "Coffee Mood 07",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/079-coffee-mood-07.jpg"
+  },
+  {
+    "title": "Coffee Mood 08",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/080-coffee-mood-08.jpg"
+  },
+  {
+    "title": "Coffee Mood 09",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/081-coffee-mood-09.jpg"
+  },
+  {
+    "title": "Coffee Mood 10",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/082-coffee-mood-10.jpg"
+  },
+  {
+    "title": "Coffee Mood 11",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/083-coffee-mood-11.jpg"
+  },
+  {
+    "title": "Coffee Mood 12",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/084-coffee-mood-12.jpg"
+  },
+  {
+    "title": "Coffee Mood 13",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/085-coffee-mood-13.jpg"
+  },
+  {
+    "title": "Coffee Mood 14",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/086-coffee-mood-14.jpg"
+  },
+  {
+    "title": "Coffee Mood 15",
+    "tags": [
+      "coffee-shop",
+      "lifestyle",
+      "portrait"
+    ],
+    "how_to_pose": "Interact with cup or table edge, keep chin slightly down, expression soft and candid.",
+    "camera_angle": "45deg side angle, medium crop with table foreground.",
+    "sample_image_url": "assets/pose-collection/blurred/087-coffee-mood-15.jpg"
+  },
+  {
+    "title": "Scenic Shot 01",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/088-scenic-shot-01.jpg"
+  },
+  {
+    "title": "Scenic Shot 02",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/089-scenic-shot-02.jpg"
+  },
+  {
+    "title": "Scenic Shot 03",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/090-scenic-shot-03.jpg"
+  },
+  {
+    "title": "Scenic Shot 04",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/091-scenic-shot-04.jpg"
+  },
+  {
+    "title": "Scenic Shot 05",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/092-scenic-shot-05.jpg"
+  },
+  {
+    "title": "Scenic Shot 06",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/093-scenic-shot-06.jpg"
+  },
+  {
+    "title": "Scenic Shot 07",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/094-scenic-shot-07.jpg"
+  },
+  {
+    "title": "Scenic Shot 08",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/095-scenic-shot-08.jpg"
+  },
+  {
+    "title": "Scenic Shot 09",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/096-scenic-shot-09.jpg"
+  },
+  {
+    "title": "Scenic Shot 10",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/097-scenic-shot-10.jpg"
+  },
+  {
+    "title": "Scenic Shot 11",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/098-scenic-shot-11.jpg"
+  },
+  {
+    "title": "Scenic Shot 12",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/099-scenic-shot-12.jpg"
+  },
+  {
+    "title": "Scenic Shot 13",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/100-scenic-shot-13.jpg"
+  },
+  {
+    "title": "Scenic Shot 14",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/101-scenic-shot-14.jpg"
+  },
+  {
+    "title": "Scenic Shot 15",
+    "tags": [
+      "landscape",
+      "travel",
+      "outdoor"
+    ],
+    "how_to_pose": "Place subject on one-third line, keep body open to horizon, use simple hand gesture for scale.",
+    "camera_angle": "Wide frame, subject small-to-medium against scenery.",
+    "sample_image_url": "assets/pose-collection/blurred/102-scenic-shot-15.jpg"
+  }
+]

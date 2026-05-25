@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system';
 
 import { ImageQualityEvaluation } from '../../models/analysis';
 import { fileToBase64 } from '../image/fileToBase64';
+import { normalizeFileUri, persistImageFile } from '../image/persistentImage';
 import { saveBase64ImageToCache } from '../image/saveBase64Image';
 import { logOpenAIImageEditRequest, logOpenAIImageEditResponse, shouldDebugOpenAIFlow } from './debugOpenAIFlow';
 import { evaluateGeneratedImageWithOpenAI } from './openaiClient';
@@ -73,16 +74,6 @@ function uploadFileNameForMime(mimeType: string): string {
   return 'photo.jpg';
 }
 
-function normalizeFileUri(imageUri: string): string {
-  if (imageUri.startsWith('file://')) {
-    return imageUri;
-  }
-  if (imageUri.startsWith('/')) {
-    return `file://${imageUri}`;
-  }
-  return imageUri;
-}
-
 function buildConservativeImageEditPrompt(userPrompt: string): string {
   return `
 Edit the uploaded photo conservatively. The uploaded image is the source of truth.
@@ -112,7 +103,7 @@ async function persistRemoteImageToCache(imageUrl: string): Promise<string> {
   if (result.status !== 200) {
     throw new Error(`Failed to download edited image (HTTP ${result.status}).`);
   }
-  return result.uri;
+  return persistImageFile(result.uri, 'openai-edit');
 }
 
 export async function generateEditedImage(

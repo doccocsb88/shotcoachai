@@ -23,10 +23,15 @@
 
 - (NSURL *)bundleURL
 {
+  NSURL *embeddedBundleURL = [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
 #if DEBUG
+  // Support direct Xcode simulator runs by using an embedded bundle when present.
+  if (embeddedBundleURL != nil) {
+    return embeddedBundleURL;
+  }
   return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@".expo/.virtual-metro-entry"];
 #else
-  return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
+  return embeddedBundleURL;
 #endif
 }
 

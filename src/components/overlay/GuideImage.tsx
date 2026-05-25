@@ -1,6 +1,6 @@
 import { Image, StyleSheet, View } from 'react-native';
 
-import { colors } from '../../constants/theme';
+import { colors, radius, shadows } from '../../constants/theme';
 import { OverlayData } from '../../models/analysis';
 import { OverlayGuide } from './OverlayGuide';
 
@@ -25,8 +25,11 @@ const styles = StyleSheet.create({
   frame: {
     alignSelf: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 8,
-    overflow: 'hidden'
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+    ...shadows.soft
   },
   image: {
     height: '100%',

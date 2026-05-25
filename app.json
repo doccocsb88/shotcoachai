@@ -12,11 +12,11 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.shotcoach.ai",
+      "bundleIdentifier": "co.q7labs.shotcoachai",
       "appleTeamId": "7C8RLFRN5X"
     },
     "android": {
-      "package": "com.shotcoach.ai",
+      "package": "co.q7labs.shotcoachai",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",

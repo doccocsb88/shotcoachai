@@ -129,6 +129,7 @@ export interface SuggestionGenerationEntry {
 
 export interface AnalysisResult {
   analysisId: string;
+  sourceAnalysisId?: string;
   overallAssessment: string;
   suggestions: Suggestion[];
   productionAnalysis?: ProductionPhotoAnalysis;
@@ -192,6 +193,34 @@ export function mergeSuggestionGeneration(
     suggestionGenerations: base,
     generatedImageUri,
     selectedSuggestionIndex: suggestionIndex
+  };
+}
+
+export function createGeneratedHistoryResult(
+  result: AnalysisResult,
+  suggestionIndex: number,
+  generatedImageUri: string,
+  qualityEvaluation?: ImageQualityEvaluation
+): AnalysisResult {
+  return {
+    ...result,
+    analysisId: `${result.sourceAnalysisId ?? result.analysisId}:generated:${suggestionIndex}:${Date.now()}`,
+    sourceAnalysisId: result.sourceAnalysisId ?? result.analysisId,
+    selectedSuggestionIndex: suggestionIndex,
+    generatedImageUri,
+    suggestionGenerations: [
+      {
+        suggestionIndex,
+        generatedImageUri,
+        qualityEvaluation
+      }
+    ],
+    visualOutput: {
+      type: 'generated_image',
+      generatedImageUri,
+      generationStatus: 'completed'
+    },
+    createdAt: new Date().toISOString()
   };
 }
 

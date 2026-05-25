@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 
-import { colors } from '../../constants/theme';
+import { colors, radius, shadows, spacing, typography } from '../../constants/theme';
 
 interface Props {
   title: string;
@@ -18,12 +18,22 @@ export function PrimaryButton({ title, onPress, variant = 'primary', disabled, s
       style={({ pressed }) => [
         styles.base,
         styles[variant],
+        variant === 'primary' && styles.primaryShadow,
         disabled && styles.disabled,
         pressed && !disabled && styles.pressed,
         style
       ]}
     >
-      <Text style={[styles.text, variant !== 'primary' && styles.secondaryText]}>{title}</Text>
+      <Text
+        style={[
+          styles.text,
+          variant === 'primary' && styles.textOnPrimary,
+          variant === 'secondary' && styles.textSecondary,
+          variant === 'ghost' && styles.textGhost
+        ]}
+      >
+        {title}
+      </Text>
     </Pressable>
   );
 }
@@ -31,35 +41,46 @@ export function PrimaryButton({ title, onPress, variant = 'primary', disabled, s
 const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
-    borderRadius: 8,
     justifyContent: 'center',
-    minHeight: 50,
-    paddingHorizontal: 18,
-    paddingVertical: 14
+    minHeight: 56,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 16
   },
   primary: {
-    backgroundColor: colors.accent
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg
+  },
+  primaryShadow: {
+    ...shadows.button
   },
   secondary: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderWidth: 1
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    ...shadows.soft
   },
   ghost: {
-    backgroundColor: 'transparent'
+    backgroundColor: 'transparent',
+    borderRadius: radius.lg
   },
   disabled: {
     opacity: 0.45
   },
   pressed: {
-    opacity: 0.78
+    opacity: 0.88
   },
   text: {
-    color: '#04130F',
-    fontSize: 16,
+    fontSize: typography.button,
     fontWeight: '700'
   },
-  secondaryText: {
+  textOnPrimary: {
+    color: colors.white
+  },
+  textSecondary: {
     color: colors.text
+  },
+  textGhost: {
+    color: colors.primary
   }
 });

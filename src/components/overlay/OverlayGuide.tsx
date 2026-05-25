@@ -18,7 +18,7 @@ export function OverlayGuide({ width, height, overlayData }: Props) {
     <Svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }}>
       <Defs>
         <Marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-          <Path d="M0,0 L8,4 L0,8 Z" fill={colors.cyan} />
+          <Path d="M0,0 L8,4 L0,8 Z" fill={colors.primary} />
         </Marker>
       </Defs>
 
@@ -50,7 +50,7 @@ export function OverlayGuide({ width, height, overlayData }: Props) {
           y1={arrow.from[1] * height}
           x2={arrow.to[0] * width}
           y2={arrow.to[1] * height}
-          stroke={colors.cyan}
+          stroke={colors.primary}
           strokeWidth={4}
           markerEnd="url(#arrowhead)"
         />

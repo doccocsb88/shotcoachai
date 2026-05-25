@@ -1,6 +1,7 @@
 import { AnalysisResult } from '../../models/analysis';
 import { withTimeout } from '../../utils/async';
 import { fileToBase64 } from '../image/fileToBase64';
+import { persistImageFile } from '../image/persistentImage';
 import { resizeImageIfNeeded } from '../image/resizeImage';
 import {
   analyzePhotoWithOpenAI,
@@ -16,12 +17,17 @@ const LOCAL_STEP_TIMEOUT_MS = 20000;
 
 export async function analyzePhoto(imageUri: string, mimeType: string): Promise<AnalysisResult> {
   if (shouldUseMockupApi() || !hasOpenAIKey()) {
+    const persistentOriginalUri = await withTimeout(
+      persistImageFile(imageUri, 'original-photo'),
+      LOCAL_STEP_TIMEOUT_MS,
+      'Image persist timeout'
+    );
     const raw = await withTimeout(
       analyzePhotoWithTestingMockupApi(),
       ANALYSIS_TIMEOUT_MS,
       'TestingMockup API timeout'
     );
-    return parseAnalysisResponse(raw, imageUri, mimeType);
+    return parseAnalysisResponse(raw, persistentOriginalUri, mimeType);
   }
 
   const analysisController = new AbortController();
@@ -65,11 +71,17 @@ export async function analyzePhoto(imageUri: string, mimeType: string): Promise<
     );
     const recipesPayload = parseJsonResponse(recipesRaw);
 
+    const persistentOriginalUri = await withTimeout(
+      persistImageFile(imageUri, 'original-photo'),
+      LOCAL_STEP_TIMEOUT_MS,
+      'Image persist timeout'
+    );
+
     return buildAnalysisResultFromProductionFlow({
       photoAnalysis,
       directionsPayload,
       recipesPayload,
-      originalImageUri: imageUri,
+      originalImageUri: persistentOriginalUri,
       originalImageMimeType: mimeType
     });
   } finally {

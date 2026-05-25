@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.shotcoach.ai</string>
+          <string>co.q7labs.shotcoachai</string>
         </array>
       </dict>
     </array>

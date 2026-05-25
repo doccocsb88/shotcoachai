@@ -1,0 +1,72 @@
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { colors, spacing, typography } from '../../constants/theme';
+
+const sideSlotMinWidth = 72;
+
+interface Props {
+  title: string;
+  /** Shown on the left (e.g. `Back`, `Done`). */
+  leadingLabel: string;
+  onLeadingPress: () => void;
+}
+
+/**
+ * Top bar: leading action on the left, title visually centered. Intended under `SafeAreaView`
+ * — use small vertical padding only (see `HomeScreen` nav).
+ */
+export function ScreenNavBar({ title, leadingLabel, onLeadingPress }: Props) {
+  return (
+    <View style={styles.bar}>
+      <View style={styles.sideSlot}>
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={onLeadingPress}
+          style={({ pressed }) => [styles.leadingPressable, pressed && styles.pressed]}
+        >
+          <Text style={styles.leadingLabel}>{leadingLabel}</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.title} numberOfLines={1}>
+        {title}
+      </Text>
+      <View style={styles.sideSlot} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  bar: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm
+  },
+  sideSlot: {
+    minWidth: sideSlotMinWidth
+  },
+  leadingPressable: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4
+  },
+  leadingLabel: {
+    color: colors.primary,
+    fontSize: typography.body,
+    fontWeight: '700'
+  },
+  title: {
+    color: colors.text,
+    flex: 1,
+    fontSize: typography.headline,
+    fontWeight: '900',
+    textAlign: 'center'
+  },
+  pressed: {
+    opacity: 0.65
+  }
+});

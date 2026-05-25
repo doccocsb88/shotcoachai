@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { AnalysisResult, PickedPhoto } from '../../models/analysis';
 import { loadHistory, persistHistory } from '../../services/storage/historyStorage';
 
+export type CameraMode = 'classic' | 'pose_ai';
+
 interface AnalysisStore {
   currentPhoto?: PickedPhoto;
   currentResult?: AnalysisResult;
@@ -10,6 +12,8 @@ interface AnalysisStore {
   isAnalyzing: boolean;
   error?: string;
   historyLoaded: boolean;
+  cameraMode: CameraMode;
+  poseAiSelectedTemplateId?: string;
 
   setCurrentPhoto: (photo: PickedPhoto) => void;
   setAnalyzing: (value: boolean) => void;
@@ -18,6 +22,8 @@ interface AnalysisStore {
   setRecentResults: (results: AnalysisResult[]) => void;
   hydrateHistory: () => Promise<void>;
   setError: (message?: string) => void;
+  setCameraMode: (mode: CameraMode) => void;
+  setPoseAiSelectedTemplateId: (templateId?: string) => void;
   clearCurrent: () => void;
 }
 
@@ -25,6 +31,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   recentResults: [],
   isAnalyzing: false,
   historyLoaded: false,
+  cameraMode: 'classic',
 
   setCurrentPhoto: photo => set({ currentPhoto: photo, error: undefined }),
   setAnalyzing: value => set({ isAnalyzing: value }),
@@ -42,5 +49,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     set({ recentResults: results, historyLoaded: true });
   },
   setError: message => set({ error: message }),
+  setCameraMode: mode => set({ cameraMode: mode }),
+  setPoseAiSelectedTemplateId: templateId => set({ poseAiSelectedTemplateId: templateId }),
   clearCurrent: () => set({ currentPhoto: undefined, currentResult: undefined, error: undefined })
 }));
