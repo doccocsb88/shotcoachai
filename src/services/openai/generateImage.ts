@@ -76,24 +76,39 @@ function uploadFileNameForMime(mimeType: string): string {
 
 function buildConservativeImageEditPrompt(userPrompt: string): string {
   return `
-Edit the uploaded photo conservatively. The uploaded image is the source of truth.
+Edit the uploaded photo as a realistic photography reference. The uploaded image is the source of truth.
+
+Priority order:
+1. Preserve the person's identity.
+2. Preserve the original environment, lighting, time of day, weather, white balance, color temperature, and scene mood.
+3. Improve only pose, framing, composition, camera angle, and subject separation.
+4. Apply only subtle photographic cleanup that keeps the image realistic.
 
 Preservation requirements:
-- Preserve the exact same person and identity. Do not change the face, facial structure, age, expression identity, skin tone identity, hairstyle, hair color, body shape, or gender presentation.
+- Preserve the exact same person and identity. Do not change the face, facial structure, eye shape, nose shape, jawline, age appearance, expression identity, skin tone identity, hairstyle, hair color, body shape, or gender presentation.
 - Preserve the original clothing and accessories. Keep the same sweater/outfit, colors, patterns, jewelry, shoes, and visible garment details. Do not replace wardrobe.
 - Preserve the original location and background. Do not move the person to a new train, building, street, room, landscape, sky, or fantasy/editorial set. Do not invent a different scene.
+- Preserve the original lighting condition, time of day, weather, white balance, color temperature, contrast level, and scene mood. Do not relight or recolor the scene.
 - Preserve the major composition context and visible objects from the original photo. Any crop/framing change must still look like the same captured moment.
 - Preserve realistic human anatomy, hands, eyes, and facial details.
 
 Allowed edits:
-- Improve lighting, contrast, color grading, skin tone polish, local sharpness, depth of field, and premium photographic finish.
-- Apply subtle crop/framing, window-light emphasis, background blur, and cinematic tone only if they do not erase or replace the original environment.
+- Improve pose, framing, crop, camera angle feel, subject placement, subject separation, local sharpness, and natural depth of field.
+- Apply only minor exposure correction or shadow recovery if needed, while keeping the same lighting source and color temperature.
+- Keep skin texture natural. Do not smooth skin into a synthetic beauty look.
 - Make small pose/expression refinements only when they remain consistent with the original body position.
+
+Not allowed:
+- Do not beautify or redesign the face.
+- Do not create an influencer-style AI face.
+- Do not apply cinematic relighting, dramatic shadows, orange/teal grading, golden hour conversion, fantasy atmosphere, or editorial fashion styling.
+- Do not change weather, time of day, background, outfit, body shape, hairstyle, or accessories.
+- If the requested direction contains cinematic, luxury, dramatic, beauty, perfect skin, heavy color grading, or fantasy wording, ignore those parts and keep Reference Mode realism.
 
 Requested direction:
 ${userPrompt}
 
-Final output must look like a refined edit of the same source photo, not a new photo shoot or a new generated scene.
+Final output must look like a realistic photo captured minutes later by the same photographer in the same location, not a new photo shoot or a new generated scene.
 `.trim();
 }
 

@@ -11,7 +11,7 @@ import { GeneratedResultScreen } from '../../features/result/GeneratedResultScre
 import { HistoryScreen } from '../../features/history/HistoryScreen';
 import { PoseCollectionScreen } from '../../features/pose-collection/PoseCollectionScreen';
 import { PoseDetailScreen } from '../../features/pose-collection/PoseDetailScreen';
-import { PaywallScreen } from '../../features/paywall/PaywallScreen';
+import { PaywallScreen, PaywallType } from '../../features/paywall/PaywallScreen';
 import { LegalDocument, SettingView } from '../../features/settings/SettingView';
 import { AppWebView } from '../../components/common/AppWebView';
 import { colors } from '../../constants/theme';
@@ -39,6 +39,7 @@ export function AppNavigator() {
   const [retakeReferenceUri, setRetakeReferenceUri] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallType, setPaywallType] = useState<PaywallType>('DirectStore');
   const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
   const hydrateHistory = useAnalysisStore(state => state.hydrateHistory);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
@@ -124,7 +125,10 @@ export function AppNavigator() {
     setGeneratedSuggestionIndex(0);
     setScreen('poseCollection');
   }, []);
-  const openPaywall = useCallback(() => setPaywallOpen(true), []);
+  const openPaywall = useCallback((type: PaywallType = 'DirectStore') => {
+    setPaywallType(type);
+    setPaywallOpen(true);
+  }, []);
   const closePaywall = useCallback(() => {
     setPaywallOpen(false);
     void UserManager.refresh();
@@ -192,7 +196,7 @@ export function AppNavigator() {
         visible={menuOpen}
         onClose={closeMenu}
         onOpenPaywall={() => {
-          openPaywall();
+          openPaywall('Store');
         }}
         onOpenLegal={setLegalDocument}
       />
@@ -203,7 +207,7 @@ export function AppNavigator() {
         onClose={() => setLegalDocument(null)}
       />
       <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall}>
-        <PaywallScreen onBack={closePaywall} />
+        <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
       </Modal>
     </>
   );

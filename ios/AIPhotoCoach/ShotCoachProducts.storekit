@@ -26,7 +26,7 @@
         }
       ],
       "productID" : "co.q7labs.shotcoachai.lifetime1",
-      "referenceName" : "ShotCoach Lifetime",
+      "referenceName" : "Lifetime",
       "type" : "NonConsumable"
     }
   ],
@@ -108,7 +108,7 @@
           ],
           "productID" : "co.q7labs.shotcoachai.weekly1",
           "recurringSubscriptionPeriod" : "P1W",
-          "referenceName" : "ShotCoach Weekly",
+          "referenceName" : "Premium Weekly",
           "subscriptionGroupID" : "ACE1FACE",
           "type" : "RecurringSubscription",
           "winbackOffers" : [
@@ -140,7 +140,7 @@
           ],
           "productID" : "co.q7labs.shotcoachai.monthlytrial1",
           "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "ShotCoach Monthly Trial",
+          "referenceName" : "Premium Monthly Trial",
           "subscriptionGroupID" : "ACE1FACE",
           "type" : "RecurringSubscription",
           "winbackOffers" : [

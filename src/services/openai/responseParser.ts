@@ -89,12 +89,22 @@ export function buildAnalysisResultFromProductionFlow(input: {
 
 export function normalizeImageQualityEvaluation(value: unknown): ImageQualityEvaluation {
   const item = value as Record<string, unknown>;
+  const identityPreservation = asNumber(item.identity_preservation);
+  const naturalness = asNumber(item.naturalness);
+  const anatomyScore = asNumber(item.anatomy_score);
+  const overallScore = asNumber(item.overall_score);
+  const thresholdRetryRequired =
+    (identityPreservation > 0 && identityPreservation < 8.5) ||
+    (naturalness > 0 && naturalness < 8) ||
+    (anatomyScore > 0 && anatomyScore < 8) ||
+    (overallScore > 0 && overallScore < 8);
+
   return {
-    identity_preservation: asNumber(item.identity_preservation),
-    naturalness: asNumber(item.naturalness),
-    anatomy_score: asNumber(item.anatomy_score),
-    overall_score: asNumber(item.overall_score),
-    retry_required: item.retry_required === true,
+    identity_preservation: identityPreservation,
+    naturalness,
+    anatomy_score: anatomyScore,
+    overall_score: overallScore,
+    retry_required: item.retry_required === true || thresholdRetryRequired,
     retry_reason: asString(item.retry_reason),
     recommended_action: asString(item.recommended_action) || 'accept'
   };

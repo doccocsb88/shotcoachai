@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { ForegroundToast } from '../../components/common/ForegroundToast';
@@ -31,10 +31,13 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
   const error = useAnalysisStore(state => state.error);
   const setError = useAnalysisStore(state => state.setError);
   const { analyze } = useAnalyzePhoto();
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const [step, setStep] = useState(0);
   const [attempt, setAttempt] = useState(0);
 
   const status = useMemo(() => statuses[Math.min(step, statuses.length - 1)], [step]);
+  const previewHeight = Math.round(windowHeight * 0.5);
+  const previewWidth = Math.min(windowWidth - 48, Math.round(previewHeight * 0.78));
 
   useEffect(() => {
     if (error) return undefined;
@@ -81,7 +84,7 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
-        <Image source={{ uri: photo.uri }} style={styles.thumbnail} />
+        <Image source={{ uri: photo.uri }} style={[styles.thumbnail, { height: previewHeight, width: previewWidth }]} />
         {error ? (
           <>
             <Text style={styles.title}>Analysis failed</Text>
@@ -119,9 +122,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
-    height: 180,
     marginBottom: 28,
-    width: 140
+    resizeMode: 'cover'
   },
   title: {
     color: colors.text,

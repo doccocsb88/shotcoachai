@@ -16,6 +16,7 @@ import {
   AnalysisResult,
   createGeneratedHistoryResult,
   getStoredGenerationUri,
+  ImageQualityEvaluation,
   mergeSuggestionGeneration
 } from '../../models/analysis';
 import { evaluateEditedImageQuality, generateEditedImage } from '../../services/openai/generateImage';
@@ -37,6 +38,23 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
       clearTimeout(timeoutId);
     }
   });
+}
+
+function buildIdentityLightingRetryPrompt(prompt: string, evaluation?: ImageQualityEvaluation): string {
+  const reason = evaluation?.retry_reason?.trim();
+  return `
+${prompt}
+
+Retry correction:
+The previous generation did not preserve identity, lighting, or realism strongly enough${reason ? `: ${reason}` : '.'}
+
+Rewrite the edit with MUCH STRONGER constraints:
+- Preserve exact face shape, eye shape, nose shape, jawline, age appearance, skin tone identity, hairstyle, clothing, body shape, and accessories.
+- Preserve the same location, background, lighting condition, time of day, weather, white balance, color temperature, and scene mood.
+- Reduce edit strength.
+- Remove beauty, influencer, cinematic, dramatic, fantasy, golden hour, and heavy color grading changes.
+- Improve only pose, framing, crop, camera angle feel, and natural subject separation.
+`.trim();
 }
 
 interface Props {
@@ -91,7 +109,7 @@ export function GeneratedResultScreen({
     try {
       setGeneratedImageUri(null);
       setIsGenerating(true);
-      const uri = await withTimeout(
+      let uri = await withTimeout(
         generateEditedImage(
           selected.image_prompt,
           result.originalImageUri,
@@ -100,9 +118,7 @@ export function GeneratedResultScreen({
         IMAGE_GENERATION_TIMEOUT_MS,
         'The AI edit is taking too long. Please check your connection and try again.'
       );
-      setGeneratedImageUri(uri);
-
-      let qualityEvaluation;
+      let qualityEvaluation: ImageQualityEvaluation | undefined;
       try {
         qualityEvaluation = await withTimeout(
           evaluateEditedImageQuality({
@@ -120,6 +136,40 @@ export function GeneratedResultScreen({
       } catch {
         qualityEvaluation = undefined;
       }
+
+      if (qualityEvaluation?.retry_required) {
+        const retryPrompt = buildIdentityLightingRetryPrompt(selected.image_prompt, qualityEvaluation);
+        uri = await withTimeout(
+          generateEditedImage(
+            retryPrompt,
+            result.originalImageUri,
+            result.originalImageMimeType
+          ),
+          IMAGE_GENERATION_TIMEOUT_MS,
+          'The AI edit is taking too long. Please check your connection and try again.'
+        );
+
+        try {
+          qualityEvaluation = await withTimeout(
+            evaluateEditedImageQuality({
+              originalImageUri: result.originalImageUri,
+              generatedImageUri: uri,
+              originalImageMimeType: result.originalImageMimeType,
+              selectedDirection: {
+                suggestion: selected,
+                recipe: result.generationRecipes?.[suggestionIndex],
+                retry: 'identity_lighting_reference_mode'
+              }
+            }),
+            QUALITY_EVALUATION_TIMEOUT_MS,
+            'Quality evaluation timed out.'
+          );
+        } catch {
+          qualityEvaluation = undefined;
+        }
+      }
+
+      setGeneratedImageUri(uri);
 
       const updatedResult = mergeSuggestionGeneration(result, suggestionIndex, uri, qualityEvaluation);
       const historyResult = createGeneratedHistoryResult(updatedResult, suggestionIndex, uri, qualityEvaluation);

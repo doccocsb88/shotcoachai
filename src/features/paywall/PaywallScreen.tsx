@@ -24,7 +24,10 @@ type LegalDocument = {
 
 interface Props {
   onBack: () => void;
+  paywallType: PaywallType;
 }
+
+export type PaywallType = 'Store' | 'DirectStore';
 
 type PaywallPlan = {
   id: PurchaseProductId;
@@ -56,7 +59,7 @@ const configuredPlans: PaywallPlan[] = [
 const defaultProductId: PurchaseProductId = 'co.q7labs.shotcoachai.monthlytrial1';
 const closeButtonTop = Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight ?? 0) + spacing.sm;
 
-export function PaywallScreen({ onBack }: Props) {
+export function PaywallScreen({ onBack, paywallType }: Props) {
   const { width } = useWindowDimensions();
   const impressionTrackedRef = useRef(false);
   const [products, setProducts] = useState<PurchaseProduct[]>([]);
@@ -135,6 +138,10 @@ export function PaywallScreen({ onBack }: Props) {
       if (result.status === 'purchased') {
         void PurchaseTracking.purchaseCompleted(plan.product, result);
         await UserManager.markPremiumActive();
+        if (paywallType === 'DirectStore') {
+          onBack();
+          return;
+        }
         Alert.alert('Purchase complete', 'ShotCoach Pro is unlocked on this device.');
       } else if (result.status === 'pending') {
         void PurchaseTracking.purchaseResolved(plan.product, result);
@@ -200,6 +207,7 @@ export function PaywallScreen({ onBack }: Props) {
         <View style={styles.planList}>
           {!productsLoaded ? (
             <View style={styles.storeStatusCard}>
+              <ActivityIndicator color={colors.primary} size="small" style={styles.storeLoadingIndicator} />
               <Text style={styles.storeStatusTitle}>Loading StoreKit products...</Text>
               <Text style={styles.storeStatusBody}>Fetching product names and prices from the store.</Text>
             </View>
@@ -465,6 +473,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 17,
     fontWeight: '900'
+  },
+  storeLoadingIndicator: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.sm
   },
   storeStatusBody: {
     color: colors.textMuted,
