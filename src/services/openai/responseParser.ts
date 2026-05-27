@@ -14,14 +14,14 @@ export function extractJsonTextFromResponse(raw: unknown): string {
   for (const item of outputs) {
     const content = item?.content ?? [];
     for (const c of content) {
-      if (c?.type === 'output_text' && typeof c?.text === 'string') {
+      if (c?.type === 'output_text' && typeof c?.text === 'string' && c.text.trim().length > 0) {
         return c.text;
       }
     }
   }
 
   const alternative = raw as { output_text?: string };
-  if (typeof alternative.output_text === 'string') {
+  if (typeof alternative.output_text === 'string' && alternative.output_text.trim().length > 0) {
     return alternative.output_text;
   }
 

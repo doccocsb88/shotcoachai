@@ -162,11 +162,13 @@ async function runOpenAIJsonStage(input: {
   }
 
   const raw = await response.json();
+  const outputText = extractOutputTextForDebug(raw);
   logOpenAIAnalysisResponse({
     status: response.status,
     ok: response.ok,
     elapsedMs: Date.now() - startedAt,
-    outputText: extractOutputTextForDebug(raw)
+    outputText,
+    rawResponse: outputText ? undefined : raw
   });
 
   return raw;
@@ -184,6 +186,6 @@ function extractOutputTextForDebug(raw: unknown): string | undefined {
 
   return typed.output
     ?.flatMap(item => item.content ?? [])
-    .find(content => content.type === 'output_text' && typeof content.text === 'string')
+    .find(content => content.type === 'output_text' && typeof content.text === 'string' && content.text.trim().length > 0)
     ?.text;
 }

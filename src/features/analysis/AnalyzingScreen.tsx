@@ -24,6 +24,8 @@ const statuses = [
   'Saving analysis'
 ];
 
+const statusScheduleMs = [0, 2800, 16000, 34000, 56000, 74000];
+
 export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
   const error = useAnalysisStore(state => state.error);
@@ -37,10 +39,13 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
   useEffect(() => {
     if (error) return undefined;
 
-    const timer = setInterval(() => {
-      setStep(value => Math.min(value + 1, statuses.length - 1));
-    }, 1200);
-    return () => clearInterval(timer);
+    setStep(0);
+    const timers = statusScheduleMs.slice(1).map((delayMs, index) =>
+      setTimeout(() => {
+        setStep(index + 1);
+      }, delayMs)
+    );
+    return () => timers.forEach(clearTimeout);
   }, [error, attempt]);
 
   useEffect(() => {

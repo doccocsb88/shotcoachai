@@ -37,6 +37,7 @@ export function logOpenAIAnalysisResponse(input: {
   ok: boolean;
   elapsedMs: number;
   outputText?: string;
+  rawResponse?: unknown;
 }) {
   if (!shouldDebugOpenAIFlow()) return;
 

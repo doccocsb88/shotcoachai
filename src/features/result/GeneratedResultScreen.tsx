@@ -310,11 +310,6 @@ export function GeneratedResultScreen({
           </View>
 
           <View style={styles.actionDock}>
-            {isGenerating ? (
-              <View style={styles.toastDock}>
-                <ForegroundToast />
-              </View>
-            ) : null}
             <View style={styles.bottomActionsRow}>
               <Pressable
                 accessibilityLabel="Retake — return home"
@@ -380,6 +375,11 @@ export function GeneratedResultScreen({
               </Pressable>
             )}
           </View>
+          {isGenerating ? (
+            <View pointerEvents="none" style={styles.generatingToastOverlay}>
+              <ForegroundToast />
+            </View>
+          ) : null}
       </View>
     </Screen>
   );
@@ -575,8 +575,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 2
   },
-  toastDock: {
-    marginBottom: 8
+  generatingToastOverlay: {
+    bottom: 88,
+    left: 16,
+    position: 'absolute',
+    right: 16
   },
   bottomActionsRow: {
     alignItems: 'center',

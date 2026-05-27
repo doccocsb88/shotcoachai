@@ -53,6 +53,7 @@ const configuredPlans: PaywallPlan[] = [
     description: 'One-time unlock with lifetime access.'
   }
 ];
+const defaultProductId: PurchaseProductId = 'co.q7labs.shotcoachai.monthlytrial1';
 const closeButtonTop = Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight ?? 0) + spacing.sm;
 
 export function PaywallScreen({ onBack }: Props) {
@@ -61,6 +62,7 @@ export function PaywallScreen({ onBack }: Props) {
   const [products, setProducts] = useState<PurchaseProduct[]>([]);
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [storeUnavailableMessage, setStoreUnavailableMessage] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<PurchaseProductId>(defaultProductId);
   const [busyProductId, setBusyProductId] = useState<PurchaseProductId | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
@@ -113,10 +115,17 @@ export function PaywallScreen({ onBack }: Props) {
     });
   }, [productById]);
 
-  const defaultPlan = displayPlans.find(plan => plan.product.id === 'co.q7labs.shotcoachai.monthlytrial1') ?? displayPlans[0];
+  useEffect(() => {
+    if (displayPlans.length > 0 && !displayPlans.some(plan => plan.product.id === selectedProductId)) {
+      setSelectedProductId(displayPlans.find(plan => plan.product.id === defaultProductId)?.product.id ?? displayPlans[0].product.id);
+    }
+  }, [displayPlans, selectedProductId]);
+
+  const selectedPlan = displayPlans.find(plan => plan.product.id === selectedProductId) ?? displayPlans[0];
   const processing = busyProductId !== null || restoring;
 
   const handleSelectPlan = async (plan: DisplayPlan, source: 'plan_card' | 'primary_cta') => {
+    setSelectedProductId(plan.product.id);
     void PurchaseTracking.itemSelected(plan.product, source);
     setBusyProductId(plan.product.id);
     try {
@@ -205,6 +214,7 @@ export function PaywallScreen({ onBack }: Props) {
           ) : (
             displayPlans.map(plan => {
               const disabled = processing;
+              const selected = plan.product.id === selectedProductId;
 
               return (
                 <Pressable
@@ -214,7 +224,7 @@ export function PaywallScreen({ onBack }: Props) {
                   onPress={() => handleSelectPlan(plan, 'plan_card')}
                   style={({ pressed }) => [
                     styles.planCard,
-                    plan.badge && styles.planCardFeatured,
+                    selected && styles.planCardSelected,
                     disabled && styles.disabledPlanCard,
                     pressed && styles.pressed
                   ]}
@@ -235,13 +245,13 @@ export function PaywallScreen({ onBack }: Props) {
 
         <Pressable
           accessibilityRole="button"
-          disabled={processing || !defaultPlan}
+          disabled={processing || !selectedPlan}
           onPress={() => {
-            if (defaultPlan) {
-              void handleSelectPlan(defaultPlan, 'primary_cta');
+            if (selectedPlan) {
+              void handleSelectPlan(selectedPlan, 'primary_cta');
             }
           }}
-          style={({ pressed }) => [styles.primaryCta, !defaultPlan && styles.disabledCta, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.primaryCta, !selectedPlan && styles.disabledCta, pressed && styles.pressed]}
         >
           <Text style={styles.primaryCtaText}>Continue</Text>
         </Pressable>
@@ -284,7 +294,10 @@ export function PaywallScreen({ onBack }: Props) {
         </View>
 
         <Text style={styles.termsText}>
-          Subscriptions renew automatically unless canceled at least 24 hours before the end of the current period.
+          Payment will be charged to iTunes Account at purchase confirmation.{'\n\n'}
+          Subscription automatically renews within 24-hours prior to the end of the current subscription period.{'\n\n'}
+          Subscription may be managed and auto-renewal may be turned off by going to the Settings application after purchased.{'\n\n'}
+          Any unused portion of a free trial period, if offered, will be forfeited when user purchases a subscription to that publication, where applicable.
         </Text>
       </ScrollView>
       <AppWebView
@@ -397,7 +410,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     ...shadows.soft
   },
-  planCardFeatured: {
+  planCardSelected: {
     borderColor: colors.primary,
     borderWidth: 2
   },

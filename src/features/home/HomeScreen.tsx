@@ -24,6 +24,8 @@ interface Props {
 const navBarTopPadding = Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight ?? 0) + spacing.sm;
 const dockBottomPadding = Platform.OS === 'ios' ? 32 : spacing.sm;
 const cameraFallbackBackground = '#05070B';
+const focusTopInset = navBarTopPadding + 88;
+const focusBottomInset = dockBottomPadding + 132;
 
 export function HomeScreen({
   onOpenPreview,
@@ -56,12 +58,6 @@ export function HomeScreen({
   }, [cameraPermission, requestCameraPermission]);
 
   const choosePhoto = async () => {
-    await UserManager.ensureReady();
-    if (!UserManager.canStartCapture()) {
-      showCaptureLimitPaywall();
-      return;
-    }
-
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Permission needed', 'Please allow photo access to choose an image.');
@@ -408,7 +404,7 @@ const styles = StyleSheet.create({
     height: 52,
     left: 20,
     position: 'absolute',
-    top: 100,
+    top: focusTopInset,
     width: 52
   },
   focusMarkTopRight: {
@@ -418,14 +414,14 @@ const styles = StyleSheet.create({
     height: 52,
     position: 'absolute',
     right: 20,
-    top: 100,
+    top: focusTopInset,
     width: 52
   },
   focusMarkBottomLeft: {
     borderBottomWidth: 3,
     borderColor: colors.primary,
     borderLeftWidth: 3,
-    bottom: 120,
+    bottom: focusBottomInset,
     height: 52,
     left: 20,
     position: 'absolute',
@@ -435,7 +431,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderColor: colors.primary,
     borderRightWidth: 3,
-    bottom: 120,
+    bottom: focusBottomInset,
     height: 52,
     position: 'absolute',
     right: 20,
