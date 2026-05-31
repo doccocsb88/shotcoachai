@@ -86,7 +86,9 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
           setProductsLoaded(true);
           setStoreUnavailableMessage(
             storeProducts.length === 0
-              ? 'No StoreKit products were returned. For local StoreKit purchases, run the app from Xcode with the AIPhotoCoach scheme so ShotCoachProducts.storekit is active.'
+              ? (Platform.OS === 'ios'
+                ? 'No StoreKit products were returned. For local StoreKit purchases, run the app from Xcode with the AIPhotoCoach scheme so ShotCoachProducts.storekit is active.'
+                : 'In-app purchases are not yet available on this platform.')
               : null
           );
         }
@@ -95,7 +97,7 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
         void PurchaseTracking.productsLoadFailed(error);
         if (mounted) {
           setProductsLoaded(true);
-          setStoreUnavailableMessage(error instanceof Error ? error.message : 'Could not load StoreKit products.');
+          setStoreUnavailableMessage(error instanceof Error ? error.message : 'Could not load store products.');
         }
       });
 
@@ -170,7 +172,7 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
         await UserManager.markPremiumActive();
         Alert.alert('Purchases restored', 'Your active ShotCoach Pro purchase is restored.');
       } else {
-        Alert.alert('No purchases found', 'No active ShotCoach Pro purchase was found for this Apple ID.');
+        Alert.alert('No purchases found', 'No active ShotCoach Pro purchase was found for this account.');
       }
     } catch (error) {
       void PurchaseTracking.restoreFailed(error);
@@ -182,6 +184,9 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
 
   return (
     <View style={styles.root}>
+      {Platform.OS === 'android' ? (
+        <StatusBar backgroundColor="transparent" translucent barStyle="light-content" />
+      ) : null}
       <Pressable
         accessibilityLabel="Close store"
         accessibilityRole="button"
@@ -302,9 +307,9 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
         </View>
 
         <Text style={styles.termsText}>
-          Payment will be charged to iTunes Account at purchase confirmation.{'\n\n'}
+          Payment will be charged to your {Platform.OS === 'ios' ? 'iTunes Account' : 'Google Play account'} at purchase confirmation.{'\n\n'}
           Subscription automatically renews within 24-hours prior to the end of the current subscription period.{'\n\n'}
-          Subscription may be managed and auto-renewal may be turned off by going to the Settings application after purchased.{'\n\n'}
+          Subscription may be managed and auto-renewal may be turned off by going to the {Platform.OS === 'ios' ? 'Settings application' : 'Google Play Store'} after purchased.{'\n\n'}
           Any unused portion of a free trial period, if offered, will be forfeited when user purchases a subscription to that publication, where applicable.
         </Text>
       </ScrollView>

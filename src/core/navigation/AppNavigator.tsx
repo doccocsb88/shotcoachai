@@ -206,7 +206,7 @@ export function AppNavigator() {
         visible={legalDocument !== null}
         onClose={() => setLegalDocument(null)}
       />
-      <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall}>
+      <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
         <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
       </Modal>
     </>

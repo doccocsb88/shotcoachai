@@ -18,9 +18,9 @@ import { prepareAdsTrackingForOnboarding } from '../../services/ads/mobileAds';
 
 /** Local onboarding art: page1 = Snap any photo, page2 = 3 smart tips, page3 = Before/after preview. */
 const ONBOARDING_ASSETS = [
-  require('../../../assets/onboarding/page1.png'),
-  require('../../../assets/onboarding/page2.png'),
-  require('../../../assets/onboarding/page3.png')
+  require('../../../assets/onboarding/page1.jpg'),
+  require('../../../assets/onboarding/page2.jpg'),
+  require('../../../assets/onboarding/page3.jpg')
 ] as const;
 
 function imageDisplayHeight(asset: (typeof ONBOARDING_ASSETS)[number], layoutWidth: number): number {

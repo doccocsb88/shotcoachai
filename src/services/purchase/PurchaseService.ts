@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules } from 'react-native';
 
 export type PurchaseProductId =
   | 'co.q7labs.shotcoachai.weekly1'
@@ -50,12 +50,14 @@ type NativePurchaseModule = {
 
 const nativeModule = NativeModules.PurchaseModule as NativePurchaseModule | undefined;
 
+const isAvailable = !!nativeModule;
+
 function requireNativePurchaseModule(): NativePurchaseModule {
-  if (Platform.OS !== 'ios' || !nativeModule) {
-    throw new Error('PurchaseService is only implemented with StoreKit 2 on iOS.');
+  if (!isAvailable) {
+    throw new Error('PurchaseService is not available on this platform.');
   }
 
-  return nativeModule;
+  return nativeModule!;
 }
 
 export const purchaseProductIds: PurchaseProductId[] = [
@@ -65,7 +67,11 @@ export const purchaseProductIds: PurchaseProductId[] = [
 ];
 
 export const PurchaseService = {
+  /** Whether in-app purchases are available on the current platform. */
+  isAvailable,
+
   getProducts(): Promise<PurchaseProduct[]> {
+    if (!isAvailable) return Promise.resolve([]);
     return requireNativePurchaseModule().getProducts();
   },
 
@@ -74,10 +80,12 @@ export const PurchaseService = {
   },
 
   restore(): Promise<RestoreResult> {
+    if (!isAvailable) return Promise.resolve({ status: 'restored' as const, activeEntitlements: [] });
     return requireNativePurchaseModule().restore();
   },
 
   verify(): Promise<VerifyResult> {
+    if (!isAvailable) return Promise.resolve({ isPremium: false, activeEntitlements: [] });
     return requireNativePurchaseModule().verify();
   },
 

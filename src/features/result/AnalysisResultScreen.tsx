@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '../../components/common/Screen';
 import { ScreenNavBar } from '../../components/common/ScreenNavBar';
@@ -100,7 +100,8 @@ export function AnalysisResultScreen({ result, onBack, onOpenPaywall, onSelectSu
 const styles = StyleSheet.create({
   analysisRoot: {
     backgroundColor: colors.background,
-    flex: 1
+    flex: 1,
+    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
   },
   analysisScroll: {
     flex: 1
