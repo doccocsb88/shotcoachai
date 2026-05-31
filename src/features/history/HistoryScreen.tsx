@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Alert, Animated, FlatList, Image, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, FlatList, Image, PanResponder, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
@@ -168,7 +168,7 @@ function SwipeableHistoryRow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 0
+    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
   },
   bodyWrap: {
     flex: 1,

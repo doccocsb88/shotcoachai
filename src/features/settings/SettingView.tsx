@@ -80,7 +80,7 @@ export function SettingView({
   };
 
   return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.settingsRoot}>
         <SafeAreaView style={styles.settingsSafeArea}>
           <ScrollView

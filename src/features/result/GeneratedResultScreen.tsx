@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { BeforeAfterSlider } from '../../components/beforeAfter/BeforeAfterSlider';
 import { ForegroundToast } from '../../components/common/ForegroundToast';
@@ -438,7 +438,8 @@ export function GeneratedResultScreen({
 const styles = StyleSheet.create({
   resultChromeRoot: {
     backgroundColor: colors.background,
-    flex: 1
+    flex: 1,
+    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
   },
   resultHeader: {
     alignItems: 'center',

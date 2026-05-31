@@ -1,4 +1,4 @@
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '../../components/common/Screen';
 import { ScreenNavBar } from '../../components/common/ScreenNavBar';
@@ -50,7 +50,7 @@ export function PoseCollectionScreen({ onBack, onOpenPose }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 0
+    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
   },
   listWrap: {
     flex: 1,

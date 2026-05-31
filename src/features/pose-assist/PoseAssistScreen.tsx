@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '../../components/common/Screen';
 import { ScreenNavBar } from '../../components/common/ScreenNavBar';
@@ -82,7 +82,8 @@ export function PoseAssistScreen({ onBack, onContinue }: { onBack: () => void; o
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1
+    flex: 1,
+    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
   },
   content: {
     flex: 1,

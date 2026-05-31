@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
@@ -51,7 +51,8 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
 
 const styles = StyleSheet.create({
   previewRoot: {
-    flex: 1
+    flex: 1,
+    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
   },
   previewBody: {
     flex: 1,
