@@ -15,7 +15,8 @@ import { PaywallScreen, PaywallType } from '../../features/paywall/PaywallScreen
 import { LegalDocument, SettingView } from '../../features/settings/SettingView';
 import { AppWebView } from '../../components/common/AppWebView';
 import { colors } from '../../constants/theme';
-import { AnalysisResult } from '../../models/analysis';
+import { AnalysisResult, PickedPhoto } from '../../models/analysis';
+import { getPhotoAiTool, PhotoAiTool } from '../../models/photoAiTool';
 import { PoseSeedItem } from '../../features/pose-collection/types';
 import { UserManager } from '../../services/user/UserManager';
 import { trackScreenView } from '../../services/tracking/firebaseTracking';
@@ -35,6 +36,7 @@ export function AppNavigator() {
   const [screen, setScreen] = useState<ScreenName>('home');
   const [selectedPose, setSelectedPose] = useState<PoseSeedItem | null>(null);
   const [resultOpenedFromHistory, setResultOpenedFromHistory] = useState(false);
+  const [canReturnToAnalysis, setCanReturnToAnalysis] = useState(true);
   const [generatedSuggestionIndex, setGeneratedSuggestionIndex] = useState(0);
   const [retakeReferenceUri, setRetakeReferenceUri] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,6 +46,9 @@ export function AppNavigator() {
   const hydrateHistory = useAnalysisStore(state => state.hydrateHistory);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const currentResult = useAnalysisStore(state => state.currentResult);
+  const currentPhoto = useAnalysisStore(state => state.currentPhoto);
+  const selectedPhotoAiTool = useAnalysisStore(state => state.selectedPhotoAiTool);
+  const selectedPhotoAiInstruction = useAnalysisStore(state => state.selectedPhotoAiInstruction);
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   useEffect(() => {
     void hydrateHistory();
@@ -57,6 +62,7 @@ export function AppNavigator() {
   const goHome = useCallback(() => {
     clearCurrent();
     setResultOpenedFromHistory(false);
+    setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
     setRetakeReferenceUri(null);
     setScreen('home');
@@ -65,6 +71,7 @@ export function AppNavigator() {
   const openRetakeCapture = useCallback((referenceUri: string) => {
     clearCurrent();
     setResultOpenedFromHistory(false);
+    setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
     setRetakeReferenceUri(referenceUri);
     setScreen('home');
@@ -76,6 +83,7 @@ export function AppNavigator() {
     }
     setResultOpenedFromHistory(openedFromHistory);
     setGeneratedSuggestionIndex(0);
+    setCanReturnToAnalysis(true);
     setScreen('analysisResult');
   }, [setCurrentResult]);
 
@@ -85,6 +93,7 @@ export function AppNavigator() {
     }
     setGeneratedSuggestionIndex(suggestionIndex);
     setResultOpenedFromHistory(openedFromHistory);
+    setCanReturnToAnalysis(!openedFromHistory);
     setScreen('generatedResult');
   }, [setCurrentResult]);
 
@@ -98,12 +107,14 @@ export function AppNavigator() {
 
   const openPreview = useCallback(() => {
     setResultOpenedFromHistory(false);
+    setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
     setRetakeReferenceUri(null);
     setScreen('preview');
   }, []);
   const openPoseAssist = useCallback(() => {
     setResultOpenedFromHistory(false);
+    setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
     setRetakeReferenceUri(null);
     setScreen('poseAssist');
@@ -111,17 +122,38 @@ export function AppNavigator() {
   const openAnalyzing = useCallback(() => {
     setResultOpenedFromHistory(false);
     setGeneratedSuggestionIndex(0);
+    setCanReturnToAnalysis(true);
     setScreen('analyzing');
   }, []);
   const openHome = useCallback(() => {
     setResultOpenedFromHistory(false);
+    setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
     setRetakeReferenceUri(null);
     setScreen('home');
   }, []);
+  const openSelectedPreviewFlow = useCallback(() => {
+    const tool = getPhotoAiTool(selectedPhotoAiTool);
+    if (tool.id === 'ai_coach') {
+      openAnalyzing();
+      return;
+    }
+
+    if (!currentPhoto) {
+      openHome();
+      return;
+    }
+
+    setCurrentResult(createDirectToolResult(currentPhoto, tool, selectedPhotoAiInstruction));
+    setResultOpenedFromHistory(false);
+    setGeneratedSuggestionIndex(0);
+    setCanReturnToAnalysis(false);
+    setScreen('generatedResult');
+  }, [currentPhoto, openAnalyzing, openHome, selectedPhotoAiInstruction, selectedPhotoAiTool, setCurrentResult]);
   const openHistory = useCallback(() => setScreen('history'), []);
   const openPoseCollection = useCallback(() => {
     setResultOpenedFromHistory(false);
+    setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
     setScreen('poseCollection');
   }, []);
@@ -143,7 +175,7 @@ export function AppNavigator() {
   let content;
 
   if (screen === 'preview') {
-    content = <PhotoPreviewScreen onBack={openHome} onAnalyze={openAnalyzing} />;
+    content = <PhotoPreviewScreen onBack={openHome} onAnalyze={openSelectedPreviewFlow} />;
   } else if (screen === 'poseAssist') {
     content = <PoseAssistScreen onBack={openHome} onContinue={openPreview} />;
   } else if (screen === 'analyzing') {
@@ -166,6 +198,7 @@ export function AppNavigator() {
         onBackToAnalysis={() => setScreen('analysisResult')}
         onRetake={openRetakeCapture}
         openedFromHistory={resultOpenedFromHistory}
+        canReturnToAnalysis={canReturnToAnalysis}
       />
     );
   } else if (screen === 'history') {
@@ -219,3 +252,59 @@ const styles = StyleSheet.create({
     flex: 1
   }
 });
+
+function createDirectToolResult(photo: PickedPhoto, tool: PhotoAiTool, instruction?: string): AnalysisResult {
+  const now = new Date().toISOString();
+  const cleanInstruction = instruction?.trim();
+
+  return {
+    analysisId: `direct:${tool.id}:${Date.now()}`,
+    overallAssessment: tool.detail,
+    originalImageUri: photo.uri,
+    originalImageMimeType: photo.mimeType,
+    createdAt: now,
+    suggestions: [
+      {
+        title: tool.title,
+        concept: tool.detail,
+        composition: 'Apply this edit directly to the selected photo.',
+        camera_angle: 'Preserve the original perspective unless the selected tool requires frame expansion.',
+        changes: [tool.subtitle, tool.promptFocus, cleanInstruction ? `User instruction: ${cleanInstruction}` : ''],
+        image_prompt: buildDirectToolImagePrompt(tool, cleanInstruction)
+      }
+    ]
+  };
+}
+
+function buildDirectToolImagePrompt(tool: PhotoAiTool, instruction?: string): string {
+  return `
+Edit this photo using the selected ShotCoach AI tool: ${tool.title}.
+
+Primary goal:
+${tool.promptFocus}
+
+User-facing intent:
+${tool.detail}
+
+User instruction:
+${instruction && instruction.length > 0 ? instruction : 'No extra instruction. Apply the tool naturally.'}
+
+Output requirements:
+- Produce a realistic, high-quality photo edit from the provided source image.
+- Preserve the same subject identity, face structure, age appearance, body proportions, hairstyle, clothing, and accessories.
+- Preserve natural anatomy, realistic skin texture, and believable lighting.
+- Keep the edit focused on "${tool.title}" and avoid unrelated redesign.
+- Do not add text, logos, watermarks, UI, stickers, or extra people.
+
+Tool-specific constraints:
+${tool.id === 'replace_background' ? '- Replace the background only. Match subject lighting, perspective, edge detail, and color temperature to the new scene.' : ''}
+${tool.id === 'expand_frame' ? '- Extend the frame naturally around the existing image. Match perspective, texture, lighting, and scene continuity.' : ''}
+${tool.id === 'remove_object' ? '- Remove distracting objects when clearly separable and reconstruct the background with matching texture and light.' : ''}
+${tool.id === 'upscale' ? '- Prioritize detail recovery, clarity, low-noise sharpening, and realistic texture preservation without changing the scene.' : ''}
+${tool.id === 'smooth_skin' ? '- Retouch skin naturally. Preserve pores, face shape, eye detail, hair, and realistic skin tone.' : ''}
+${tool.id === 'background_boost' ? '- Improve only the existing background depth, detail, and subject separation. Do not replace the location.' : ''}
+${tool.id === 'light_color' ? '- Correct exposure, shadows, contrast, white balance, and color harmony while preserving the original mood.' : ''}
+${tool.id === 'restore_color' ? '- Restore faded colors and saturation naturally while keeping skin tones realistic.' : ''}
+${tool.id === 'enhance_photo' ? '- Improve clarity, exposure, fine detail, natural polish, and overall photo quality without changing identity or scene.' : ''}
+`.trim();
+}

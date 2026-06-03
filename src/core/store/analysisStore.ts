@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { AnalysisResult, PickedPhoto } from '../../models/analysis';
+import { DEFAULT_PHOTO_AI_TOOL_ID, PhotoAiToolId } from '../../models/photoAiTool';
 import { loadHistory, persistHistory } from '../../services/storage/historyStorage';
 
 export type CameraMode = 'classic' | 'pose_ai';
@@ -14,6 +15,8 @@ interface AnalysisStore {
   historyLoaded: boolean;
   cameraMode: CameraMode;
   poseAiSelectedTemplateId?: string;
+  selectedPhotoAiTool: PhotoAiToolId;
+  selectedPhotoAiInstruction?: string;
 
   setCurrentPhoto: (photo: PickedPhoto) => void;
   setAnalyzing: (value: boolean) => void;
@@ -25,6 +28,8 @@ interface AnalysisStore {
   setError: (message?: string) => void;
   setCameraMode: (mode: CameraMode) => void;
   setPoseAiSelectedTemplateId: (templateId?: string) => void;
+  setSelectedPhotoAiTool: (toolId: PhotoAiToolId) => void;
+  setSelectedPhotoAiInstruction: (instruction?: string) => void;
   clearCurrent: () => void;
 }
 
@@ -33,8 +38,15 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   isAnalyzing: false,
   historyLoaded: false,
   cameraMode: 'classic',
+  selectedPhotoAiTool: DEFAULT_PHOTO_AI_TOOL_ID,
 
-  setCurrentPhoto: photo => set({ currentPhoto: photo, error: undefined }),
+  setCurrentPhoto: photo =>
+    set({
+      currentPhoto: photo,
+      error: undefined,
+      selectedPhotoAiTool: DEFAULT_PHOTO_AI_TOOL_ID,
+      selectedPhotoAiInstruction: undefined
+    }),
   setAnalyzing: value => set({ isAnalyzing: value }),
   setCurrentResult: result => set({ currentResult: result }),
   setRecentResults: results => set({ recentResults: results, historyLoaded: true }),
@@ -57,5 +69,14 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   setError: message => set({ error: message }),
   setCameraMode: mode => set({ cameraMode: mode }),
   setPoseAiSelectedTemplateId: templateId => set({ poseAiSelectedTemplateId: templateId }),
-  clearCurrent: () => set({ currentPhoto: undefined, currentResult: undefined, error: undefined })
+  setSelectedPhotoAiTool: toolId => set({ selectedPhotoAiTool: toolId, selectedPhotoAiInstruction: undefined }),
+  setSelectedPhotoAiInstruction: instruction => set({ selectedPhotoAiInstruction: instruction }),
+  clearCurrent: () =>
+    set({
+      currentPhoto: undefined,
+      currentResult: undefined,
+      error: undefined,
+      selectedPhotoAiTool: DEFAULT_PHOTO_AI_TOOL_ID,
+      selectedPhotoAiInstruction: undefined
+    })
 }));

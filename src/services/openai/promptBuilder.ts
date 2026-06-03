@@ -1,3 +1,5 @@
+import { getPhotoAiTool, PhotoAiToolId } from '../../models/photoAiTool';
+
 export const buildVisionAnalysisPrompt = () => `
 You are a professional photography director and visual analysis engine.
 
@@ -56,10 +58,34 @@ Return STRICT JSON only:
 }
 `;
 
-export const buildCreativeDirectionPrompt = () => `
+function buildToolModeInstructions(toolId: PhotoAiToolId): string {
+  const tool = getPhotoAiTool(toolId);
+
+  if (tool.id === 'ai_coach') {
+    return `
+Selected tool: AI Coach.
+Use the default conservative ShotCoach flow.
+`;
+  }
+
+  return `
+Selected tool: ${tool.title}.
+User intent: ${tool.promptFocus}
+
+Tool-specific rules:
+- All 3 directions must focus on the selected tool, not generic pose coaching.
+- Preserve the original person's identity, face, age appearance, body proportions, hairstyle, and clothing unless the tool explicitly concerns background or frame expansion.
+- Keep results realistic and suitable for a direct image-edit workflow.
+- If the tool is advanced, describe the intended edit clearly enough for a later generation prompt without asking the user for extra information.
+`;
+}
+
+export const buildCreativeDirectionPrompt = (toolId: PhotoAiToolId = 'ai_coach') => `
 You are a realistic photography reference director.
 
 Create exactly 3 visually different improvement directions from the provided PhotoAnalysis JSON.
+
+${buildToolModeInstructions(toolId)}
 
 Focus on:
 - composition
@@ -100,10 +126,12 @@ Return this schema:
 }
 `;
 
-export const buildPromptComposerPrompt = () => `
+export const buildPromptComposerPrompt = (toolId: PhotoAiToolId = 'ai_coach') => `
 You are an expert image generation prompt engineer.
 
 Convert each creative direction into a production-ready Reference Mode image-edit prompt.
+
+${buildToolModeInstructions(toolId)}
 
 Include:
 - pose
@@ -122,9 +150,10 @@ Priority order:
 Rules:
 - The prompt must explicitly preserve the original person's exact facial structure, eye shape, nose shape, jawline, age appearance, skin tone identity, hairstyle, clothing, accessories, pose structure, and original environment/background.
 - The prompt must explicitly preserve same lighting condition, time of day, weather, white balance, color temperature, and scene mood.
-- The prompt must not ask for a new scene, new person, new outfit, or new background.
+- The prompt must not ask for a new scene, new person, new outfit, or new background unless the selected tool is Replace Background or Expand Frame.
 - The prompt must not use luxury, cinematic, editorial, dramatic, beauty, perfect skin, influencer, fantasy, golden hour, orange/teal, or heavy color grading language unless it says to avoid those changes.
 - Include a negative prompt that avoids extra fingers, distorted anatomy, plastic skin, changed identity, changed clothing, replaced background, face beautification, relighting, weather changes, time-of-day changes, fantasy atmosphere, and cinematic recoloring.
+- For Replace Background or Expand Frame, the negative prompt should avoid changed subject identity, changed outfit, bad cutouts, mismatched lighting, broken perspective, and artificial compositing instead of forbidding the requested background/frame change.
 - Return STRICT JSON only.
 
 Return this schema:

@@ -5,6 +5,7 @@ import {
   buildVisionAnalysisPrompt
 } from './promptBuilder';
 import { logOpenAIAnalysisRequest, logOpenAIAnalysisResponse } from './debugOpenAIFlow';
+import { PhotoAiToolId } from '../../models/photoAiTool';
 
 const OPENAI_URL = 'https://api.openai.com/v1/responses';
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
@@ -33,11 +34,12 @@ export async function createCreativeDirectionsWithOpenAI(
   photoAnalysisJson: unknown,
   imageBase64: string,
   mimeType: string,
+  toolId: PhotoAiToolId = 'ai_coach',
   signal?: AbortSignal
 ): Promise<unknown> {
   return runOpenAIJsonStage({
     stage: 'creative-directions',
-    systemPrompt: buildCreativeDirectionPrompt(),
+    systemPrompt: buildCreativeDirectionPrompt(toolId),
     userText: `Create creative directions for this PhotoAnalysis JSON:\n${JSON.stringify(photoAnalysisJson)}`,
     imageBase64,
     mimeType,
@@ -48,11 +50,12 @@ export async function createCreativeDirectionsWithOpenAI(
 export async function composeGenerationRecipesWithOpenAI(
   photoAnalysisJson: unknown,
   creativeDirectionsJson: unknown,
+  toolId: PhotoAiToolId = 'ai_coach',
   signal?: AbortSignal
 ): Promise<unknown> {
   return runOpenAIJsonStage({
     stage: 'prompt-composer',
-    systemPrompt: buildPromptComposerPrompt(),
+    systemPrompt: buildPromptComposerPrompt(toolId),
     userText:
       `Compose generation recipes for this PhotoAnalysis JSON:\n${JSON.stringify(photoAnalysisJson)}\n\n` +
       `CreativeDirection JSON:\n${JSON.stringify(creativeDirectionsJson)}`,

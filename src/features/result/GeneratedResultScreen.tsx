@@ -64,6 +64,7 @@ interface Props {
   onBackToAnalysis: () => void;
   onRetake: (referenceUri: string) => void;
   openedFromHistory?: boolean;
+  canReturnToAnalysis?: boolean;
 }
 
 export function GeneratedResultScreen({
@@ -72,7 +73,8 @@ export function GeneratedResultScreen({
   onBack,
   onBackToAnalysis,
   onRetake,
-  openedFromHistory = false
+  openedFromHistory = false,
+  canReturnToAnalysis = true
 }: Props) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImageUri, setGeneratedImageUri] = useState<string | null>(null);
@@ -82,6 +84,7 @@ export function GeneratedResultScreen({
 
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
+  const isDirectToolResult = result.analysisId.startsWith('direct:');
 
   useEffect(() => {
     setGenerationError(null);
@@ -119,25 +122,27 @@ export function GeneratedResultScreen({
         'The AI edit is taking too long. Please check your connection and try again.'
       );
       let qualityEvaluation: ImageQualityEvaluation | undefined;
-      try {
-        qualityEvaluation = await withTimeout(
-          evaluateEditedImageQuality({
-            originalImageUri: result.originalImageUri,
-            generatedImageUri: uri,
-            originalImageMimeType: result.originalImageMimeType,
-            selectedDirection: {
-              suggestion: selected,
-              recipe: result.generationRecipes?.[suggestionIndex]
-            }
-          }),
-          QUALITY_EVALUATION_TIMEOUT_MS,
-          'Quality evaluation timed out.'
-        );
-      } catch {
-        qualityEvaluation = undefined;
+      if (!isDirectToolResult) {
+        try {
+          qualityEvaluation = await withTimeout(
+            evaluateEditedImageQuality({
+              originalImageUri: result.originalImageUri,
+              generatedImageUri: uri,
+              originalImageMimeType: result.originalImageMimeType,
+              selectedDirection: {
+                suggestion: selected,
+                recipe: result.generationRecipes?.[suggestionIndex]
+              }
+            }),
+            QUALITY_EVALUATION_TIMEOUT_MS,
+            'Quality evaluation timed out.'
+          );
+        } catch {
+          qualityEvaluation = undefined;
+        }
       }
 
-      if (qualityEvaluation?.retry_required) {
+      if (!isDirectToolResult && qualityEvaluation?.retry_required) {
         const retryPrompt = buildIdentityLightingRetryPrompt(selected.image_prompt, qualityEvaluation);
         uri = await withTimeout(
           generateEditedImage(
@@ -242,7 +247,7 @@ export function GeneratedResultScreen({
   const headerActionsDisabled = isGenerating;
 
   const returnToSuggestionPicker = () => {
-    if (openedFromHistory) {
+    if (openedFromHistory || !canReturnToAnalysis) {
       onBack();
       return;
     }
@@ -269,6 +274,10 @@ export function GeneratedResultScreen({
   const closeGenerationError = () => {
     setGenerationError(null);
     setRetrySuggestionIndex(null);
+    if (!canReturnToAnalysis) {
+      onBack();
+      return;
+    }
     onBackToAnalysis();
   };
 
@@ -277,7 +286,7 @@ export function GeneratedResultScreen({
       <View style={styles.resultChromeRoot}>
           <View style={styles.resultHeader}>
             <Pressable
-              accessibilityLabel={openedFromHistory ? 'Back to history' : 'Back to creative directions'}
+              accessibilityLabel={openedFromHistory || !canReturnToAnalysis ? 'Back' : 'Back to creative directions'}
               accessibilityRole="button"
               disabled={headerActionsDisabled}
               onPress={returnToSuggestionPicker}

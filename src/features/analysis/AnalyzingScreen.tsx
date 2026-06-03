@@ -6,6 +6,7 @@ import { ForegroundToast } from '../../components/common/ForegroundToast';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius, typography } from '../../constants/theme';
+import { getPhotoAiTool } from '../../models/photoAiTool';
 import { useAnalyzePhoto } from './useAnalyzePhoto';
 
 interface Props {
@@ -30,12 +31,14 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
   const error = useAnalysisStore(state => state.error);
   const setError = useAnalysisStore(state => state.setError);
+  const selectedToolId = useAnalysisStore(state => state.selectedPhotoAiTool);
   const { analyze } = useAnalyzePhoto();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const [step, setStep] = useState(0);
   const [attempt, setAttempt] = useState(0);
 
   const status = useMemo(() => statuses[Math.min(step, statuses.length - 1)], [step]);
+  const selectedTool = getPhotoAiTool(selectedToolId);
   const previewHeight = Math.round(windowHeight * 0.5);
   const previewWidth = Math.min(windowWidth - 48, Math.round(previewHeight * 0.78));
 
@@ -98,7 +101,7 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
         ) : (
           <>
             <ActivityIndicator color={colors.primary} size="large" />
-            <Text style={styles.title}>Analyzing photo</Text>
+            <Text style={styles.title}>Running {selectedTool.title}</Text>
             <Text style={styles.subtitle}>{status}</Text>
             <View style={styles.toastDock}>
               <ForegroundToast />

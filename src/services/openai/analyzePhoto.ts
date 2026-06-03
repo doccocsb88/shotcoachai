@@ -1,4 +1,5 @@
 import { AnalysisResult } from '../../models/analysis';
+import { PhotoAiToolId } from '../../models/photoAiTool';
 import { withTimeout } from '../../utils/async';
 import { fileToBase64 } from '../image/fileToBase64';
 import { persistImageFile } from '../image/persistentImage';
@@ -15,7 +16,11 @@ import { analyzePhotoWithTestingMockupApi } from './testingMockupApi';
 const ANALYSIS_TIMEOUT_MS = 90000;
 const LOCAL_STEP_TIMEOUT_MS = 20000;
 
-export async function analyzePhoto(imageUri: string, mimeType: string): Promise<AnalysisResult> {
+export async function analyzePhoto(
+  imageUri: string,
+  mimeType: string,
+  toolId: PhotoAiToolId = 'ai_coach'
+): Promise<AnalysisResult> {
   if (shouldUseMockupApi() || !hasOpenAIKey()) {
     const persistentOriginalUri = await withTimeout(
       persistImageFile(imageUri, 'original-photo'),
@@ -57,6 +62,7 @@ export async function analyzePhoto(imageUri: string, mimeType: string): Promise<
         photoAnalysis,
         imageBase64,
         optimizedUri.mimeType,
+        toolId,
         analysisController.signal
       ),
       ANALYSIS_TIMEOUT_MS,
@@ -65,7 +71,7 @@ export async function analyzePhoto(imageUri: string, mimeType: string): Promise<
     const directionsPayload = parseJsonResponse(directionsRaw);
 
     const recipesRaw = await withTimeout(
-      composeGenerationRecipesWithOpenAI(photoAnalysis, directionsPayload, analysisController.signal),
+      composeGenerationRecipesWithOpenAI(photoAnalysis, directionsPayload, toolId, analysisController.signal),
       ANALYSIS_TIMEOUT_MS,
       'OpenAI prompt composer timeout'
     );

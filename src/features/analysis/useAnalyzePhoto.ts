@@ -8,12 +8,13 @@ export function useAnalyzePhoto() {
   const setAnalyzing = useAnalysisStore(state => state.setAnalyzing);
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const setError = useAnalysisStore(state => state.setError);
+  const selectedPhotoAiTool = useAnalysisStore(state => state.selectedPhotoAiTool);
 
   const analyze = useCallback(async (imageUri: string, mimeType: string) => {
     try {
       setError(undefined);
       setAnalyzing(true);
-      const parsed = await runAnalyzePhoto(imageUri, mimeType);
+      const parsed = await runAnalyzePhoto(imageUri, mimeType, selectedPhotoAiTool);
       setCurrentResult(parsed);
       return parsed;
     } catch (error) {
@@ -22,7 +23,7 @@ export function useAnalyzePhoto() {
     } finally {
       setAnalyzing(false);
     }
-  }, [setAnalyzing, setCurrentResult, setError]);
+  }, [selectedPhotoAiTool, setAnalyzing, setCurrentResult, setError]);
 
   return { analyze };
 }
