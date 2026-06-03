@@ -1,7 +1,8 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Image, Platform, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, AppState, Image, Linking, Platform, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
@@ -40,7 +41,7 @@ export function HomeScreen({
   const setCurrentPhoto = useAnalysisStore(state => state.setCurrentPhoto);
   const cameraMode = useAnalysisStore(state => state.cameraMode);
   const setPoseAiSelectedTemplateId = useAnalysisStore(state => state.setPoseAiSelectedTemplateId);
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [cameraPermission, requestCameraPermission, getCameraPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
   const referenceWidth = Math.round((width * 2) / 5);
@@ -56,6 +57,24 @@ export function HomeScreen({
       void requestCameraPermission();
     }
   }, [cameraPermission, requestCameraPermission]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        void getCameraPermission();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [getCameraPermission]);
+
+  const openCameraSettings = async () => {
+    try {
+      await Linking.openSettings();
+    } catch {
+      Alert.alert('Settings unavailable', 'Please open Settings and allow camera access for ShotCoach AI.');
+    }
+  };
 
   const choosePhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -85,7 +104,10 @@ export function HomeScreen({
       ? cameraPermission
       : await requestCameraPermission();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow camera access to take a photo.');
+      Alert.alert('Permission needed', 'Please allow camera access in Settings to take a photo.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: openCameraSettings }
+      ]);
       return;
     }
 
@@ -174,14 +196,25 @@ export function HomeScreen({
 
     if (!cameraPermission.granted) {
       return (
-        <Pressable
-          accessibilityLabel="Allow camera access"
-          accessibilityRole="button"
-          onPress={requestCameraPermission}
-          style={styles.cameraFallback}
-        >
-          <Text style={styles.cameraFallbackText}>Tap to allow camera</Text>
-        </Pressable>
+        <View style={styles.cameraFallback}>
+          <View style={styles.permissionCard}>
+            <View style={styles.permissionIconWrap}>
+              <CameraPermissionIcon />
+            </View>
+            <Text style={styles.permissionTitle}>Camera Permission Required</Text>
+            <Text style={styles.permissionSubtitle}>
+              Allow camera access to capture a photo and start your AI pose analysis.
+            </Text>
+            <Pressable
+              accessibilityLabel="Open settings to allow camera access"
+              accessibilityRole="button"
+              onPress={openCameraSettings}
+              style={({ pressed }) => [styles.permissionButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.permissionButtonText}>Open Settings</Text>
+            </Pressable>
+          </View>
+        </View>
       );
     }
 
@@ -264,6 +297,45 @@ export function HomeScreen({
   );
 }
 
+function CameraPermissionIcon() {
+  const stroke = colors.primary;
+
+  return (
+    <Svg height={34} viewBox="0 0 24 24" width={34}>
+      <Path
+        d="M4 8.5h3.2L8.8 6h6.4l1.6 2.5H20a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7.5a2 2 0 0 1 2-2Z"
+        fill="none"
+        stroke={stroke}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+      />
+      <Path
+        d="M12 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"
+        fill="none"
+        stroke={stroke}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+      />
+      <Path
+        d="M18 5v4"
+        fill="none"
+        stroke={colors.danger}
+        strokeLinecap="round"
+        strokeWidth={2}
+      />
+      <Path
+        d="M18 12h.01"
+        fill="none"
+        stroke={colors.danger}
+        strokeLinecap="round"
+        strokeWidth={3}
+      />
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
   root: {
     backgroundColor: colors.background,
@@ -289,6 +361,51 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontSize: 15,
     fontWeight: '800'
+  },
+  permissionCard: {
+    alignItems: 'center',
+    paddingHorizontal: 34,
+    width: '100%'
+  },
+  permissionIconWrap: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: 68,
+    justifyContent: 'center',
+    marginBottom: 18,
+    width: 68
+  },
+  permissionTitle: {
+    color: colors.white,
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 8,
+    textAlign: 'center'
+  },
+  permissionSubtitle: {
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontSize: 15,
+    lineHeight: 22,
+    maxWidth: 300,
+    textAlign: 'center'
+  },
+  permissionButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    justifyContent: 'center',
+    marginTop: 22,
+    minHeight: 52,
+    paddingHorizontal: 24,
+    ...shadows.soft
+  },
+  permissionButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900'
   },
   navBar: {
     alignItems: 'center',
