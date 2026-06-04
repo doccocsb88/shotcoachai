@@ -29,6 +29,7 @@ interface AnalysisStore {
   setCameraMode: (mode: CameraMode) => void;
   setPoseAiSelectedTemplateId: (templateId?: string) => void;
   setSelectedPhotoAiTool: (toolId: PhotoAiToolId) => void;
+  setSelectedPhotoAiEdit: (toolId: PhotoAiToolId, instruction?: string) => void;
   setSelectedPhotoAiInstruction: (instruction?: string) => void;
   clearCurrent: () => void;
 }
@@ -70,6 +71,8 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   setCameraMode: mode => set({ cameraMode: mode }),
   setPoseAiSelectedTemplateId: templateId => set({ poseAiSelectedTemplateId: templateId }),
   setSelectedPhotoAiTool: toolId => set({ selectedPhotoAiTool: toolId, selectedPhotoAiInstruction: undefined }),
+  setSelectedPhotoAiEdit: (toolId, instruction) =>
+    set({ selectedPhotoAiTool: toolId, selectedPhotoAiInstruction: instruction }),
   setSelectedPhotoAiInstruction: instruction => set({ selectedPhotoAiInstruction: instruction }),
   clearCurrent: () =>
     set({

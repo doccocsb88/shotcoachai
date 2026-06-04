@@ -65,6 +65,7 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
   const selectedToolId = useAnalysisStore(state => state.selectedPhotoAiTool);
   const setSelectedTool = useAnalysisStore(state => state.setSelectedPhotoAiTool);
+  const setSelectedEdit = useAnalysisStore(state => state.setSelectedPhotoAiEdit);
   const setSelectedInstruction = useAnalysisStore(state => state.setSelectedPhotoAiInstruction);
   const { width } = useWindowDimensions();
   const imageWidth = Math.min(width - 40, 440);
@@ -156,8 +157,7 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
     const cleanInstruction = rawInstruction && rawInstruction !== selectedQuickSuggestion
       ? rawInstruction
       : suggestionInstruction || rawInstruction || selectedTool.detail;
-    setSelectedTool(selectedTool.id);
-    setSelectedInstruction(cleanInstruction);
+    setSelectedEdit(selectedTool.id, cleanInstruction);
     void runWithConsent();
   };
 
