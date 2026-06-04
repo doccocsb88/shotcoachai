@@ -37,6 +37,7 @@ const directTools = PHOTO_AI_TOOLS.filter(tool => tool.id !== 'ai_coach');
 const editToolIconSources: Partial<Record<PhotoAiToolId, ImageSourcePropType>> = {
   ai_coach: require('../../../assets/icons/ai-edit-tools/ai-coach-teal.png'),
   enhance_photo: require('../../../assets/icons/ai-edit-tools/enhance-photo.png'),
+  better_composition: require('../../../assets/icons/ai-edit-tools/better-composition.png'),
   light_color: require('../../../assets/icons/ai-edit-tools/light-color.png'),
   restore_color: require('../../../assets/icons/ai-edit-tools/restore-color.png'),
   upscale: require('../../../assets/icons/ai-edit-tools/upscale.png'),
