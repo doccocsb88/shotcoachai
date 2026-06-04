@@ -16,16 +16,14 @@ import {
   AnalysisResult,
   createGeneratedHistoryResult,
   getStoredGenerationUri,
-  ImageQualityEvaluation,
   mergeSuggestionGeneration
 } from '../../models/analysis';
 import { PHOTO_AI_TOOLS, PhotoAiToolId } from '../../models/photoAiTool';
-import { evaluateEditedImageQuality, generateEditedImage } from '../../services/openai/generateImage';
+import { generateEditedImage } from '../../services/openai/generateImage';
 import { saveImageToLibrary, shareImage } from '../../services/share/shareGuide';
 import { useAnalysisStore } from '../../core/store/analysisStore';
 
 const IMAGE_GENERATION_TIMEOUT_MS = 90_000;
-const QUALITY_EVALUATION_TIMEOUT_MS = 20_000;
 const GENERATE_EDIT_ERROR_MESSAGE = 'We could not create your AI edit right now. Please check your connection and try again.';
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
@@ -39,23 +37,6 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
       clearTimeout(timeoutId);
     }
   });
-}
-
-function buildIdentityLightingRetryPrompt(prompt: string, evaluation?: ImageQualityEvaluation): string {
-  const reason = evaluation?.retry_reason?.trim();
-  return `
-${prompt}
-
-Retry correction:
-The previous generation did not preserve identity, lighting, or realism strongly enough${reason ? `: ${reason}` : '.'}
-
-Rewrite the edit with MUCH STRONGER constraints:
-- Preserve exact face shape, eye shape, nose shape, jawline, age appearance, skin tone identity, hairstyle, clothing, body shape, and accessories.
-- Preserve the same location, background, lighting condition, time of day, weather, white balance, color temperature, and scene mood.
-- Reduce edit strength.
-- Remove beauty, influencer, cinematic, dramatic, fantasy, golden hour, and heavy color grading changes.
-- Improve only pose, framing, crop, camera angle feel, and natural subject separation.
-`.trim();
 }
 
 function getDirectToolId(analysisId: string): PhotoAiToolId | undefined {
@@ -120,7 +101,7 @@ export function GeneratedResultScreen({
     try {
       setGeneratedImageUri(null);
       setIsGenerating(true);
-      let uri = await withTimeout(
+      const uri = await withTimeout(
         generateEditedImage(
           selected.image_prompt,
           result.originalImageUri,
@@ -130,63 +111,11 @@ export function GeneratedResultScreen({
         IMAGE_GENERATION_TIMEOUT_MS,
         'The AI edit is taking too long. Please check your connection and try again.'
       );
-      let qualityEvaluation: ImageQualityEvaluation | undefined;
-      if (!isDirectToolResult) {
-        try {
-          qualityEvaluation = await withTimeout(
-            evaluateEditedImageQuality({
-              originalImageUri: result.originalImageUri,
-              generatedImageUri: uri,
-              originalImageMimeType: result.originalImageMimeType,
-              selectedDirection: {
-                suggestion: selected,
-                recipe: result.generationRecipes?.[suggestionIndex]
-              }
-            }),
-            QUALITY_EVALUATION_TIMEOUT_MS,
-            'Quality evaluation timed out.'
-          );
-        } catch {
-          qualityEvaluation = undefined;
-        }
-      }
-
-      if (!isDirectToolResult && qualityEvaluation?.retry_required) {
-        const retryPrompt = buildIdentityLightingRetryPrompt(selected.image_prompt, qualityEvaluation);
-        uri = await withTimeout(
-          generateEditedImage(
-            retryPrompt,
-            result.originalImageUri,
-            result.originalImageMimeType
-          ),
-          IMAGE_GENERATION_TIMEOUT_MS,
-          'The AI edit is taking too long. Please check your connection and try again.'
-        );
-
-        try {
-          qualityEvaluation = await withTimeout(
-            evaluateEditedImageQuality({
-              originalImageUri: result.originalImageUri,
-              generatedImageUri: uri,
-              originalImageMimeType: result.originalImageMimeType,
-              selectedDirection: {
-                suggestion: selected,
-                recipe: result.generationRecipes?.[suggestionIndex],
-                retry: 'identity_lighting_reference_mode'
-              }
-            }),
-            QUALITY_EVALUATION_TIMEOUT_MS,
-            'Quality evaluation timed out.'
-          );
-        } catch {
-          qualityEvaluation = undefined;
-        }
-      }
 
       setGeneratedImageUri(uri);
 
-      const updatedResult = mergeSuggestionGeneration(result, suggestionIndex, uri, qualityEvaluation);
-      const historyResult = createGeneratedHistoryResult(updatedResult, suggestionIndex, uri, qualityEvaluation);
+      const updatedResult = mergeSuggestionGeneration(result, suggestionIndex, uri);
+      const historyResult = createGeneratedHistoryResult(updatedResult, suggestionIndex, uri);
       setCurrentResult(updatedResult);
       await addRecentResult(historyResult);
     } catch (error) {
