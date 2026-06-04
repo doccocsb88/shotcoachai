@@ -15,7 +15,7 @@ import {
   type ImageSourcePropType,
   useWindowDimensions
 } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
@@ -35,7 +35,7 @@ type PreviewStep = 'flows' | 'instructions';
 const directTools = PHOTO_AI_TOOLS.filter(tool => tool.id !== 'ai_coach');
 
 const editToolIconSources: Partial<Record<PhotoAiToolId, ImageSourcePropType>> = {
-  ai_coach: require('../../../assets/icons/ai-edit-tools/ai-coach.png'),
+  ai_coach: require('../../../assets/icons/ai-edit-tools/ai-coach-teal.png'),
   enhance_photo: require('../../../assets/icons/ai-edit-tools/enhance-photo.png'),
   light_color: require('../../../assets/icons/ai-edit-tools/light-color.png'),
   restore_color: require('../../../assets/icons/ai-edit-tools/restore-color.png'),
@@ -315,17 +315,32 @@ function FlowCard({
         pressed && styles.pressed
       ]}
     >
+      {isBlue ? <CoachFlowGradient /> : null}
       <View style={styles.flowIconWrap}>
-        <ToolImageIcon id={iconId} size={isBlue ? 40 : 34} fallbackColor={isBlue ? colors.primary : '#7C3AED'} />
+        <ToolImageIcon id={iconId} size={50} fallbackColor={isBlue ? '#27C0B2' : '#7C3AED'} />
       </View>
       <View style={styles.flowTextWrap}>
-        <Text style={[styles.flowTitle, isBlue && styles.flowTitleOnBlue]}>{title}</Text>
-        <Text style={[styles.flowSubtitle, isBlue && styles.flowSubtitleOnBlue]}>{subtitle}</Text>
+        <Text style={styles.flowTitle} numberOfLines={1}>{title}</Text>
+        <Text style={styles.flowSubtitle} numberOfLines={2}>{subtitle}</Text>
       </View>
-      <View style={[styles.flowArrow, isBlue && styles.flowArrowOnBlue]}>
-        <Text style={[styles.flowArrowText, isBlue && styles.flowArrowTextOnBlue]}>›</Text>
+      <View style={styles.flowArrow}>
+        <Text style={styles.flowArrowText}>›</Text>
       </View>
     </Pressable>
+  );
+}
+
+function CoachFlowGradient() {
+  return (
+    <Svg style={StyleSheet.absoluteFill} viewBox="0 0 100 100" preserveAspectRatio="none">
+      <Defs>
+        <LinearGradient id="coachFlowGradient" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#BDF6F3" />
+          <Stop offset="1" stopColor="#DCF8E9" />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100" height="100" fill="url(#coachFlowGradient)" />
+    </Svg>
   );
 }
 
@@ -650,12 +665,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     flexDirection: 'row',
     marginTop: 12,
-    minHeight: 112,
-    padding: 18
+    minHeight: 116,
+    overflow: 'hidden',
+    paddingLeft: 16,
+    paddingRight: 10,
+    paddingVertical: 14
   },
   flowCardBlue: {
-    backgroundColor: '#155DFF',
-    ...shadows.button
+    backgroundColor: '#D9F8EC',
+    ...shadows.soft
   },
   flowCardPurple: {
     backgroundColor: colors.surface,
@@ -666,54 +684,45 @@ const styles = StyleSheet.create({
   flowIconWrap: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: radius.md,
-    height: 50,
+    borderRadius: 18,
+    height: 60,
     justifyContent: 'center',
     marginRight: 12,
-    width: 50
+    width: 60,
+    zIndex: 1
   },
   flowTextWrap: {
-    flex: 1
+    flex: 1,
+    zIndex: 1
   },
   flowTitle: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '900',
-    marginBottom: 6
-  },
-  flowTitleOnBlue: {
-    color: colors.white
+    marginBottom: 5
   },
   flowSubtitle: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
-    lineHeight: 19
-  },
-  flowSubtitleOnBlue: {
-    color: 'rgba(255, 255, 255, 0.84)'
+    lineHeight: 17
   },
   flowArrow: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: 'transparent',
     borderRadius: radius.pill,
-    height: 32,
+    height: 36,
     justifyContent: 'center',
-    marginLeft: 10,
-    width: 32
-  },
-  flowArrowOnBlue: {
-    backgroundColor: colors.white
+    marginLeft: 4,
+    width: 24,
+    zIndex: 1
   },
   flowArrowText: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '900',
-    lineHeight: 27,
+    lineHeight: 31,
     marginTop: -2
-  },
-  flowArrowTextOnBlue: {
-    color: colors.primary
   },
   sectionHeader: {
     marginBottom: 14,
