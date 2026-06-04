@@ -28,8 +28,12 @@ function resolveImageEditSize(model: string): string {
   return '1024x1536';
 }
 
-function resolveImageEditQuality(): string {
-  return (process.env.EXPO_PUBLIC_OPENAI_IMAGE_EDIT_QUALITY ?? 'medium').trim();
+function resolveImageEditQuality(editingToolId?: PhotoAiToolId): string {
+  const configuredQuality = process.env.EXPO_PUBLIC_OPENAI_IMAGE_EDIT_QUALITY?.trim();
+  if (configuredQuality) {
+    return configuredQuality;
+  }
+  return editingToolId === 'enhance_photo' ? 'high' : 'medium';
 }
 
 function isDallE2(model: string): boolean {
@@ -75,26 +79,14 @@ function uploadFileNameForMime(mimeType: string): string {
   return 'photo.jpg';
 }
 
-function buildCompositionImageEditPrompt(userPrompt: string): string {
-  return `
-Edit the uploaded photo as a realistic photography reference.
-The uploaded image is the source of truth. This is a composition-only edit.
-
-Requested composition edit:
-${userPrompt}
-
-Composition wrapper:
-- Preserve identity, face, body shape, clothing, accessories, scene, background, lighting, color temperature, and mood.
-- Improve only crop, framing, subject placement, composition balance, negative space, and minor visual distractions.
-- Do not change pose, expression, camera angle, outfit, background, lighting style, time of day, weather, or scene.
-- Do not beautify, retouch, reshape, relight, recolor, apply cinematic grading, or create a studio/fashion/editorial look.
-- Final image must look like the same original photo carefully recomposed, not a new generated scene.
-`.trim();
-}
-
 function buildConservativeImageEditPrompt(userPrompt: string, editingToolId: PhotoAiToolId = 'ai_coach'): string {
-  if (editingToolId === 'better_composition') {
-    return buildCompositionImageEditPrompt(userPrompt);
+  if (
+    editingToolId === 'enhance_photo' ||
+    editingToolId === 'better_composition' ||
+    editingToolId === 'light_color' ||
+    editingToolId === 'smooth_skin'
+  ) {
+    return userPrompt.trim();
   }
 
   return `
@@ -178,7 +170,7 @@ export async function generateEditedImage(
   );
 
   if (isGptImageFamily(model)) {
-    form.append('quality', resolveImageEditQuality());
+    form.append('quality', resolveImageEditQuality(editingToolId));
     form.append('output_format', 'png');
   }
 
@@ -193,7 +185,7 @@ export async function generateEditedImage(
       url: IMAGE_EDITS_URL,
       model,
       size,
-      quality: isGptImageFamily(model) ? resolveImageEditQuality() : undefined,
+      quality: isGptImageFamily(model) ? resolveImageEditQuality(editingToolId) : undefined,
       outputFormat: isGptImageFamily(model) ? 'png' : undefined,
       imageUri: fileUri,
       mimeType,

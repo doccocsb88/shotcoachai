@@ -277,13 +277,230 @@ function createDirectToolResult(photo: PickedPhoto, tool: PhotoAiTool, instructi
 }
 
 function buildDirectToolImagePrompt(tool: PhotoAiTool, instruction?: string): string {
-  return [
-    buildDirectBasePrompt(tool),
-    buildDirectToolPrompt(tool),
-    buildDirectUserPrompt(tool, instruction),
-    buildDirectOutputPrompt(tool)
-  ].join('\n\n').trim();
+  switch (tool.id) {
+    case 'enhance_photo':
+      return PromptBuilder.enhancePhoto(instruction);
+    case 'better_composition':
+      return PromptBuilder.compositionOnly(instruction);
+    case 'light_color':
+      return PromptBuilder.lightColor(instruction);
+    case 'smooth_skin':
+      return PromptBuilder.skinOnly(instruction);
+    default:
+      return PromptBuilder.genericDirectTool(tool, instruction);
+  }
 }
+
+const PromptBuilder = {
+  enhancePhoto(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser request:\n${instruction}\n`
+      : '';
+
+    return `
+Edit the uploaded photo conservatively.
+
+The uploaded image is the source of truth.
+Selected tool: Enhance Photo.
+
+Goal:
+Preserve the exact same photograph while applying only minimal quality improvements.
+${userRequest}
+Preserve exactly:
+- Same person and identity.
+- Same face and facial proportions.
+- Same expression.
+- Same hairstyle.
+- Same body shape.
+- Same clothing and accessories.
+- Same pose.
+- Same framing.
+- Same camera angle.
+- Same background and environment.
+- Same lighting direction.
+- Same weather and time of day.
+- Same white balance and color temperature.
+
+Allowed adjustments:
+- Very minor exposure correction.
+- Very minor shadow recovery.
+- Very minor highlight recovery.
+- Mild noise reduction.
+- Mild image cleanup.
+- Mild overall quality improvement.
+
+Do not:
+- Recompose the image.
+- Change the crop.
+- Change the pose.
+- Change the expression.
+- Change facial features.
+- Add or remove objects.
+- Change lighting style.
+- Change color grading.
+- Change depth of field.
+- Change background.
+- Beautify the subject.
+- Retouch skin.
+- Add cinematic effects.
+
+Important:
+Treat the image as an existing photograph being lightly corrected, not as a scene to be regenerated.
+
+Output:
+Output should appear visually identical to the original image, with only subtle quality improvements.
+`.trim();
+  },
+
+  compositionOnly(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser request:\n${instruction}\n`
+      : '';
+
+    return `
+Edit the uploaded photo as a realistic ShotCoach AI photo edit.
+
+The uploaded image is the source of truth.
+Selected tool: Better Composition.
+This is a composition-only edit.
+
+Goal:
+Improve the photo through better crop, framing, subject placement, composition balance, negative space, and minor visual distraction reduction.
+${userRequest}
+Preserve:
+- The same person, identity, face, body shape, hairstyle, clothing, and accessories.
+- The original location, background, visible objects, lighting, time of day, weather, white balance, color temperature, contrast, and mood.
+- Realistic anatomy, eyes, hands, skin texture, and believable lighting.
+
+Allowed edits:
+- Crop and reframe the image.
+- Improve subject placement, visual balance, negative space, and visual hierarchy.
+- Slightly reduce minor visual distractions only if the scene still looks original.
+- Add subtle subject separation only through realistic local clarity, contrast, or depth.
+
+Do not:
+- Change pose, expression, camera angle, outfit, hairstyle, background, lighting style, time of day, weather, or scene.
+- Beautify, retouch, reshape, relight, recolor, or redesign the face or body.
+- Apply cinematic grading, golden hour conversion, studio lighting, beauty filters, fashion/editorial styling, or a new photoshoot look.
+- Add text, logos, watermarks, UI, stickers, or extra people.
+
+Output requirement:
+The final image must look like the same original photo, carefully cropped and reframed with better subject placement and composition.
+
+It must not look like a new generated scene, a different moment, or a new photo shoot.
+`.trim();
+  },
+
+  lightColor(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser request:\n${instruction}\n`
+      : '';
+
+    return `
+Edit the uploaded photo with realistic light and color correction.
+
+The uploaded image is the source of truth.
+Selected tool: Light & Color.
+
+Goal:
+Improve exposure, tonal balance, white balance, and color accuracy while preserving the same photograph.
+${userRequest}
+Preserve exactly:
+- Same person and identity.
+- Same face and expression.
+- Same hairstyle.
+- Same body shape.
+- Same clothing and accessories.
+- Same pose.
+- Same framing.
+- Same camera angle.
+- Same background and environment.
+- Same scene composition.
+
+Allowed adjustments:
+- Exposure correction.
+- Shadow recovery.
+- Highlight recovery.
+- White balance correction.
+- Natural color balance.
+- Contrast optimization.
+- Subtle vibrance adjustment.
+- Skin tone accuracy improvement.
+
+Do not:
+- Change pose.
+- Change framing.
+- Change crop.
+- Change composition.
+- Change camera angle.
+- Change facial features.
+- Change hairstyle.
+- Change clothing.
+- Change background.
+- Change weather.
+- Add cinematic lighting.
+- Add dramatic relighting.
+- Add artificial bokeh.
+- Add filters.
+- Add beauty retouching.
+
+Important:
+Treat the image as an existing photograph receiving professional color correction and tonal adjustment, not as a scene being regenerated.
+
+Output:
+Output should look like the same photo after careful Lightroom-style light and color adjustment.
+`.trim();
+  },
+
+  skinOnly(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser request:\n${instruction}\n`
+      : '';
+
+    return `
+Edit the uploaded photo as a realistic ShotCoach AI photo edit.
+
+The uploaded image is the source of truth.
+Selected tool: Smooth Skin.
+
+Goal:
+Apply natural professional skin retouching while preserving identity, facial structure, realistic texture, and lighting.
+${userRequest}
+Preserve:
+- The same person, identity, facial structure, expression, hairstyle, clothing, accessories, and body shape.
+- The original lighting, color temperature, white balance, environment, and scene.
+- Realistic anatomy, eyes, lips, eyebrows, eyelashes, and hair detail.
+
+Allowed edits:
+- Reduce minor blemishes, acne, redness, uneven texture, and temporary skin imperfections.
+- Slightly smooth skin texture while maintaining realistic pores and natural detail.
+- Improve overall skin consistency and cleanliness.
+- Apply subtle under-eye refinement if natural and realistic.
+
+Do not:
+- Change facial structure, face shape, nose, jawline, eyes, lips, age appearance, or expression.
+- Create plastic skin, airbrushed skin, porcelain skin, or beauty filter effects.
+- Change skin tone significantly.
+- Apply makeup, glam retouching, influencer styling, fashion magazine retouching, or cosmetic surgery effects.
+- Change hairstyle, clothing, background, lighting, or scene.
+- Add text, logos, watermarks, UI, stickers, or extra people.
+
+Output requirement:
+The result should look like the same original photograph after a professional natural skin retouch.
+
+The person must remain immediately recognizable as the same individual.
+`.trim();
+  },
+
+  genericDirectTool(tool: PhotoAiTool, instruction?: string): string {
+    return [
+      buildDirectBasePrompt(tool),
+      buildDirectToolPrompt(tool),
+      buildDirectUserPrompt(instruction),
+      buildDirectOutputPrompt()
+    ].join('\n\n').trim();
+  }
+};
 
 function buildDirectBasePrompt(tool: PhotoAiTool): string {
   return `
@@ -301,25 +518,11 @@ Base preservation rules:
 }
 
 function buildDirectToolPrompt(tool: PhotoAiTool): string {
-  if (tool.id === 'better_composition') {
-    return `
-Tool goal:
-This is a composition-only edit. Improve framing, crop, subject placement, balance, negative space, and minor visual distractions.
-
-Composition constraints:
-- Preserve the original location, background, objects, lighting, time of day, weather, white balance, color temperature, contrast, and mood.
-- Do not change pose, expression, outfit, background, lighting style, or scene.
-- Do not beautify, retouch, reshape, or redesign the face or body.
-- Use only crop, reframing, composition balance, subtle subject separation, and very minor local cleanup.
-- Avoid cinematic relighting, dramatic grading, golden hour conversion, beauty filters, studio looks, or a new photo shoot.
-`.trim();
-}
-
   const constraints: Partial<Record<PhotoAiTool['id'], string>> = {
     background_boost: 'Improve only the existing background depth, detail, and subject separation. Do not replace the location.',
-    enhance_photo: 'Improve clarity, exposure, fine detail, natural polish, and overall photo quality without changing identity or scene.',
+    enhance_photo: 'Apply only minimal quality correction. Do not change crop, pose, face, skin, background, lighting style, color grading, or depth of field.',
     expand_frame: 'Extend the frame naturally around the existing image. Match perspective, texture, lighting, and scene continuity.',
-    light_color: 'Correct exposure, shadows, contrast, white balance, and color harmony while preserving the original mood.',
+    light_color: 'Correct only light and color. Do not change pose, framing, crop, composition, camera angle, face, clothing, background, weather, lighting style, depth of field, or retouching.',
     remove_object: 'Remove distracting objects when clearly separable and reconstruct the background with matching texture and light.',
     replace_background: 'Replace the background only. Match subject lighting, perspective, edge detail, and color temperature to the new scene.',
     restore_color: 'Restore faded colors and saturation naturally while keeping skin tones realistic.',
@@ -336,25 +539,14 @@ ${constraints[tool.id] ?? tool.detail}
 `.trim();
 }
 
-function buildDirectUserPrompt(tool: PhotoAiTool, instruction?: string): string {
-  const fallback = tool.id === 'better_composition'
-    ? 'No extra instruction. Improve composition conservatively and naturally.'
-    : 'No extra instruction. Apply the tool naturally.';
-
+function buildDirectUserPrompt(instruction?: string): string {
   return `
 User instruction:
-${instruction && instruction.length > 0 ? instruction : fallback}
+${instruction && instruction.length > 0 ? instruction : 'No extra instruction. Apply the tool naturally.'}
 `.trim();
 }
 
-function buildDirectOutputPrompt(tool: PhotoAiTool): string {
-  if (tool.id === 'better_composition') {
-    return `
-Output requirement:
-The final image must look like the same original photo, carefully recomposed by a professional photographer through better crop, framing, and subject placement, not a new generated scene.
-`.trim();
-  }
-
+function buildDirectOutputPrompt(): string {
   return `
 Output requirement:
 Produce a realistic, high-quality photo edit from the provided source image.

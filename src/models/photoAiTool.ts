@@ -51,8 +51,13 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     subtitle: 'Make the photo look professional',
     detail: 'Improve clarity, exposure, detail, and natural polish while preserving identity and the original scene.',
     cta: 'Enhance Photo',
-    promptFocus: 'Create professional, realistic photo enhancement directions: improve sharpness, exposure, detail, and natural quality without changing identity, pose, outfit, or background.',
+    promptFocus: 'Preserve the exact same photograph while applying only minimal quality improvements: very minor exposure, shadow, highlight, noise, cleanup, and overall quality correction without changing crop, pose, face, skin, background, lighting style, color grading, or depth of field.',
     quickSuggestions: ['Professional look', 'Natural detail', 'Sharper photo'],
+    quickSuggestionInstructions: {
+      'Professional look': 'Apply only minimal professional cleanup. Preserve the exact same photograph, crop, identity, pose, background, lighting direction, white balance, and color temperature.',
+      'Natural detail': 'Apply mild overall quality improvement and minor cleanup only. Do not retouch skin, beautify, recompose, recolor, relight, or change depth of field.',
+      'Sharper photo': 'Apply mild noise reduction and very conservative sharpening only. Do not change the person, face, pose, outfit, background, crop, lighting, or color grading.'
+    },
     instructionPlaceholder: 'Describe the style you want, such as natural portrait, product polish, or clearer detail...'
   },
   {
@@ -94,8 +99,13 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     subtitle: 'Balance exposure and tone',
     detail: 'Fix dark areas, contrast, white balance, and color harmony without making the edit look artificial.',
     cta: 'Fix Light & Color',
-    promptFocus: 'Focus on exposure, shadow recovery, contrast, white balance, skin tone accuracy, and subtle color harmony. Preserve the original scene and mood.',
+    promptFocus: 'Improve exposure, tonal balance, white balance, and color accuracy while preserving the same photograph, identity, pose, framing, crop, composition, camera angle, clothing, background, weather, and scene.',
     quickSuggestions: ['Brighten shadows', 'Fix white balance', 'Warmer tone'],
+    quickSuggestionInstructions: {
+      'Brighten shadows': 'Recover shadows naturally while preserving the same photograph, pose, framing, crop, camera angle, background, lighting direction, and color accuracy.',
+      'Fix white balance': 'Correct white balance and natural color balance only. Preserve identity, skin tone accuracy, clothing, background, scene composition, and camera perspective.',
+      'Warmer tone': 'Apply only a subtle natural warmth adjustment. Do not add filters, cinematic lighting, dramatic relighting, artificial bokeh, beauty retouching, or change the scene.'
+    },
     instructionPlaceholder: 'Describe the lighting or color issue you want to fix...'
   },
   {
@@ -179,7 +189,12 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     detail: 'Suggest light, natural, or studio-level skin smoothing while keeping facial details realistic.',
     cta: 'Smooth Skin',
     promptFocus: 'Focus on natural portrait retouching: smooth skin texture gently, reduce minor blemishes, preserve pores, facial structure, identity, hair detail, and realistic skin tone.',
-    quickSuggestions: ['Light touch', 'Natural skin', 'Studio retouch'],
+    quickSuggestions: ['Light Touch', 'Natural Skin', 'Studio Retouch'],
+    quickSuggestionInstructions: {
+      'Light Touch': 'Reduce only minor blemishes. Preserve nearly all skin texture.',
+      'Natural Skin': 'Reduce blemishes. Improve texture consistency. Maintain realistic pores.',
+      'Studio Retouch': 'Apply more noticeable skin refinement. Clean the under-eye area and reduce texture imperfections while preserving identity and realistic pores.'
+    },
     instructionPlaceholder: 'Describe the retouch strength you want...'
   }
 ];
