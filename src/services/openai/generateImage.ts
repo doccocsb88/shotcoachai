@@ -85,6 +85,10 @@ function buildConservativeImageEditPrompt(userPrompt: string, editingToolId: Pho
     editingToolId === 'better_composition' ||
     editingToolId === 'light_color' ||
     editingToolId === 'upscale' ||
+    editingToolId === 'background_boost' ||
+    editingToolId === 'expand_frame' ||
+    editingToolId === 'replace_background' ||
+    editingToolId === 'remove_object' ||
     editingToolId === 'smooth_skin'
   ) {
     return userPrompt.trim();

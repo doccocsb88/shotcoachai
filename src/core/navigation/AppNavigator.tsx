@@ -286,6 +286,14 @@ function buildDirectToolImagePrompt(tool: PhotoAiTool, instruction?: string): st
       return PromptBuilder.lightColor(instruction);
     case 'upscale':
       return PromptBuilder.upscale(instruction);
+    case 'background_boost':
+      return PromptBuilder.backgroundBoost(instruction);
+    case 'expand_frame':
+      return PromptBuilder.expandFrame(instruction);
+    case 'replace_background':
+      return PromptBuilder.replaceBackground(instruction);
+    case 'remove_object':
+      return PromptBuilder.removeObject(instruction);
     case 'smooth_skin':
       return PromptBuilder.skinOnly(instruction);
     default:
@@ -521,41 +529,256 @@ Output should look like the same photo after subtle resolution enhancement and a
 `.trim();
   },
 
+  backgroundBoost(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser request:\n${instruction}\n`
+      : '';
+
+    return `
+Edit the uploaded photo with conservative background enhancement.
+
+The uploaded image is the source of truth.
+Selected tool: Background Boost.
+
+Goal:
+Improve the existing background subtly while preserving the exact same person, scene, composition, lighting, and camera perspective.
+${userRequest}
+Preserve exactly:
+- Same person and identity.
+- Same face and expression.
+- Same hairstyle.
+- Same body shape.
+- Same clothing and accessories.
+- Same pose.
+- Same framing.
+- Same crop.
+- Same camera angle.
+- Same background location.
+- Same background objects.
+- Same lighting direction.
+- Same weather and time of day.
+- Same white balance and color temperature.
+- Same scene mood.
+
+Allowed background-only adjustments:
+- Mild background cleanup.
+- Mild background clarity improvement.
+- Mild background noise reduction.
+- Mild background shadow/highlight balancing.
+- Subtle background color harmony.
+- Subtle subject-background separation.
+- Very subtle depth enhancement only if it already exists in the original photo.
+
+Do not:
+- Replace the background.
+- Change the location.
+- Add new objects.
+- Remove important existing objects.
+- Change architecture, landscape, street, sky, room, train, building, or environment.
+- Change pose.
+- Change framing.
+- Change crop.
+- Change camera angle.
+- Change the subject.
+- Change facial features.
+- Beautify the subject.
+- Add artificial bokeh.
+- Add cinematic lighting.
+- Add dramatic color grading.
+- Make the subject look cut out or pasted onto the background.
+
+Important:
+Treat the image as an existing photograph receiving subtle background cleanup and separation, not as a new generated scene.
+
+Output:
+Output should look like the same photo with a cleaner, more naturally balanced background.
+`.trim();
+  },
+
+  expandFrame(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser request:\n${instruction}\n`
+      : '';
+
+    return `
+Edit the uploaded photo as a realistic outpaint / expand-frame edit.
+
+The uploaded image is the source of truth.
+Selected tool: Expand Frame.
+
+Task:
+Expand the frame naturally around the original photo while preserving the exact same captured moment.
+${userRequest}
+Strict preservation rules:
+- Keep the original image content unchanged as much as possible.
+- Preserve the same person, identity, face, expression, body shape, hairstyle, clothing, accessories, skin tone, and anatomy.
+- Do not change the subject's pose, facial features, outfit, body proportions, or position.
+- Preserve the original location, background style, lighting, time of day, weather, white balance, color temperature, contrast, and scene mood.
+- Match the original perspective, camera lens feel, depth of field, texture, noise, sharpness, and photographic realism.
+
+Expand-frame rules:
+- Only extend the surrounding environment beyond the current image boundaries.
+- Continue existing background elements naturally and consistently.
+- Do not invent a new location, new objects, extra people, text, logos, UI, stickers, fantasy elements, or editorial styling.
+- The expanded areas must look like they were part of the original camera capture.
+
+Allowed edits:
+- Fill missing outer areas realistically.
+- Make very minor edge blending only if needed.
+- Keep the center/original subject and scene visually unchanged.
+
+Not allowed:
+- Do not beautify the face.
+- Do not retouch skin into a beauty-filter look.
+- Do not relight, recolor, recompose, crop, or change the camera angle.
+- Do not create a new photoshoot or a newly generated scene.
+
+Output:
+A realistic high-quality photo where the frame is expanded naturally, while the original photo remains the source of truth.
+
+Final result must look like the same photo with a wider frame, not a different photo.
+`.trim();
+  },
+
+  replaceBackground(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser instruction:\n${instruction}\n`
+      : '\nUser instruction:\nNo extra instruction. Apply the tool naturally.\n';
+
+    return `
+Edit the uploaded photo as a realistic background replacement.
+
+The uploaded image is the source of truth.
+Selected tool: Replace Background.
+
+Task:
+Replace only the background with a realistic, natural new setting while preserving the original subject unchanged.
+
+Strict subject preservation rules:
+- Preserve the exact same person, identity, face, facial structure, expression, age appearance, skin tone identity, hairstyle, hair color, body shape, pose, clothing, accessories, and visible garment details.
+- Preserve realistic anatomy, eyes, hands, hair edges, skin texture, and facial details.
+- Do not beautify, reshape, retouch, stylize, relight, or redesign the subject.
+- Do not change the subject's pose, camera-facing angle, proportions, outfit, hairstyle, or expression.
+
+Background replacement rules:
+- Replace the original background only.
+- Create a realistic natural background that matches the subject's perspective, lens feel, camera height, depth of field, lighting direction, shadow logic, white balance, color temperature, and image grain.
+- Integrate the subject naturally into the new scene with believable edges, contact shadows, ambient light, and depth separation.
+- The new background should feel like a real photograph, not a fantasy scene, studio render, poster, or editorial set.
+
+Allowed edits:
+- Clean subject-background edges if needed.
+- Add realistic depth of field behind the subject if consistent with the original image.
+- Adjust only minimal edge lighting or shadow blending required to make the composite believable.
+
+Not allowed:
+- Do not change the subject.
+- Do not add extra people, text, logos, watermarks, UI, stickers, animals, fantasy objects, or distracting elements.
+- Do not apply cinematic relighting, heavy color grading, beauty filters, makeup, fashion styling, or AI influencer effects.
+- Do not change the subject's skin tone, face, body shape, clothing, or accessories.
+${userRequest}
+Output:
+A realistic high-quality photo edit where only the background is replaced.
+The person must remain immediately recognizable as the same individual.
+
+Final result must look like the same subject naturally photographed in a new realistic background, not a new person or a new photoshoot.
+`.trim();
+  },
+
+  removeObject(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser instruction:\n${instruction}\n`
+      : '\nUser instruction:\nRemove the unwanted object naturally.\n';
+
+    return `
+Edit the uploaded photo as a realistic object removal edit.
+
+The uploaded image is the source of truth.
+
+Selected tool: Remove Object.
+
+Priority order:
+- Preserve the person's identity.
+- Preserve the original environment, lighting, time of day, weather, white balance, color temperature, and scene mood.
+- Remove only the unwanted object.
+- Reconstruct the affected area naturally while maintaining photo realism.
+
+Strict preservation rules:
+- Preserve the exact same person and identity.
+- Do not change facial structure, face shape, eyes, nose, lips, jawline, age appearance, skin tone identity, hairstyle, hair color, body shape, or gender presentation.
+- Preserve the original clothing and accessories, including colors, patterns, jewelry, shoes, and visible garment details.
+- Preserve the original location, background, perspective, composition, camera angle, crop, depth of field, and scene context.
+- Preserve the original lighting condition, weather, time of day, white balance, color temperature, contrast, image grain, and overall mood.
+- Preserve realistic anatomy, hands, eyes, facial details, skin texture, and hair detail.
+- Preserve all important scene elements that are not being removed.
+
+Object removal rules:
+- Remove only the unwanted or distracting object.
+- Reconstruct the removed area using surrounding visual information.
+- Match texture, lighting, perspective, shadows, reflections, blur, noise, and depth of field.
+- Maintain natural continuity with nearby objects and surfaces.
+- If the object overlaps the subject, preserve the subject accurately and reconstruct only the removed object area.
+- If the object cannot be confidently identified, make the smallest reasonable cleanup and keep the image mostly unchanged.
+
+Allowed edits:
+- Remove unwanted objects.
+- Repair background continuity.
+- Reconstruct missing visual information naturally.
+- Apply minimal blending required to make the edit invisible.
+
+Not allowed:
+- Do not modify the person.
+- Do not beautify or redesign the face.
+- Do not alter pose, expression, hairstyle, body shape, clothing, or accessories.
+- Do not change the background, location, lighting, weather, or scene.
+- Do not crop, recompose, relight, recolor, or restyle the image.
+- Do not add new objects, people, animals, text, logos, watermarks, UI elements, stickers, or decorative elements.
+- Do not create a new scene or reinterpret the photograph.
+${userRequest}
+Output requirement:
+Produce a realistic high-quality photo edit from the provided source image.
+
+The final image must look like the original photograph with the unwanted object naturally removed and the surrounding area realistically reconstructed.
+
+The result must remain the same photo, not a new composition, a new scene, or a newly generated image.
+`.trim();
+  },
+
   skinOnly(instruction?: string): string {
     const userRequest = instruction && instruction.length > 0
       ? `\nUser request:\n${instruction}\n`
       : '';
 
     return `
-Edit the uploaded photo as a realistic ShotCoach AI photo edit.
+Edit the uploaded photo as a realistic natural skin retouch.
 
 The uploaded image is the source of truth.
 Selected tool: Smooth Skin.
 
-Goal:
-Apply natural professional skin retouching while preserving identity, facial structure, realistic texture, and lighting.
+Task:
+Improve only temporary skin imperfections while keeping the person, face, lighting, and photo realism unchanged.
 ${userRequest}
-Preserve:
-- The same person, identity, facial structure, expression, hairstyle, clothing, accessories, and body shape.
-- The original lighting, color temperature, white balance, environment, and scene.
-- Realistic anatomy, eyes, lips, eyebrows, eyelashes, and hair detail.
+Strict preservation rules:
+- Preserve the exact same person, identity, facial structure, expression, age appearance, skin tone identity, hairstyle, clothing, accessories, body shape, and background.
+- Preserve the original lighting, white balance, color temperature, contrast, environment, and scene mood.
+- Preserve natural facial details including eyes, eyebrows, eyelashes, lips, teeth, hairline, moles, freckles, pores, and realistic skin texture.
+- Do not change the shape of the face, nose, jawline, cheeks, eyes, lips, forehead, chin, or neck.
 
 Allowed edits:
-- Reduce minor blemishes, acne, redness, uneven texture, and temporary skin imperfections.
-- Slightly smooth skin texture while maintaining realistic pores and natural detail.
-- Improve overall skin consistency and cleanliness.
-- Apply subtle under-eye refinement if natural and realistic.
+- Gently reduce temporary blemishes, acne, redness, small spots, and uneven skin texture.
+- Slightly smooth skin texture while keeping visible pores and natural detail.
+- Subtly refine under-eye shadows only if it still looks natural.
+- Improve skin cleanliness and consistency without changing identity.
 
-Do not:
-- Change facial structure, face shape, nose, jawline, eyes, lips, age appearance, or expression.
-- Create plastic skin, airbrushed skin, porcelain skin, or beauty filter effects.
-- Change skin tone significantly.
-- Apply makeup, glam retouching, influencer styling, fashion magazine retouching, or cosmetic surgery effects.
-- Change hairstyle, clothing, background, lighting, or scene.
-- Add text, logos, watermarks, UI, stickers, or extra people.
+Not allowed:
+- Do not beautify, reshape, slim, age, de-age, or stylize the face.
+- Do not apply makeup, glam retouching, porcelain skin, plastic skin, airbrushed skin, beauty filter effects, or influencer styling.
+- Do not significantly brighten, relight, recolor, or change skin tone.
+- Do not change hairstyle, outfit, background, lighting, camera angle, crop, or scene.
+- Do not add text, logos, watermarks, UI, stickers, or extra people.
 
-Output requirement:
-The result should look like the same original photograph after a professional natural skin retouch.
+Output:
+The result must look like the same original photograph with only a subtle natural skin cleanup.
 
 The person must remain immediately recognizable as the same individual.
 `.trim();
@@ -588,14 +811,14 @@ Base preservation rules:
 
 function buildDirectToolPrompt(tool: PhotoAiTool): string {
   const constraints: Partial<Record<PhotoAiTool['id'], string>> = {
-    background_boost: 'Improve only the existing background depth, detail, and subject separation. Do not replace the location.',
+    background_boost: 'Apply only conservative background cleanup and balance. Do not replace the background, change location, add objects, remove important objects, change crop, pose, camera angle, subject, lighting style, or make the subject look pasted in.',
     enhance_photo: 'Apply only minimal quality correction. Do not change crop, pose, face, skin, background, lighting style, color grading, or depth of field.',
-    expand_frame: 'Extend the frame naturally around the existing image. Match perspective, texture, lighting, and scene continuity.',
+    expand_frame: 'Only extend the surrounding environment beyond the current image boundaries. Keep original content, subject, pose, face, crop center, lighting, perspective, and captured moment unchanged.',
     light_color: 'Correct only light and color. Do not change pose, framing, crop, composition, camera angle, face, clothing, background, weather, lighting style, depth of field, or retouching.',
-    remove_object: 'Remove distracting objects when clearly separable and reconstruct the background with matching texture and light.',
-    replace_background: 'Replace the background only. Match subject lighting, perspective, edge detail, and color temperature to the new scene.',
+    remove_object: 'Remove only the unwanted object and reconstruct the affected area naturally. Do not modify the person, crop, recompose, relight, recolor, change scene, or add new objects.',
+    replace_background: 'Replace only the background. Do not change the subject, face, pose, outfit, skin tone, body shape, hairstyle, expression, or accessories. Composite the same subject into a new realistic background.',
     restore_color: 'Restore faded colors and saturation naturally while keeping skin tones realistic.',
-    smooth_skin: 'Retouch skin naturally. Preserve pores, face shape, eye detail, hair, and realistic skin tone.',
+    smooth_skin: 'Improve only temporary skin imperfections. Do not change facial structure, lighting, skin tone identity, hairstyle, outfit, background, camera angle, crop, or overall scene.',
     upscale: 'Conservatively enhance perceived resolution and clean compression or softness. Do not change crop, pose, composition, face, skin, hair, clothing, background, lighting, color grading, or invent missing facial detail.'
   };
 

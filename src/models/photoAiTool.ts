@@ -142,11 +142,16 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     category: 'background',
     title: 'Background Boost',
     shortTitle: 'Backdrop',
-    subtitle: 'Improve scenery and depth',
-    detail: 'Make the existing background cleaner, deeper, and more attractive while keeping the subject unchanged.',
+    subtitle: 'Clean up background balance',
+    detail: 'Subtly clean and balance the existing background while preserving the same person, scene, composition, lighting, and camera perspective.',
     cta: 'Boost Background',
-    promptFocus: 'Improve the existing background only: increase depth, environmental detail, and natural separation. Do not replace the location or change the subject.',
-    quickSuggestions: ['More depth', 'Cleaner background', 'Better scenery'],
+    promptFocus: 'Improve the existing background subtly with mild cleanup, clarity, noise reduction, shadow/highlight balance, color harmony, and subject-background separation. Do not replace the background, change location, add objects, remove important objects, change crop, pose, camera angle, subject, lighting, weather, or scene mood.',
+    quickSuggestions: ['Cleaner background', 'Background balance', 'Subtle separation'],
+    quickSuggestionInstructions: {
+      'Cleaner background': 'Apply mild background cleanup only. Preserve the same background location, objects, scene, crop, camera angle, subject, lighting direction, weather, and color temperature.',
+      'Background balance': 'Balance background shadows, highlights, noise, and color harmony subtly. Do not replace the background, add objects, remove important objects, or change the environment.',
+      'Subtle separation': 'Add only subtle subject-background separation that already fits the original photo. Do not add artificial bokeh, cinematic lighting, dramatic grading, or make the subject look cut out.'
+    },
     instructionPlaceholder: 'Describe how the existing background should be improved...'
   },
   {
@@ -155,10 +160,15 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     title: 'Replace Background',
     shortTitle: 'Replace',
     subtitle: 'Move subject into a new scene',
-    detail: 'Create a realistic new background concept while preserving the subject, face, outfit, and pose.',
+    detail: 'Replace only the background with a realistic new setting while preserving the original subject unchanged.',
     cta: 'Replace Background',
-    promptFocus: 'Replace the background with a realistic, natural new setting while preserving the exact subject identity, face, outfit, pose, lighting integration, and perspective.',
+    promptFocus: 'Replace only the background with a realistic natural new setting. Preserve the exact same subject, identity, face, facial structure, expression, skin tone identity, hairstyle, body shape, pose, clothing, accessories, hair edges, and realistic anatomy.',
     quickSuggestions: ['Studio background', 'Beach sunset', 'City street'],
+    quickSuggestionInstructions: {
+      'Studio background': 'Replace only the background with a realistic simple studio setting. Preserve the same subject, face, pose, outfit, proportions, skin tone, hair, lighting logic, and edge realism.',
+      'Beach sunset': 'Replace only the background with a realistic beach sunset scene. Keep the subject unchanged and match perspective, depth of field, shadow logic, white balance, and image grain naturally.',
+      'City street': 'Replace only the background with a realistic city street setting. Do not change the subject, add extra people, apply cinematic relighting, heavy grading, beauty filters, or AI influencer styling.'
+    },
     instructionPlaceholder: 'Describe the new background you want...'
   },
   {
@@ -167,10 +177,17 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     title: 'Remove Object',
     shortTitle: 'Remove',
     subtitle: 'Clean distracting items',
-    detail: 'Remove visible distractions and reconstruct the surrounding background naturally.',
+    detail: 'Remove only the unwanted object and reconstruct the affected area naturally while preserving the same photo.',
     cta: 'Remove Objects',
-    promptFocus: 'Remove distracting or unwanted visible objects where appropriate and reconstruct the background naturally with matching texture, lighting, and perspective.',
+    promptFocus: 'Remove only the unwanted object, then reconstruct the affected area using surrounding visual information. Preserve the exact same person, environment, background, perspective, composition, camera angle, crop, lighting, weather, depth of field, and all important scene elements.',
     quickSuggestions: ['People in background', 'Trash can', 'Power lines', 'Cars', 'Other object'],
+    quickSuggestionInstructions: {
+      'People in background': 'Remove only unwanted people in the background. Preserve the main subject, scene, lighting, perspective, crop, and all important objects.',
+      'Trash can': 'Remove only the trash can and reconstruct the affected area with matching texture, shadows, blur, noise, and perspective.',
+      'Power lines': 'Remove only distracting power lines where clearly separable. Preserve sky, buildings, trees, lighting, image grain, and scene continuity.',
+      Cars: 'Remove only unwanted cars if they are clearly distracting. Reconstruct the background naturally and do not change the location, crop, lighting, or subject.',
+      'Other object': 'Remove only the specified unwanted object. If unclear, make the smallest reasonable cleanup and keep the image mostly unchanged.'
+    },
     instructionPlaceholder: 'Describe what you want to remove...'
   },
   {
@@ -179,10 +196,15 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     title: 'Expand Frame',
     shortTitle: 'Expand',
     subtitle: 'Create more space around subject',
-    detail: 'Extend the image edges with natural scenery and matching perspective for more flexible crops.',
+    detail: 'Outpaint the edges naturally while keeping the original subject, scene, pose, lighting, perspective, and captured moment unchanged.',
     cta: 'Expand Frame',
-    promptFocus: 'Create outpaint-style expansion directions: extend the frame naturally around the existing image, preserving subject placement, perspective, lighting, and scene continuity.',
+    promptFocus: 'Expand the frame naturally around the original photo while preserving the same captured moment. Only extend the surrounding environment beyond the current image boundaries. Do not change pose, face, outfit, subject position, lighting, perspective, crop center, or original image content.',
     quickSuggestions: ['Expand left and right', 'More sky', 'More room around subject'],
+    quickSuggestionInstructions: {
+      'Expand left and right': 'Extend only the left and right outer areas naturally. Keep the original subject, pose, face, crop center, perspective, lighting, and scene unchanged.',
+      'More sky': 'Extend the frame with more matching sky only where it naturally continues from the original. Do not change the location, lighting, subject, camera angle, or scene mood.',
+      'More room around subject': 'Add surrounding space by outpainting the edges only. Preserve the exact same captured moment and keep the center/original subject visually unchanged.'
+    },
     instructionPlaceholder: 'Describe which sides to expand or what extra space you need...'
   },
   {
@@ -191,14 +213,14 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     title: 'Smooth Skin',
     shortTitle: 'Skin',
     subtitle: 'Natural portrait retouch',
-    detail: 'Suggest light, natural, or studio-level skin smoothing while keeping facial details realistic.',
+    detail: 'Gently reduce temporary skin imperfections while preserving identity, facial structure, lighting, and natural texture.',
     cta: 'Smooth Skin',
-    promptFocus: 'Focus on natural portrait retouching: smooth skin texture gently, reduce minor blemishes, preserve pores, facial structure, identity, hair detail, and realistic skin tone.',
-    quickSuggestions: ['Light Touch', 'Natural Skin', 'Studio Retouch'],
+    promptFocus: 'Improve only temporary skin imperfections while preserving the exact same person, facial structure, expression, age appearance, skin tone identity, hairstyle, clothing, background, lighting, pores, moles, freckles, and realistic skin texture.',
+    quickSuggestions: ['Light Touch', 'Natural Skin', 'Under-eye Softening'],
     quickSuggestionInstructions: {
-      'Light Touch': 'Reduce only minor blemishes. Preserve nearly all skin texture.',
-      'Natural Skin': 'Reduce blemishes. Improve texture consistency. Maintain realistic pores.',
-      'Studio Retouch': 'Apply more noticeable skin refinement. Clean the under-eye area and reduce texture imperfections while preserving identity and realistic pores.'
+      'Light Touch': 'Reduce only small temporary blemishes and redness. Preserve nearly all pores, freckles, moles, facial structure, lighting, and natural skin texture.',
+      'Natural Skin': 'Gently reduce temporary blemishes and uneven skin texture only. Do not beautify, reshape, relight, recolor, change skin tone, or smooth skin unnaturally.',
+      'Under-eye Softening': 'Subtly refine under-eye shadows only if it still looks natural. Do not de-age, brighten the whole face, reshape features, add makeup, or change identity.'
     },
     instructionPlaceholder: 'Describe the retouch strength you want...'
   }
