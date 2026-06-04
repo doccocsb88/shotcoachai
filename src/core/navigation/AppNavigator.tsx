@@ -46,9 +46,6 @@ export function AppNavigator() {
   const hydrateHistory = useAnalysisStore(state => state.hydrateHistory);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const currentResult = useAnalysisStore(state => state.currentResult);
-  const currentPhoto = useAnalysisStore(state => state.currentPhoto);
-  const selectedPhotoAiTool = useAnalysisStore(state => state.selectedPhotoAiTool);
-  const selectedPhotoAiInstruction = useAnalysisStore(state => state.selectedPhotoAiInstruction);
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   useEffect(() => {
     void hydrateHistory();
@@ -133,23 +130,28 @@ export function AppNavigator() {
     setScreen('home');
   }, []);
   const openSelectedPreviewFlow = useCallback(() => {
-    const tool = getPhotoAiTool(selectedPhotoAiTool);
+    const {
+      currentPhoto: latestPhoto,
+      selectedPhotoAiInstruction: latestInstruction,
+      selectedPhotoAiTool: latestToolId
+    } = useAnalysisStore.getState();
+    const tool = getPhotoAiTool(latestToolId);
     if (tool.id === 'ai_coach') {
       openAnalyzing();
       return;
     }
 
-    if (!currentPhoto) {
+    if (!latestPhoto) {
       openHome();
       return;
     }
 
-    setCurrentResult(createDirectToolResult(currentPhoto, tool, selectedPhotoAiInstruction));
+    setCurrentResult(createDirectToolResult(latestPhoto, tool, latestInstruction));
     setResultOpenedFromHistory(false);
     setGeneratedSuggestionIndex(0);
     setCanReturnToAnalysis(false);
     setScreen('generatedResult');
-  }, [currentPhoto, openAnalyzing, openHome, selectedPhotoAiInstruction, selectedPhotoAiTool, setCurrentResult]);
+  }, [openAnalyzing, openHome, setCurrentResult]);
   const openHistory = useCallback(() => setScreen('history'), []);
   const openPoseCollection = useCallback(() => {
     setResultOpenedFromHistory(false);

@@ -154,9 +154,12 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
     const suggestionInstruction = selectedQuickSuggestion
       ? selectedTool.quickSuggestionInstructions?.[selectedQuickSuggestion] ?? selectedQuickSuggestion
       : undefined;
+    const labeledSuggestionInstruction = selectedQuickSuggestion && suggestionInstruction
+      ? `${selectedQuickSuggestion}: ${suggestionInstruction}`
+      : undefined;
     const cleanInstruction = rawInstruction && rawInstruction !== selectedQuickSuggestion
       ? rawInstruction
-      : suggestionInstruction || rawInstruction || selectedTool.detail;
+      : labeledSuggestionInstruction || rawInstruction || selectedTool.detail;
     setSelectedEdit(selectedTool.id, cleanInstruction);
     void runWithConsent();
   };
