@@ -126,10 +126,15 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     title: 'Upscale 2K/4K',
     shortTitle: 'Upscale',
     subtitle: 'Recover detail and sharpness',
-    detail: 'Generate directions that prioritize crisp detail, clarity, and low-noise restoration for blurry photos.',
+    detail: 'Conservatively improve perceived resolution, softness, compression artifacts, and noise while preserving the exact same image.',
     cta: 'Upscale Photo',
-    promptFocus: 'Prioritize image detail recovery, clarity, texture preservation, low-noise sharpening, and realistic high-resolution restoration. Do not change composition or identity.',
+    promptFocus: 'Increase perceived resolution and clean up compression or softness while preserving the exact same image. Do not change crop, pose, camera angle, composition, face, skin, hair, clothing, background, lighting, color grading, or invent missing facial details.',
     quickSuggestions: ['Sharper face', 'Reduce blur', 'More detail'],
+    quickSuggestionInstructions: {
+      'Sharper face': 'Apply mild conservative sharpening only. Do not reconstruct the face, invent missing facial details, enhance eyes, teeth, skin, or hair beyond the original, or change identity.',
+      'Reduce blur': 'Apply mild deblurring and compression cleanup only. Preserve the same crop, pose, camera angle, face, clothing, background, lighting, and color grading.',
+      'More detail': 'Improve perceived resolution and natural texture preservation conservatively. Do not add new details, change facial features, beautify, smooth skin, or alter the scene.'
+    },
     instructionPlaceholder: 'Describe what should become clearer, such as face, product, text, or background detail...'
   },
   {

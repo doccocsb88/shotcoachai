@@ -284,6 +284,8 @@ function buildDirectToolImagePrompt(tool: PhotoAiTool, instruction?: string): st
       return PromptBuilder.compositionOnly(instruction);
     case 'light_color':
       return PromptBuilder.lightColor(instruction);
+    case 'upscale':
+      return PromptBuilder.upscale(instruction);
     case 'smooth_skin':
       return PromptBuilder.skinOnly(instruction);
     default:
@@ -452,6 +454,73 @@ Output should look like the same photo after careful Lightroom-style light and c
 `.trim();
   },
 
+  upscale(instruction?: string): string {
+    const userRequest = instruction && instruction.length > 0
+      ? `\nUser request:\n${instruction}\n`
+      : '';
+
+    return `
+Upscale and restore the uploaded photo conservatively.
+
+The uploaded image is the source of truth.
+Selected tool: Upscale 2K/4K.
+
+Goal:
+Increase perceived resolution and clean up compression or softness while preserving the exact same image.
+${userRequest}
+Preserve exactly:
+- Same person and identity.
+- Same face and facial proportions.
+- Same expression.
+- Same hairstyle.
+- Same body shape.
+- Same clothing and accessories.
+- Same pose.
+- Same framing.
+- Same crop.
+- Same camera angle.
+- Same background and environment.
+- Same lighting direction.
+- Same white balance and color temperature.
+- Same scene mood.
+
+Allowed adjustments:
+- Conservative resolution enhancement.
+- Mild deblurring.
+- Mild compression artifact cleanup.
+- Mild noise reduction.
+- Mild edge refinement.
+- Natural texture preservation.
+
+Do not:
+- Change pose.
+- Change framing.
+- Change crop.
+- Change camera angle.
+- Change composition.
+- Change facial features.
+- Reconstruct the face.
+- Invent missing facial details.
+- Beautify the subject.
+- Smooth skin.
+- Change skin tone.
+- Change hairstyle.
+- Change clothing.
+- Change background.
+- Add or remove objects.
+- Change lighting.
+- Change color grading.
+- Add bokeh.
+- Add cinematic effects.
+
+Important:
+Treat the image as an existing photograph being conservatively upscaled, not as a new generated image.
+
+Output:
+Output should look like the same photo after subtle resolution enhancement and artifact cleanup.
+`.trim();
+  },
+
   skinOnly(instruction?: string): string {
     const userRequest = instruction && instruction.length > 0
       ? `\nUser request:\n${instruction}\n`
@@ -527,7 +596,7 @@ function buildDirectToolPrompt(tool: PhotoAiTool): string {
     replace_background: 'Replace the background only. Match subject lighting, perspective, edge detail, and color temperature to the new scene.',
     restore_color: 'Restore faded colors and saturation naturally while keeping skin tones realistic.',
     smooth_skin: 'Retouch skin naturally. Preserve pores, face shape, eye detail, hair, and realistic skin tone.',
-    upscale: 'Prioritize detail recovery, clarity, low-noise sharpening, and realistic texture preservation without changing the scene.'
+    upscale: 'Conservatively enhance perceived resolution and clean compression or softness. Do not change crop, pose, composition, face, skin, hair, clothing, background, lighting, color grading, or invent missing facial detail.'
   };
 
   return `

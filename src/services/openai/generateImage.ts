@@ -33,7 +33,7 @@ function resolveImageEditQuality(editingToolId?: PhotoAiToolId): string {
   if (configuredQuality) {
     return configuredQuality;
   }
-  return editingToolId === 'enhance_photo' ? 'high' : 'medium';
+  return editingToolId === 'enhance_photo' || editingToolId === 'upscale' ? 'high' : 'medium';
 }
 
 function isDallE2(model: string): boolean {
@@ -84,6 +84,7 @@ function buildConservativeImageEditPrompt(userPrompt: string, editingToolId: Pho
     editingToolId === 'enhance_photo' ||
     editingToolId === 'better_composition' ||
     editingToolId === 'light_color' ||
+    editingToolId === 'upscale' ||
     editingToolId === 'smooth_skin'
   ) {
     return userPrompt.trim();
