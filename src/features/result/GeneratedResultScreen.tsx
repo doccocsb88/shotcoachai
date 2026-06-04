@@ -19,6 +19,7 @@ import {
   ImageQualityEvaluation,
   mergeSuggestionGeneration
 } from '../../models/analysis';
+import { PHOTO_AI_TOOLS, PhotoAiToolId } from '../../models/photoAiTool';
 import { evaluateEditedImageQuality, generateEditedImage } from '../../services/openai/generateImage';
 import { saveImageToLibrary, shareImage } from '../../services/share/shareGuide';
 import { useAnalysisStore } from '../../core/store/analysisStore';
@@ -57,6 +58,12 @@ Rewrite the edit with MUCH STRONGER constraints:
 `.trim();
 }
 
+function getDirectToolId(analysisId: string): PhotoAiToolId | undefined {
+  if (!analysisId.startsWith('direct:')) return undefined;
+  const toolId = analysisId.split(':')[1] as PhotoAiToolId | undefined;
+  return PHOTO_AI_TOOLS.some(tool => tool.id === toolId) ? toolId : undefined;
+}
+
 interface Props {
   result: AnalysisResult;
   suggestionIndex: number;
@@ -85,6 +92,7 @@ export function GeneratedResultScreen({
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
   const isDirectToolResult = result.analysisId.startsWith('direct:');
+  const directToolId = getDirectToolId(result.analysisId);
 
   useEffect(() => {
     setGenerationError(null);
@@ -116,7 +124,8 @@ export function GeneratedResultScreen({
         generateEditedImage(
           selected.image_prompt,
           result.originalImageUri,
-          result.originalImageMimeType
+          result.originalImageMimeType,
+          directToolId
         ),
         IMAGE_GENERATION_TIMEOUT_MS,
         'The AI edit is taking too long. Please check your connection and try again.'
@@ -422,7 +431,7 @@ export function GeneratedResultScreen({
               </Pressable>
             </View>
 
-            {openedFromHistory ? null : (
+            {openedFromHistory || isDirectToolResult ? null : (
               <Pressable
                 accessibilityLabel="Choose another creative direction"
                 accessibilityRole="button"

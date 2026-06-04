@@ -1,6 +1,7 @@
 export type PhotoAiToolId =
   | 'ai_coach'
   | 'enhance_photo'
+  | 'better_composition'
   | 'light_color'
   | 'restore_color'
   | 'upscale'
@@ -23,6 +24,7 @@ export interface PhotoAiTool {
   badge?: string;
   promptFocus: string;
   quickSuggestions?: string[];
+  quickSuggestionInstructions?: Record<string, string>;
   instructionPlaceholder?: string;
 }
 
@@ -52,6 +54,37 @@ export const PHOTO_AI_TOOLS: PhotoAiTool[] = [
     promptFocus: 'Create professional, realistic photo enhancement directions: improve sharpness, exposure, detail, and natural quality without changing identity, pose, outfit, or background.',
     quickSuggestions: ['Professional look', 'Natural detail', 'Sharper photo'],
     instructionPlaceholder: 'Describe the style you want, such as natural portrait, product polish, or clearer detail...'
+  },
+  {
+    id: 'better_composition',
+    category: 'recommended',
+    title: 'Better Composition',
+    shortTitle: 'Compose',
+    subtitle: 'Improve framing and balance',
+    detail: 'Recompose the photo with better framing, balance, and subject placement while preserving the original scene.',
+    cta: 'Improve Composition',
+    promptFocus: 'Improve framing, balance, and subject placement for a stronger, more professional composition while preserving the original scene, identity, lighting, and realism.',
+    quickSuggestions: [
+      'Rule of Thirds',
+      'Symmetrical',
+      'Subject Focus',
+      'Centered Portrait',
+      'Cinematic Framing',
+      'Social Media Ready',
+      'Travel Photography',
+      'Professional Portrait'
+    ],
+    quickSuggestionInstructions: {
+      'Rule of Thirds': 'Reframe the photo using classic rule-of-thirds composition.',
+      Symmetrical: 'Create a clean and balanced composition with visual symmetry.',
+      'Subject Focus': 'Emphasize the main subject and reduce visual distractions.',
+      'Centered Portrait': 'Place the subject centrally for a strong portrait look.',
+      'Cinematic Framing': 'Create a more dramatic and visually engaging composition.',
+      'Social Media Ready': 'Optimize framing for modern social media content.',
+      'Travel Photography': 'Balance the subject and scenery for a travel-style photo.',
+      'Professional Portrait': 'Improve composition for a polished portrait appearance.'
+    },
+    instructionPlaceholder: "Describe the composition you'd like to achieve..."
   },
   {
     id: 'light_color',

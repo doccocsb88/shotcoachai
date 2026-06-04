@@ -47,6 +47,20 @@ const editToolIconSources: Partial<Record<PhotoAiToolId, ImageSourcePropType>> =
   smooth_skin: require('../../../assets/icons/ai-edit-tools/smooth-skin.png')
 };
 
+const toolPromptTags: Record<PhotoAiToolId, string[]> = {
+  ai_coach: ['Pose', 'Framing', 'Lighting'],
+  enhance_photo: ['Professional', 'Natural', 'Detail'],
+  better_composition: ['Framing', 'Balance', 'Subject placement'],
+  light_color: ['Lighting', 'Exposure', 'Tone'],
+  restore_color: ['Color', 'Saturation', 'Skin tone'],
+  upscale: ['Clarity', 'Sharpness', '2K/4K'],
+  background_boost: ['Background', 'Depth', 'Scenery'],
+  replace_background: ['New scene', 'Subject safe', 'Realistic'],
+  remove_object: ['Cleanup', 'Object removal', 'Natural fill'],
+  expand_frame: ['Outpaint', 'More space', 'Composition'],
+  smooth_skin: ['Portrait', 'Skin texture', 'Natural retouch']
+};
+
 export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
   const selectedToolId = useAnalysisStore(state => state.selectedPhotoAiTool);
@@ -135,7 +149,13 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
   };
 
   const generateDirectEdit = () => {
-    const cleanInstruction = instruction.trim() || selectedQuickSuggestion || selectedTool.detail;
+    const rawInstruction = instruction.trim();
+    const suggestionInstruction = selectedQuickSuggestion
+      ? selectedTool.quickSuggestionInstructions?.[selectedQuickSuggestion] ?? selectedQuickSuggestion
+      : undefined;
+    const cleanInstruction = rawInstruction && rawInstruction !== selectedQuickSuggestion
+      ? rawInstruction
+      : suggestionInstruction || rawInstruction || selectedTool.detail;
     setSelectedTool(selectedTool.id);
     setSelectedInstruction(cleanInstruction);
     void runWithConsent();
@@ -189,12 +209,13 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
 
         {step === 'instructions' ? (
           <ScrollView contentContainerStyle={styles.instructionsContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <View style={styles.instructionsHeader}>
-              <View style={styles.instructionsIconWrap}>
-                <ToolImageIcon id={selectedTool.id} size={58} />
+            <View style={styles.instructionsIntro}>
+              <Text style={styles.instructionsDetail}>{selectedTool.detail}</Text>
+              <View style={styles.toolTagRow}>
+                {toolPromptTags[selectedTool.id].map(tag => (
+                  <Text key={tag} style={styles.toolTag}>{tag}</Text>
+                ))}
               </View>
-              <Text style={styles.title}>{selectedTool.title}</Text>
-              <Text style={styles.subtitle}>{selectedTool.detail}</Text>
             </View>
 
             <Text style={styles.fieldLabel}>Quick suggestions</Text>
@@ -481,6 +502,15 @@ function PhotoToolIcon({ id, color, size }: { id: PhotoAiToolId; color: string; 
         <>
           <Circle {...common} cx={12} cy={12} r={8} />
           <Path {...common} d="M12 7v5l3 2" />
+        </>
+      ) : id === 'better_composition' ? (
+        <>
+          <Rect {...common} height={16} rx={3} width={16} x={4} y={4} />
+          <Path {...common} d="M9.3 4v16" />
+          <Path {...common} d="M14.7 4v16" />
+          <Path {...common} d="M4 9.3h16" />
+          <Path {...common} d="M4 14.7h16" />
+          <Circle {...common} cx={15} cy={9} r={2.1} />
         </>
       ) : id === 'light_color' ? (
         <>
@@ -847,18 +877,34 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center'
   },
-  instructionsHeader: {
-    alignItems: 'center',
-    marginBottom: 24
+  instructionsIntro: {
+    marginBottom: 22
   },
-  instructionsIconWrap: {
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.lg,
-    height: 62,
-    justifyContent: 'center',
+  instructionsDetail: {
+    color: colors.textMuted,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 22,
     marginBottom: 14,
-    width: 62
+    textAlign: 'center'
+  },
+  toolTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center'
+  },
+  toolTag: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 7
   },
   fieldLabel: {
     color: colors.text,

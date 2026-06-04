@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system';
 
 import { ImageQualityEvaluation } from '../../models/analysis';
+import { PhotoAiToolId } from '../../models/photoAiTool';
 import { fileToBase64 } from '../image/fileToBase64';
 import { normalizeFileUri, persistImageFile } from '../image/persistentImage';
 import { saveBase64ImageToCache } from '../image/saveBase64Image';
@@ -74,7 +75,28 @@ function uploadFileNameForMime(mimeType: string): string {
   return 'photo.jpg';
 }
 
-function buildConservativeImageEditPrompt(userPrompt: string): string {
+function buildCompositionImageEditPrompt(userPrompt: string): string {
+  return `
+Edit the uploaded photo as a realistic photography reference.
+The uploaded image is the source of truth. This is a composition-only edit.
+
+Requested composition edit:
+${userPrompt}
+
+Composition wrapper:
+- Preserve identity, face, body shape, clothing, accessories, scene, background, lighting, color temperature, and mood.
+- Improve only crop, framing, subject placement, composition balance, negative space, and minor visual distractions.
+- Do not change pose, expression, camera angle, outfit, background, lighting style, time of day, weather, or scene.
+- Do not beautify, retouch, reshape, relight, recolor, apply cinematic grading, or create a studio/fashion/editorial look.
+- Final image must look like the same original photo carefully recomposed, not a new generated scene.
+`.trim();
+}
+
+function buildConservativeImageEditPrompt(userPrompt: string, editingToolId: PhotoAiToolId = 'ai_coach'): string {
+  if (editingToolId === 'better_composition') {
+    return buildCompositionImageEditPrompt(userPrompt);
+  }
+
   return `
 Edit the uploaded photo as a realistic photography reference. The uploaded image is the source of truth.
 
@@ -124,7 +146,8 @@ async function persistRemoteImageToCache(imageUrl: string): Promise<string> {
 export async function generateEditedImage(
   prompt: string,
   originalImageUri: string,
-  originalImageMimeType?: string
+  originalImageMimeType?: string,
+  editingToolId?: PhotoAiToolId
 ): Promise<string> {
   const provider = process.env.EXPO_PUBLIC_ANALYSIS_PROVIDER;
   if (provider === 'mock' || provider === 'testing_mockup') {
@@ -142,10 +165,11 @@ export async function generateEditedImage(
   const size = resolveImageEditSize(model);
   const mimeType = resolveMimeType(originalImageUri, originalImageMimeType);
   const fileUri = normalizeFileUri(originalImageUri);
+  const editPrompt = buildConservativeImageEditPrompt(prompt, editingToolId);
 
   const form = new FormData();
   form.append('model', model);
-  form.append('prompt', buildConservativeImageEditPrompt(prompt));
+  form.append('prompt', editPrompt);
   form.append('size', size);
   form.append(
     'image',
@@ -173,7 +197,7 @@ export async function generateEditedImage(
       outputFormat: isGptImageFamily(model) ? 'png' : undefined,
       imageUri: fileUri,
       mimeType,
-      prompt: buildConservativeImageEditPrompt(prompt)
+      prompt: editPrompt
     });
   }
 
