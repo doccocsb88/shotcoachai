@@ -8,6 +8,7 @@ import { PoseAssistScreen } from '../../features/pose-assist/PoseAssistScreen';
 import { AnalyzingScreen } from '../../features/analysis/AnalyzingScreen';
 import { AnalysisResultScreen } from '../../features/result/AnalysisResultScreen';
 import { GeneratedResultScreen } from '../../features/result/GeneratedResultScreen';
+import { ImageResultView } from '../../features/result/ImageResultView';
 import { HistoryScreen } from '../../features/history/HistoryScreen';
 import { RecipeDetailScreen } from '../../features/photo-recipes/RecipeDetailScreen';
 import { RecipeListScreen } from '../../features/photo-recipes/RecipeListScreen';
@@ -52,6 +53,7 @@ export function AppNavigator() {
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallType, setPaywallType] = useState<PaywallType>('DirectStore');
   const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
+  const [imageViewerResult, setImageViewerResult] = useState<AnalysisResult | null>(null);
   const hydrateHistory = useAnalysisStore(state => state.hydrateHistory);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const currentResult = useAnalysisStore(state => state.currentResult);
@@ -104,12 +106,8 @@ export function AppNavigator() {
   }, [setCurrentResult]);
 
   const openResultFromHistory = useCallback((result: AnalysisResult) => {
-    if (typeof result.selectedSuggestionIndex === 'number' && result.generatedImageUri) {
-      openGeneratedResult(result.selectedSuggestionIndex, result, true);
-      return;
-    }
-    openAnalysisResult(result, true);
-  }, [openAnalysisResult, openGeneratedResult]);
+    setImageViewerResult(result);
+  }, []);
 
   const openPreview = useCallback(() => {
     setResultOpenedFromHistory(false);
@@ -407,6 +405,14 @@ export function AppNavigator() {
           <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
         </Modal>
       )}
+
+      <Modal 
+        animationType="slide" 
+        visible={!!imageViewerResult} 
+        onRequestClose={() => setImageViewerResult(null)}
+      >
+        {imageViewerResult && <ImageResultView result={imageViewerResult} onBack={() => setImageViewerResult(null)} />}
+      </Modal>
     </>
   );
 }

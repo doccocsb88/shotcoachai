@@ -9,13 +9,16 @@ interface Props {
   /** Shown on the left (e.g. `Back`, `Done`). */
   leadingLabel: string;
   onLeadingPress: () => void;
+  trailingLabel?: string;
+  trailingColor?: string;
+  onTrailingPress?: () => void;
 }
 
 /**
  * Top bar: leading action on the left, title visually centered. Intended under `SafeAreaView`
  * — use small vertical padding only (see `HomeScreen` nav).
  */
-export function ScreenNavBar({ title, leadingLabel, onLeadingPress }: Props) {
+export function ScreenNavBar({ title, leadingLabel, onLeadingPress, trailingLabel, trailingColor, onTrailingPress }: Props) {
   return (
     <View style={styles.bar}>
       <View style={styles.sideSlot}>
@@ -31,7 +34,18 @@ export function ScreenNavBar({ title, leadingLabel, onLeadingPress }: Props) {
       <Text style={styles.title} numberOfLines={1}>
         {title}
       </Text>
-      <View style={styles.sideSlot} />
+      <View style={[styles.sideSlot, styles.sideSlotRight]}>
+        {trailingLabel && onTrailingPress && (
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={onTrailingPress}
+            style={({ pressed }) => [styles.trailingPressable, pressed && styles.pressed]}
+          >
+            <Text style={[styles.trailingLabel, trailingColor ? { color: trailingColor } : undefined]}>{trailingLabel}</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -55,6 +69,18 @@ const styles = StyleSheet.create({
     paddingVertical: 4
   },
   leadingLabel: {
+    color: colors.primary,
+    fontSize: typography.body,
+    fontWeight: '700'
+  },
+  sideSlotRight: {
+    alignItems: 'flex-end',
+  },
+  trailingPressable: {
+    alignSelf: 'flex-end',
+    paddingVertical: 4
+  },
+  trailingLabel: {
     color: colors.primary,
     fontSize: typography.body,
     fontWeight: '700'

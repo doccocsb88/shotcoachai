@@ -1,251 +1,299 @@
-import { useRef } from 'react';
-import { Alert, Animated, FlatList, Image, PanResponder, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Alert, Dimensions, FlatList, Image, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
 import { ScreenNavBar } from '../../components/common/ScreenNavBar';
 import { colors, radius, shadows } from '../../constants/theme';
-import { AnalysisResult, countStoredSuggestionEdits } from '../../models/analysis';
+import { AnalysisResult, FlowType, getFlowType } from '../../models/analysis';
+import { CheckCircleIcon, CircleIcon, DocumentIcon, SlidersIcon, SparklesIcon } from '../../components/icons/ResultActionIcons';
 
 interface Props {
   onBack: () => void;
   onOpenResult: (result: AnalysisResult) => void;
 }
 
+const TABS: { id: FlowType; label: string; icon: (props: { size: number; color: string }) => JSX.Element }[] = [
+  { id: 'aiCoach', label: 'AI Coach', icon: SparklesIcon },
+  { id: 'editingTool', label: 'Editing Tools', icon: SlidersIcon },
+  { id: 'photoRecipe', label: 'Photo Receipt', icon: DocumentIcon },
+];
+
+const { width } = Dimensions.get('window');
+const COLUMN_COUNT = 3;
+const GRID_SPACING = 8;
+const GRID_PADDING = 16;
+const CARD_WIDTH = (width - (GRID_PADDING * 2) - (GRID_SPACING * (COLUMN_COUNT - 1))) / COLUMN_COUNT;
+
 export function HistoryScreen({ onBack, onOpenResult }: Props) {
   const recentResults = useAnalysisStore(state => state.recentResults);
   const removeRecentResult = useAnalysisStore(state => state.removeRecentResult);
 
-  const confirmDelete = (item: AnalysisResult) => {
+  const [activeTab, setActiveTab] = useState<FlowType>('aiCoach');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const filteredResults = useMemo(() => {
+    return recentResults.filter(r => getFlowType(r) === activeTab);
+  }, [recentResults, activeTab]);
+
+  const toggleSelection = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleTrailingPress = useCallback(() => {
+    if (isEditMode) {
+      setIsEditMode(false);
+      setSelectedIds(new Set());
+    } else {
+      setIsEditMode(true);
+    }
+  }, [isEditMode]);
+
+  const confirmDelete = useCallback(() => {
     Alert.alert(
-      'Delete history item?',
-      'This saved result will be removed from your history.',
+      'Delete selected items?',
+      `Are you sure you want to delete ${selectedIds.size} item(s)?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            void removeRecentResult(item.analysisId);
+            selectedIds.forEach(id => removeRecentResult(id));
+            setIsEditMode(false);
+            setSelectedIds(new Set());
           }
         }
       ]
     );
-  };
+  }, [selectedIds, removeRecentResult]);
 
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
-        <ScreenNavBar title="History" leadingLabel="Back" onLeadingPress={onBack} />
+        <ScreenNavBar 
+          title="History" 
+          leadingLabel="Back" 
+          onLeadingPress={onBack} 
+          trailingLabel={filteredResults.length > 0 ? (isEditMode ? 'Cancel' : 'Edit') : undefined}
+          trailingColor={isEditMode ? colors.textMuted : colors.primary}
+          onTrailingPress={handleTrailingPress}
+        />
+        
+        {/* Tab Bar */}
+        <View style={styles.tabContainer}>
+          {TABS.map(tab => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <Pressable
+                key={tab.id}
+                style={[styles.tab, isActive && styles.tabActive]}
+                onPress={() => {
+                  setActiveTab(tab.id);
+                  if (isEditMode) {
+                    setIsEditMode(false);
+                    setSelectedIds(new Set());
+                  }
+                }}
+              >
+                <Icon size={16} color={isActive ? colors.primary : colors.textMuted} />
+                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]} numberOfLines={1}>
+                  {tab.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Grid */}
         <View style={styles.bodyWrap}>
-          {recentResults.length === 0 ? (
+          {filteredResults.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>No analyses yet</Text>
-              <Text style={styles.emptyBody}>Analyze a photo and it will appear here.</Text>
+              <Text style={styles.emptyBody}>Results for this category will appear here.</Text>
             </View>
           ) : (
             <FlatList
-              data={recentResults}
+              data={filteredResults}
               keyExtractor={item => item.analysisId}
+              numColumns={COLUMN_COUNT}
               contentContainerStyle={styles.list}
+              columnWrapperStyle={styles.columnWrapper}
               renderItem={({ item }) => (
-                <SwipeableHistoryRow
+                <HistoryGridItem
                   item={item}
-                  onDelete={() => confirmDelete(item)}
+                  isEditMode={isEditMode}
+                  isSelected={selectedIds.has(item.analysisId)}
+                  onToggleSelection={() => toggleSelection(item.analysisId)}
                   onOpen={() => onOpenResult(item)}
                 />
               )}
             />
           )}
         </View>
+        
+        {/* Floating Action Button */}
+        {isEditMode && selectedIds.size > 0 && (
+          <View style={styles.fabContainer}>
+            <Pressable style={styles.fab} onPress={confirmDelete}>
+              <Text style={styles.fabText}>Delete {selectedIds.size} items</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </Screen>
   );
 }
 
-function SwipeableHistoryRow({
+function HistoryGridItem({
   item,
-  onDelete,
+  isEditMode,
+  isSelected,
+  onToggleSelection,
   onOpen
 }: {
   item: AnalysisResult;
-  onDelete: () => void;
+  isEditMode: boolean;
+  isSelected: boolean;
+  onToggleSelection: () => void;
   onOpen: () => void;
 }) {
-  const translateX = useRef(new Animated.Value(0)).current;
-  const currentX = useRef(0);
-  const deleteRequested = useRef(false);
-  const deleteWidth = 92;
-  const savedEditCount = countStoredSuggestionEdits(item);
-  const selectedSuggestion =
-    typeof item.selectedSuggestionIndex === 'number'
-      ? item.suggestions[item.selectedSuggestionIndex]
-      : undefined;
   const thumbnailUri = item.generatedImageUri ?? item.originalImageUri;
-  const title = selectedSuggestion?.title ?? item.overallAssessment;
-  const subtitle = selectedSuggestion?.concept ?? item.overallAssessment;
-
-  const animateTo = (toValue: number) => {
-    currentX.current = toValue;
-    Animated.spring(translateX, {
-      toValue,
-      useNativeDriver: true,
-      bounciness: 0,
-      speed: 22
-    }).start();
-  };
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => {
-        return Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy);
-      },
-      onPanResponderMove: (_, gesture) => {
-        const nextX = Math.max(-deleteWidth * 1.35, Math.min(0, currentX.current + gesture.dx));
-        translateX.setValue(nextX);
-      },
-      onPanResponderRelease: (_, gesture) => {
-        const finalX = currentX.current + gesture.dx;
-        if (finalX <= -deleteWidth * 1.15 && !deleteRequested.current) {
-          deleteRequested.current = true;
-          animateTo(0);
-          onDelete();
-          return;
-        }
-        const shouldOpen = finalX < -deleteWidth / 2 || gesture.vx < -0.6;
-        animateTo(shouldOpen ? -deleteWidth : 0);
-      },
-      onPanResponderTerminate: () => {
-        animateTo(0);
-      }
-    })
-  ).current;
-
-  const handleDelete = () => {
-    deleteRequested.current = true;
-    animateTo(0);
-    onDelete();
-  };
+  const dateStr = new Date(item.createdAt).toLocaleString(undefined, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
 
   return (
-    <View style={styles.swipeRow}>
-      <View style={styles.deleteAction}>
-        <Pressable
-          accessibilityLabel="Delete history item"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={handleDelete}
-          style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.deleteText}>Delete</Text>
-        </Pressable>
+    <Pressable
+      onPress={isEditMode ? onToggleSelection : onOpen}
+      style={[styles.card, isSelected && styles.cardSelected]}
+    >
+      <Image source={{ uri: thumbnailUri }} style={styles.cardImage} />
+      
+      <View style={styles.cardOverlay}>
+        <View style={styles.cardGradient} />
+        <Text style={styles.cardDate} numberOfLines={1}>{dateStr}</Text>
       </View>
-      <Animated.View
-        style={[
-          styles.swipeContent,
-          {
-            transform: [{ translateX }]
-          }
-        ]}
-        {...panResponder.panHandlers}
-      >
-        <Pressable onPress={onOpen} style={styles.row}>
-          <Image source={{ uri: thumbnailUri }} style={styles.thumb} />
-          <View style={styles.rowText}>
-            <Text style={styles.summary} numberOfLines={1}>{title}</Text>
-            <Text style={styles.direction} numberOfLines={1}>{subtitle}</Text>
-            <Text style={styles.date}>
-              {new Date(item.createdAt).toLocaleString()}
-              {savedEditCount > 0 ? ' · saved edit' : ''}
-            </Text>
-          </View>
-        </Pressable>
-      </Animated.View>
-    </View>
+
+      {isEditMode && (
+        <View style={styles.selectionCircle}>
+          {isSelected ? (
+            <CheckCircleIcon size={24} color={colors.primary} />
+          ) : (
+            <CircleIcon size={24} color="#FFFFFF" />
+          )}
+        </View>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
+    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 }),
+    position: 'relative'
   },
   bodyWrap: {
     flex: 1,
-    paddingBottom: 20,
-    paddingHorizontal: 20
   },
-  list: {
-    gap: 12,
-    paddingBottom: 32,
-    paddingTop: 12
-  },
-  swipeRow: {
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    position: 'relative'
-  },
-  swipeContent: {
-    backgroundColor: colors.background,
-    borderRadius: radius.md
-  },
-  deleteAction: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.danger,
-    borderRadius: radius.md,
-    overflow: 'hidden'
-  },
-  deleteButton: {
-    alignItems: 'center',
-    bottom: 0,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    width: 92
-  },
-  deleteText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '900'
-  },
-  row: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
+  tabContainer: {
     flexDirection: 'row',
-    gap: 12,
-    padding: 12,
+    paddingHorizontal: GRID_PADDING,
+    paddingVertical: 12,
+    backgroundColor: colors.background,
+    gap: 4
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    gap: 6,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface
+  },
+  tabActive: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadows.soft
   },
-  thumb: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm,
-    height: 76,
-    width: 58
-  },
-  rowText: {
-    flex: 1,
-    justifyContent: 'center'
-  },
-  summary: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-    lineHeight: 20,
-    marginTop: 2
-  },
-  direction: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 19,
-    marginTop: 4
-  },
-  date: {
-    color: colors.textMuted,
+  tabLabel: {
     fontSize: 12,
-    marginTop: 6
+    fontWeight: '600',
+    color: colors.textMuted
+  },
+  tabLabelActive: {
+    color: colors.primary
+  },
+  list: {
+    padding: GRID_PADDING,
+    paddingBottom: 80 // Leave space for FAB
+  },
+  columnWrapper: {
+    gap: GRID_SPACING,
+    marginBottom: GRID_SPACING
+  },
+  card: {
+    width: CARD_WIDTH,
+    height: CARD_WIDTH * 1.35,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: colors.surface
+  },
+  cardSelected: {
+    opacity: 0.7
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover'
+  },
+  cardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    padding: 6
+  },
+  cardGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  cardDate: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+    zIndex: 1,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 1 }
+  },
+  selectionCircle: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    zIndex: 2,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 12
   },
   empty: {
     alignItems: 'center',
@@ -264,7 +312,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center'
   },
-  pressed: {
-    opacity: 0.72
+  fabContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center'
+  },
+  fab: {
+    backgroundColor: colors.danger,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 30,
+    ...shadows.button
+  },
+  fabText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 16
   }
 });
