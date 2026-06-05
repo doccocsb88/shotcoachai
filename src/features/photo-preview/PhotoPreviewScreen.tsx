@@ -201,7 +201,7 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
     return (
       <Screen scroll={false}>
         <View style={styles.previewRoot}>
-          <ScreenNavBar title="Choose What to Do" leadingLabel="Back" onLeadingPress={onBack} />
+          <ScreenNavBar title="Improve Your Photo" leadingLabel="Back" onLeadingPress={onBack} />
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>No photo selected</Text>
             <PrimaryButton title="Back" onPress={onBack} variant="secondary" />
@@ -214,7 +214,7 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
   return (
     <Screen scroll={false}>
       <View style={styles.previewRoot}>
-        <ScreenNavBar title={step === 'instructions' ? selectedTool.title : 'Choose What to Do'} leadingLabel="Back" onLeadingPress={handleBackPress} />
+        <ScreenNavBar title={step === 'instructions' ? selectedTool.title : 'Improve Your Photo'} leadingLabel="Back" onLeadingPress={handleBackPress} />
 
         {step === 'flows' ? (
           <ScrollView contentContainerStyle={styles.previewContent} showsVerticalScrollIndicator={false}>
@@ -227,8 +227,8 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
 
             <FlowCard
               accent="blue"
-              title="Analyze with AI Coach"
-              subtitle="Get pose, framing and lighting advice before taking another shot."
+              title="Photo Coach"
+              subtitle="Get pose, framing and lighting guidance for your next shot."
               iconId="ai_coach"
               onPress={handleCoachFlow}
             />
