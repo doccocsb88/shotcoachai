@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, shadows, typography } from '../../constants/theme';
 
@@ -7,6 +7,8 @@ interface Props {
   subtitle?: string;
 }
 
+const isIOS = Platform.OS === 'ios';
+
 export function ForegroundToast({
   message = 'Creating your photo...',
   subtitle = 'Please keep this screen open until your result is ready.'
@@ -14,8 +16,8 @@ export function ForegroundToast({
   return (
     <View pointerEvents="none" style={styles.toast}>
       <View style={styles.textContainer}>
-        <Text style={styles.message} numberOfLines={1} adjustsFontSizeToFit>{message}</Text>
-        {subtitle ? <Text style={styles.subtitle} numberOfLines={1} adjustsFontSizeToFit>{subtitle}</Text> : null}
+        <Text style={styles.message} numberOfLines={isIOS ? 1 : undefined} adjustsFontSizeToFit={isIOS}>{message}</Text>
+        {subtitle ? <Text style={styles.subtitle} numberOfLines={isIOS ? 1 : undefined} adjustsFontSizeToFit={isIOS}>{subtitle}</Text> : null}
       </View>
     </View>
   );
@@ -27,16 +29,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: 'rgba(8, 18, 34, 0.88)',
     borderRadius: radius.pill,
-    flexDirection: 'row',
-    gap: 8,
-    maxWidth: '100%',
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    flexDirection: 'column',
+    maxWidth: '90%',
+    paddingHorizontal: 40,
+    paddingVertical: 12,
     ...shadows.button
   },
   textContainer: {
-    flexShrink: 1,
-    flexDirection: 'column',
     alignItems: 'center',
     gap: 2
   },

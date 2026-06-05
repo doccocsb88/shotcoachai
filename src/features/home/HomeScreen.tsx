@@ -22,7 +22,7 @@ interface Props {
   referenceImageUri?: string | null;
 }
 
-const navBarTopPadding = Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight ?? 0) + spacing.sm;
+const navBarTopPadding = Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight || 24) + spacing.md;
 const dockBottomPadding = Platform.OS === 'ios' ? 32 : spacing.sm;
 const cameraFallbackBackground = '#05070B';
 const focusTopInset = navBarTopPadding + 88;

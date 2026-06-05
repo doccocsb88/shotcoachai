@@ -782,7 +782,7 @@ function ConsentBullet({ text }: { text: string }) {
 const styles = StyleSheet.create({
   previewRoot: {
     flex: 1,
-    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
+    paddingTop: Platform.select({ android: (StatusBar.currentHeight || 24) + 16, ios: 0 })
   },
   previewContent: {
     paddingBottom: 26,

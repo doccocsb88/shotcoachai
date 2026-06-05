@@ -203,7 +203,7 @@ function HistoryGridItem({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 }),
+    paddingTop: Platform.select({ android: (StatusBar.currentHeight || 24) + 16, ios: 0 }),
     position: 'relative'
   },
   bodyWrap: {
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '40%',
+    height: '20%',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   cardDate: {

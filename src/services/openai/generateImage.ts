@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 import { ImageQualityEvaluation } from '../../models/analysis';
 import { PhotoAiToolId } from '../../models/photoAiTool';
@@ -166,9 +167,19 @@ export async function generateEditedImage(
   assertModelSupportsImageEdit(model);
 
   const size = resolveImageEditSize(model);
-  const mimeType = resolveMimeType(originalImageUri, originalImageMimeType);
   const fileUri = normalizeFileUri(originalImageUri);
   const editPrompt = buildConservativeImageEditPrompt(prompt, editingToolId);
+
+  // OpenAI strictly requires PNG format for image edits.
+  // Convert the image to PNG format to prevent "Invalid image file or mode" errors.
+  const processedImage = await ImageManipulator.manipulateAsync(
+    fileUri,
+    [],
+    { format: ImageManipulator.SaveFormat.PNG }
+  );
+  
+  const finalFileUri = normalizeFileUri(processedImage.uri);
+  const finalMimeType = 'image/png';
 
   const form = new FormData();
   form.append('model', model);
@@ -177,7 +188,7 @@ export async function generateEditedImage(
   form.append(
     'image',
     // React Native FormData accepts a local file descriptor here (not a web File).
-    { uri: fileUri, type: mimeType, name: uploadFileNameForMime(mimeType) } as unknown as Blob
+    { uri: finalFileUri, type: finalMimeType, name: 'photo.png' } as unknown as Blob
   );
 
   if (isGptImageFamily(model)) {
@@ -198,8 +209,8 @@ export async function generateEditedImage(
       size,
       quality: isGptImageFamily(model) ? resolveImageEditQuality(editingToolId) : undefined,
       outputFormat: isGptImageFamily(model) ? 'png' : undefined,
-      imageUri: fileUri,
-      mimeType,
+      imageUri: finalFileUri,
+      mimeType: finalMimeType,
       prompt: editPrompt
     });
   }
@@ -231,6 +242,9 @@ export async function generateEditedImage(
       generatedBase64Length: b64?.length,
       revisedPrompt: undefined
     });
+    if (!response.ok) {
+      console.error('[ShotCoach][OpenAI] 400 ERROR RESPONSE:', responseText);
+    }
   }
 
   if (!response.ok) {

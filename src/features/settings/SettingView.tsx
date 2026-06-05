@@ -73,9 +73,10 @@ export function SettingView({
   };
 
   const shareApp = async () => {
+    const url = Platform.OS === 'ios' ? APP_STORE_URL : 'https://play.google.com/store/apps/details?id=co.q7labs.shotcoachai';
     await Share.share({
-      message: `Try ShotCoach AI for photo and pose coaching.\n${APP_STORE_URL}`,
-      url: APP_STORE_URL
+      message: `Try ShotCoach AI for photo and pose coaching.\n${url}`,
+      url: url
     });
   };
 
