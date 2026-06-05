@@ -81,9 +81,11 @@ function uploadFileNameForMime(mimeType: string): string {
 
 function buildConservativeImageEditPrompt(userPrompt: string, editingToolId: PhotoAiToolId = 'ai_coach'): string {
   if (
+    editingToolId === 'ai_coach' ||
     editingToolId === 'enhance_photo' ||
     editingToolId === 'better_composition' ||
     editingToolId === 'light_color' ||
+    editingToolId === 'restore_color' ||
     editingToolId === 'upscale' ||
     editingToolId === 'background_boost' ||
     editingToolId === 'expand_frame' ||
@@ -127,7 +129,7 @@ Not allowed:
 Requested direction:
 ${userPrompt}
 
-Final output must look like a realistic photo captured minutes later by the same photographer in the same location, not a new photo shoot or a new generated scene.
+Final output must look like the same captured moment with improved photographic choices, not a new photo shoot or a new generated scene.
 `.trim();
 }
 

@@ -1,3 +1,4 @@
+import { CoachDirectionV2, CoachPhotoAnalysisV2 } from '../../models/analysis';
 import { getPhotoAiTool, PhotoAiToolId } from '../../models/photoAiTool';
 
 export const buildVisionAnalysisPrompt = () => `
@@ -57,6 +58,251 @@ Return STRICT JSON only:
   "overall_assessment": "short expert review of the current photo"
 }
 `;
+
+export const buildCoachVisionAnalysisPromptV2 = () => `
+You are ShotCoach, a professional photography coach.
+
+Analyze the uploaded photo and return structured JSON only.
+
+Product goal:
+ShotCoach helps users create a realistic photography coaching reference for retaking a better version of the same photo.
+
+Focus on:
+- composition
+- framing
+- camera distance
+- subject placement
+- pose readability
+- lighting quality
+- subject separation
+- background distractions
+- realism
+- social media usefulness
+
+Safety rules:
+- Do not suggest changing identity, face, body shape, outfit, hairstyle, background, location, weather, time of day, or lighting style.
+- Do not suggest cinematic relighting, heavy color grading, beauty retouching, fantasy styling, or editorial redesign.
+- Prefer safer improvements through framing, crop, camera distance, subject placement, composition, and subject separation.
+- Pose suggestions must be minimal and must preserve the original expression, face angle, hand position, and body structure whenever possible.
+- Only describe visible elements. If uncertain, use "unknown".
+
+Return STRICT JSON only:
+{
+  "schema_version": "2.0",
+  "photo_id": "source_photo",
+  "scene": {
+    "photo_type": "portrait | couple | group | product | landscape | unknown",
+    "environment": "visible environment or unknown",
+    "background_description": "visible background only",
+    "weather_or_time_of_day": "visible condition or unknown",
+    "scene_mood": "natural mood or unknown"
+  },
+  "subject": {
+    "subject_count": 1,
+    "pose_description": "visible pose only",
+    "expression_description": "visible expression only",
+    "outfit_description": "visible outfit only",
+    "identity_risk_level": "low | medium | high",
+    "identity_risk_notes": "short notes"
+  },
+  "composition": {
+    "quality_score": 0,
+    "notes": "specific composition assessment",
+    "safe_improvements": ["safe framing/crop/placement ideas"],
+    "avoid_changes": ["unsafe composition changes"]
+  },
+  "lighting": {
+    "quality_score": 0,
+    "lighting_type": "visible light type or unknown",
+    "notes": "specific lighting assessment",
+    "preserve_rules": ["preserve existing light characteristics"]
+  },
+  "pose": {
+    "quality_score": 0,
+    "notes": "specific pose assessment",
+    "safe_pose_refinements": ["minimal safe refinements"],
+    "unsafe_pose_changes": ["changes that should not be attempted"]
+  },
+  "aesthetic": {
+    "overall_score": 0,
+    "notes": "short expert review",
+    "style_preservation": ["style/mood rules to preserve"]
+  },
+  "scores": {
+    "composition_score": 0,
+    "lighting_score": 0,
+    "pose_score": 0,
+    "subject_separation_score": 0,
+    "naturalness_score": 0,
+    "social_media_score": 0,
+    "overall_aesthetic_score": 0
+  },
+  "overall_assessment": "short expert review"
+}
+`;
+
+export const buildCoachDirectionPromptV2 = () => `
+You are ShotCoach, a professional photography coach.
+
+Create exactly 3 safe creative directions from the provided PhotoAnalysis JSON.
+
+These directions will be used to generate realistic AI photo references.
+
+The goal is not to redesign the photo.
+The goal is to show better ways to photograph the same person in the same scene.
+
+Prioritize improvements in this order:
+1. Framing
+2. Crop
+3. Camera distance
+4. Subject placement
+5. Composition
+6. Subject separation
+7. Minimal pose refinement only if safe
+
+Do not suggest:
+- new background
+- new location
+- new outfit
+- new face
+- new identity
+- new time of day
+- new weather
+- cinematic relighting
+- heavy color grading
+- beauty retouch
+- fantasy or editorial styling
+- major pose changes
+- opening closed eyes
+- moving hands to a completely different position
+- changing face angle dramatically
+
+Each direction must include:
+- title
+- user-facing summary
+- composition change
+- camera distance change
+- subject placement change
+- pose refinement
+- lighting preservation
+- edit strength
+- identity risk
+- implementation notes for prompt builder
+
+Return STRICT JSON only:
+{
+  "directions": [
+    {
+      "id": "close_crop",
+      "title": "Soft Close-Up",
+      "summary": "A closer crop that strengthens facial connection while keeping the original mood.",
+      "composition_change": "tighter vertical crop around face and upper torso",
+      "camera_distance_change": "slightly closer camera distance",
+      "subject_placement_change": "keep subject near center with balanced headroom",
+      "pose_refinement": "preserve the original pose; only minimal refinement if safe",
+      "lighting_preservation": "preserve the same light direction and color temperature",
+      "edit_strength": "low | medium | high",
+      "identity_risk": "low | medium | high",
+      "prompt_builder_notes": ["avoid changing facial structure", "avoid changing expression"]
+    }
+  ]
+}
+`;
+
+export function buildAICoachImageEditPrompt(
+  analysis: CoachPhotoAnalysisV2,
+  direction: CoachDirectionV2,
+  userInstruction?: string
+): string {
+  const instruction = userInstruction?.trim() || 'No extra instruction. Apply the selected coaching direction naturally and conservatively.';
+  const analysisRules = [
+    ...analysis.composition.avoid_changes,
+    ...analysis.lighting.preserve_rules,
+    ...analysis.pose.unsafe_pose_changes,
+    ...analysis.aesthetic.style_preservation,
+    ...direction.prompt_builder_notes
+  ].filter(Boolean);
+  const analysisContext = analysisRules.length
+    ? `\nSource-specific safety notes:\n${analysisRules.map(rule => `- ${rule}`).join('\n')}\n`
+    : '';
+
+  return `
+Edit the uploaded photo as a realistic ShotCoach AI photography coaching reference.
+
+The uploaded image is the source of truth.
+
+Product goal:
+Create a realistic reference image that shows a better way to photograph the same person in the same scene.
+This is not a beauty edit, not a full redesign, and not a new photoshoot.
+
+Priority order:
+1. Preserve the person's identity.
+2. Preserve the original environment, lighting, time of day, weather, white balance, color temperature, and scene mood.
+3. Improve the photo mainly through framing, crop, camera distance, subject placement, composition, and subject separation.
+4. Apply only minimal pose refinement when it is safe and consistent with the original pose.
+5. Keep the result realistic and close to the original captured moment.
+
+Strict subject preservation rules:
+- Preserve the exact same person and identity.
+- Do not change facial structure, face shape, eye shape, nose shape, lips, jawline, cheeks, forehead, chin, age appearance, skin tone identity, hairstyle, hair color, body shape, or gender presentation.
+- Preserve the original expression identity. Do not create a new facial expression.
+- Preserve the original clothing and accessories, including outfit shape, colors, patterns, jewelry, shoes, and visible garment details.
+- Preserve realistic anatomy, hands, eyes, facial details, hair detail, and natural skin texture.
+
+Scene and lighting preservation rules:
+- Preserve the original location and background.
+- Do not move the person to a new train, building, street, room, landscape, sky, studio, or fantasy/editorial set.
+- Preserve the original lighting condition, time of day, weather, white balance, color temperature, contrast level, and scene mood.
+- Do not relight, recolor, or apply cinematic grading.
+- Preserve realistic depth, lens feel, perspective, grain, texture, and photographic realism.
+
+Selected direction:
+Title: ${direction.title}
+Summary: ${direction.summary}
+
+Composition change:
+${direction.composition_change}
+
+Camera distance change:
+${direction.camera_distance_change}
+
+Subject placement change:
+${direction.subject_placement_change}
+
+Pose refinement:
+${direction.pose_refinement}
+
+Lighting preservation:
+${direction.lighting_preservation}
+${analysisContext}
+Allowed changes:
+- Improve framing and crop while keeping the same scene.
+- Improve subject placement and visual balance.
+- Improve subject separation using natural depth and local clarity, without changing the background.
+- Apply only very subtle pose refinement if it remains consistent with the original body position.
+- Apply only minor exposure or shadow recovery if needed, while keeping the same lighting source and color temperature.
+- Keep skin texture natural and realistic.
+
+Not allowed:
+- Do not create a different person.
+- Do not beautify or redesign the face.
+- Do not create an influencer-style AI face.
+- Do not change facial structure, expression identity, body shape, hairstyle, outfit, accessories, or skin tone identity.
+- Do not significantly change the pose, hand position, face angle, or eye direction.
+- Do not replace the background.
+- Do not change weather, time of day, lighting direction, white balance, or color temperature.
+- Do not apply cinematic relighting, dramatic shadows, orange/teal grading, golden hour conversion, fantasy atmosphere, editorial fashion styling, makeup, perfect skin, or beauty filter effects.
+- Do not add text, logos, watermarks, UI elements, stickers, extra people, or new distracting objects.
+
+User instruction:
+${instruction}
+
+Output requirement:
+Produce a realistic high-quality photo edit from the provided source image.
+The final output must look like a realistic photography coaching reference for retaking the same photo in the same location.
+It should feel like the same captured moment with improved photographic choices, not a new generated scene or a new photoshoot.
+`.trim();
+}
 
 function buildToolModeInstructions(toolId: PhotoAiToolId): string {
   const tool = getPhotoAiTool(toolId);

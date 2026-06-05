@@ -48,6 +48,23 @@ const editToolIconSources: Partial<Record<PhotoAiToolId, ImageSourcePropType>> =
   smooth_skin: require('../../../assets/icons/ai-edit-tools/smooth-skin.png')
 };
 
+const compositionSuggestionIconSources: Record<string, ImageSourcePropType> = {
+  'Rule of Thirds': require('../../../assets/icons/composition-suggestions/rule-of-thirds.png'),
+  Symmetrical: require('../../../assets/icons/composition-suggestions/symmetrical.png'),
+  'Subject Focus': require('../../../assets/icons/composition-suggestions/subject-focus.png'),
+  'Centered Portrait': require('../../../assets/icons/composition-suggestions/centered-portrait.png'),
+  'Cinematic Framing': require('../../../assets/icons/composition-suggestions/cinematic-framing.png'),
+  'Social Media Ready': require('../../../assets/icons/composition-suggestions/social-media-ready.png'),
+  'Travel Photography': require('../../../assets/icons/composition-suggestions/travel-photography.png'),
+  'Professional Portrait': require('../../../assets/icons/composition-suggestions/professional-portrait.png')
+};
+
+const enhanceSuggestionIconSources: Record<string, ImageSourcePropType> = {
+  'Professional look': require('../../../assets/icons/enhance-suggestions/professional-look.png'),
+  'Natural detail': require('../../../assets/icons/enhance-suggestions/natural-detail.png'),
+  'Sharper photo': require('../../../assets/icons/enhance-suggestions/sharper-photo.png')
+};
+
 const toolPromptTags: Record<PhotoAiToolId, string[]> = {
   ai_coach: ['Pose', 'Framing', 'Lighting'],
   enhance_photo: ['Professional', 'Natural', 'Detail'],
@@ -223,27 +240,11 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
             </View>
 
             <Text style={styles.fieldLabel}>Quick suggestions</Text>
-            <View style={styles.quickSuggestionGrid}>
-              {(selectedTool.quickSuggestions ?? []).map(suggestion => {
-                const selected = selectedQuickSuggestion === suggestion;
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    key={suggestion}
-                    onPress={() => chooseQuickSuggestion(suggestion)}
-                    style={({ pressed }) => [
-                      styles.quickSuggestion,
-                      selected && styles.quickSuggestionSelected,
-                      pressed && styles.pressed
-                    ]}
-                  >
-                    <Text style={[styles.quickSuggestionText, selected && styles.quickSuggestionTextSelected]}>
-                      {suggestion}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <QuickSuggestionPicker
+              selectedSuggestion={selectedQuickSuggestion}
+              tool={selectedTool}
+              onSelect={chooseQuickSuggestion}
+            />
 
             <Text style={styles.fieldLabel}>Or describe it</Text>
             <View style={styles.inputWrap}>
@@ -286,6 +287,118 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
         />
       </View>
     </Screen>
+  );
+}
+
+function QuickSuggestionPicker({
+  tool,
+  selectedSuggestion,
+  onSelect
+}: {
+  tool: PhotoAiTool;
+  selectedSuggestion: string | null;
+  onSelect: (suggestion: string) => void;
+}) {
+  const suggestions = tool.quickSuggestions ?? [];
+
+  if (tool.id === 'enhance_photo') {
+    return (
+      <View style={styles.compositionSuggestionGrid}>
+        {suggestions.map(suggestion => {
+          const selected = selectedSuggestion === suggestion;
+          const iconSource = enhanceSuggestionIconSources[suggestion];
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={suggestion}
+              onPress={() => onSelect(suggestion)}
+              style={({ pressed }) => [
+                styles.compositionSuggestionCard,
+                selected && styles.compositionSuggestionCardSelected,
+                pressed && styles.pressed
+              ]}
+            >
+              {iconSource ? (
+                <Image source={iconSource} style={styles.compositionSuggestionIcon} resizeMode="contain" />
+              ) : null}
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                numberOfLines={1}
+                style={[
+                  styles.compositionSuggestionText,
+                  selected && styles.compositionSuggestionTextSelected
+                ]}
+              >
+                {suggestion}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
+
+  if (tool.id === 'better_composition') {
+    return (
+      <View style={styles.compositionSuggestionGrid}>
+        {suggestions.map(suggestion => {
+          const selected = selectedSuggestion === suggestion;
+          const iconSource = compositionSuggestionIconSources[suggestion];
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={suggestion}
+              onPress={() => onSelect(suggestion)}
+              style={({ pressed }) => [
+                styles.compositionSuggestionCard,
+                selected && styles.compositionSuggestionCardSelected,
+                pressed && styles.pressed
+              ]}
+            >
+              {iconSource ? (
+                <Image source={iconSource} style={styles.compositionSuggestionIcon} resizeMode="contain" />
+              ) : null}
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                numberOfLines={1}
+                style={[
+                  styles.compositionSuggestionText,
+                  selected && styles.compositionSuggestionTextSelected
+                ]}
+              >
+                {suggestion}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.quickSuggestionGrid}>
+      {suggestions.map(suggestion => {
+        const selected = selectedSuggestion === suggestion;
+        return (
+          <Pressable
+            accessibilityRole="button"
+            key={suggestion}
+            onPress={() => onSelect(suggestion)}
+            style={({ pressed }) => [
+              styles.quickSuggestion,
+              selected && styles.quickSuggestionSelected,
+              pressed && styles.pressed
+            ]}
+          >
+            <Text style={[styles.quickSuggestionText, selected && styles.quickSuggestionTextSelected]}>
+              {suggestion}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -882,14 +995,14 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   instructionsIntro: {
-    marginBottom: 22
+    marginBottom: 12
   },
   instructionsDetail: {
     color: colors.textMuted,
     fontSize: 15,
     fontWeight: '700',
     lineHeight: 22,
-    marginBottom: 14,
+    marginBottom: 10,
     textAlign: 'center'
   },
   toolTagRow: {
@@ -914,14 +1027,53 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: '900',
-    marginBottom: 10,
-    marginTop: 8
+    marginBottom: 8,
+    marginTop: 4
   },
   quickSuggestionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
     marginBottom: 16
+  },
+  compositionSuggestionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14
+  },
+  compositionSuggestionCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 24,
+    borderWidth: 1,
+    flexDirection: 'row',
+    minHeight: 62,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    width: '48%',
+    ...shadows.soft
+  },
+  compositionSuggestionCardSelected: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary
+  },
+  compositionSuggestionIcon: {
+    borderRadius: 10,
+    height: 38,
+    marginRight: 7,
+    width: 38
+  },
+  compositionSuggestionText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 11.5,
+    fontWeight: '900',
+    lineHeight: 14
+  },
+  compositionSuggestionTextSelected: {
+    color: colors.primary
   },
   quickSuggestion: {
     backgroundColor: colors.surfaceMuted,
@@ -970,9 +1122,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopColor: colors.border,
     borderTopWidth: 1,
-    paddingBottom: 24,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 8,
     paddingHorizontal: 20,
-    paddingTop: 14
+    paddingTop: 10
   },
   emptyState: {
     alignItems: 'center',

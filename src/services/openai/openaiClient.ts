@@ -1,4 +1,6 @@
 import {
+  buildCoachDirectionPromptV2,
+  buildCoachVisionAnalysisPromptV2,
   buildCreativeDirectionPrompt,
   buildPromptComposerPrompt,
   buildQualityEvaluationPrompt,
@@ -30,6 +32,22 @@ export async function analyzePhotoWithOpenAI(
   });
 }
 
+export async function analyzeCoachPhotoV2WithOpenAI(
+  imageBase64: string,
+  mimeType: string,
+  signal?: AbortSignal
+): Promise<unknown> {
+  return runOpenAIJsonStage({
+    stage: 'coach-v2-analysis',
+    systemPrompt: buildCoachVisionAnalysisPromptV2(),
+    userText:
+      'Analyze this uploaded photo for ShotCoach AI Coach. Create a safe structured analysis for improving the same photo, not redesigning the person or scene. Return the PhotoAnalysis JSON only.',
+    imageBase64,
+    mimeType,
+    signal
+  });
+}
+
 export async function createCreativeDirectionsWithOpenAI(
   photoAnalysisJson: unknown,
   imageBase64: string,
@@ -41,6 +59,24 @@ export async function createCreativeDirectionsWithOpenAI(
     stage: 'creative-directions',
     systemPrompt: buildCreativeDirectionPrompt(toolId),
     userText: `Create creative directions for this PhotoAnalysis JSON:\n${JSON.stringify(photoAnalysisJson)}`,
+    imageBase64,
+    mimeType,
+    signal
+  });
+}
+
+export async function createCoachDirectionsV2WithOpenAI(
+  photoAnalysisJson: unknown,
+  imageBase64: string,
+  mimeType: string,
+  signal?: AbortSignal
+): Promise<unknown> {
+  return runOpenAIJsonStage({
+    stage: 'coach-v2-directions',
+    systemPrompt: buildCoachDirectionPromptV2(),
+    userText:
+      `Create 3 safe ShotCoach AI Coach directions from this PhotoAnalysis JSON:\n${JSON.stringify(photoAnalysisJson)}\n\n` +
+      'Directions should be practical, realistic, and suitable for generating reference images. Use conservative changes that preserve identity, lighting, background, outfit, and scene mood.',
     imageBase64,
     mimeType,
     signal

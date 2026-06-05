@@ -5,12 +5,19 @@ import { fileToBase64 } from '../image/fileToBase64';
 import { persistImageFile } from '../image/persistentImage';
 import { resizeImageIfNeeded } from '../image/resizeImage';
 import {
+  analyzeCoachPhotoV2WithOpenAI,
   analyzePhotoWithOpenAI,
   composeGenerationRecipesWithOpenAI,
+  createCoachDirectionsV2WithOpenAI,
   createCreativeDirectionsWithOpenAI,
   hasOpenAIKey
 } from './openaiClient';
-import { buildAnalysisResultFromProductionFlow, parseAnalysisResponse, parseJsonResponse } from './responseParser';
+import {
+  buildAnalysisResultFromCoachV2Flow,
+  buildAnalysisResultFromProductionFlow,
+  parseAnalysisResponse,
+  parseJsonResponse
+} from './responseParser';
 import { analyzePhotoWithTestingMockupApi } from './testingMockupApi';
 
 const ANALYSIS_TIMEOUT_MS = 90000;
@@ -49,6 +56,40 @@ export async function analyzePhoto(
       LOCAL_STEP_TIMEOUT_MS,
       'Image read timeout'
     );
+
+    if (shouldUseAiCoachV2(toolId)) {
+      const coachAnalysisRaw = await withTimeout(
+        analyzeCoachPhotoV2WithOpenAI(imageBase64, optimizedUri.mimeType, analysisController.signal),
+        ANALYSIS_TIMEOUT_MS,
+        'OpenAI AI Coach v2 analysis timeout'
+      );
+      const photoAnalysis = parseJsonResponse(coachAnalysisRaw);
+
+      const directionsRaw = await withTimeout(
+        createCoachDirectionsV2WithOpenAI(
+          photoAnalysis,
+          imageBase64,
+          optimizedUri.mimeType,
+          analysisController.signal
+        ),
+        ANALYSIS_TIMEOUT_MS,
+        'OpenAI AI Coach v2 directions timeout'
+      );
+      const directionsPayload = parseJsonResponse(directionsRaw);
+
+      const persistentOriginalUri = await withTimeout(
+        persistImageFile(imageUri, 'original-photo'),
+        LOCAL_STEP_TIMEOUT_MS,
+        'Image persist timeout'
+      );
+
+      return buildAnalysisResultFromCoachV2Flow({
+        photoAnalysis,
+        directionsPayload,
+        originalImageUri: persistentOriginalUri,
+        originalImageMimeType: mimeType
+      });
+    }
 
     const visionRaw = await withTimeout(
       analyzePhotoWithOpenAI(imageBase64, optimizedUri.mimeType, analysisController.signal),
@@ -98,4 +139,8 @@ export async function analyzePhoto(
 function shouldUseMockupApi(): boolean {
   const provider = process.env.EXPO_PUBLIC_ANALYSIS_PROVIDER;
   return provider === 'mock' || provider === 'testing_mockup';
+}
+
+function shouldUseAiCoachV2(toolId: PhotoAiToolId): boolean {
+  return toolId === 'ai_coach' && process.env.EXPO_PUBLIC_AI_COACH_FLOW !== 'v1';
 }

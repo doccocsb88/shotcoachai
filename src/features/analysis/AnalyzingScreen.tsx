@@ -18,14 +18,13 @@ interface Props {
 /** Cosmetic progress only — advances on a timer. Must match what `analyze()` actually does (see `useAnalyzePhoto` / `analyzePhoto`). */
 const statuses = [
   'Preparing your photo',
-  'Running vision analysis',
+  'Running photo analysis',
   'Scoring composition, lighting, and pose',
-  'Creating creative directions',
-  'Composing image prompts',
+  'Creating coaching directions',
   'Saving analysis'
 ];
 
-const statusScheduleMs = [0, 2800, 16000, 34000, 56000, 74000];
+const statusScheduleMs = [0, 2800, 16000, 34000, 56000];
 
 export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);

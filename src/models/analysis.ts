@@ -45,6 +45,59 @@ export interface ProductionPhotoAnalysis {
   overall_assessment: string;
 }
 
+export interface CoachPhotoAnalysisV2 {
+  schema_version: string;
+  photo_id: string;
+  scene: {
+    photo_type: string;
+    environment: string;
+    background_description: string;
+    weather_or_time_of_day: string;
+    scene_mood: string;
+  };
+  subject: {
+    subject_count: number;
+    pose_description: string;
+    expression_description: string;
+    outfit_description: string;
+    identity_risk_level: 'low' | 'medium' | 'high' | 'unknown';
+    identity_risk_notes: string;
+  };
+  composition: {
+    quality_score: number;
+    notes: string;
+    safe_improvements: string[];
+    avoid_changes: string[];
+  };
+  lighting: {
+    quality_score: number;
+    lighting_type: string;
+    notes: string;
+    preserve_rules: string[];
+  };
+  pose: {
+    quality_score: number;
+    notes: string;
+    safe_pose_refinements: string[];
+    unsafe_pose_changes: string[];
+  };
+  aesthetic: {
+    overall_score: number;
+    notes: string;
+    style_preservation: string[];
+  };
+  scores: {
+    composition_score: number;
+    lighting_score: number;
+    pose_score: number;
+    subject_separation_score: number;
+    naturalness_score: number;
+    social_media_score: number;
+    overall_aesthetic_score: number;
+  };
+  overall_assessment: string;
+}
+
 export interface CreativeDirection {
   title: string;
   concept: string;
@@ -56,6 +109,20 @@ export interface CreativeDirection {
     composition: string[];
     style: string[];
   };
+}
+
+export interface CoachDirectionV2 {
+  id: string;
+  title: string;
+  summary: string;
+  composition_change: string;
+  camera_distance_change: string;
+  subject_placement_change: string;
+  pose_refinement: string;
+  lighting_preservation: string;
+  edit_strength: 'low' | 'medium' | 'high' | 'unknown';
+  identity_risk: 'low' | 'medium' | 'high' | 'unknown';
+  prompt_builder_notes: string[];
 }
 
 export interface GenerationRecipe {
@@ -133,7 +200,9 @@ export interface AnalysisResult {
   overallAssessment: string;
   suggestions: Suggestion[];
   productionAnalysis?: ProductionPhotoAnalysis;
+  coachAnalysisV2?: CoachPhotoAnalysisV2;
   creativeDirections?: CreativeDirection[];
+  coachDirectionsV2?: CoachDirectionV2[];
   generationRecipes?: GenerationRecipe[];
   createdAt: string;
   originalImageUri: string;

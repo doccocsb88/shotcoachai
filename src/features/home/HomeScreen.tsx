@@ -1,4 +1,4 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Image, Linking, Platform, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -43,6 +43,7 @@ export function HomeScreen({
   const setPoseAiSelectedTemplateId = useAnalysisStore(state => state.setPoseAiSelectedTemplateId);
   const [cameraPermission, requestCameraPermission, getCameraPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
   const referenceWidth = Math.round((width * 2) / 5);
 
@@ -121,6 +122,11 @@ export function HomeScreen({
     } finally {
       setIsCapturing(false);
     }
+  };
+
+  const swapCamera = () => {
+    if (isCapturing) return;
+    setCameraFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
   const showCaptureLimitPaywall = () => {
@@ -218,7 +224,7 @@ export function HomeScreen({
       );
     }
 
-    return <CameraView ref={cameraRef} facing="back" style={styles.cameraView} />;
+    return <CameraView ref={cameraRef} facing={cameraFacing} style={styles.cameraView} />;
   };
 
   return (
@@ -290,7 +296,15 @@ export function HomeScreen({
             <View style={styles.captureInner} />
           </Pressable>
 
-          <View style={styles.bottomDockSpacer} />
+          <Pressable
+            accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
+            accessibilityRole="button"
+            disabled={isCapturing}
+            onPress={swapCamera}
+            style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
+          >
+            <CameraSwapIcon />
+          </Pressable>
         </View>
       </View>
     </Screen>
@@ -331,6 +345,45 @@ function CameraPermissionIcon() {
         stroke={colors.danger}
         strokeLinecap="round"
         strokeWidth={3}
+      />
+    </Svg>
+  );
+}
+
+function CameraSwapIcon() {
+  return (
+    <Svg height={28} viewBox="0 0 24 24" width={28}>
+      <Path
+        d="M7.2 7.8A7 7 0 0 1 18.4 9"
+        fill="none"
+        stroke={colors.text}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.2}
+      />
+      <Path
+        d="M18.4 5.4V9h-3.6"
+        fill="none"
+        stroke={colors.text}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.2}
+      />
+      <Path
+        d="M16.8 16.2A7 7 0 0 1 5.6 15"
+        fill="none"
+        stroke={colors.text}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.2}
+      />
+      <Path
+        d="M5.6 18.6V15h3.6"
+        fill="none"
+        stroke={colors.text}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.2}
       />
     </Svg>
   );
@@ -584,9 +637,16 @@ const styles = StyleSheet.create({
     tintColor: colors.text,
     width: 28
   },
-  bottomDockSpacer: {
+  swapCameraButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
     height: 58,
-    width: 58
+    justifyContent: 'center',
+    width: 58,
+    ...shadows.soft
   },
   captureButton: {
     alignItems: 'center',
