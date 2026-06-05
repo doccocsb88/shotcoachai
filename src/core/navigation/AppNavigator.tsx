@@ -234,8 +234,8 @@ export function AppNavigator() {
 
   let content;
 
-  const isRecipeFlow = screen === 'recipeList' || screen === 'recipeDetail' || (screen === 'generatedResult' && !!currentResult && getFlowType(currentResult) === 'photoRecipe');
-  const isGenericResultFlow = screen === 'generatedResult' && (!currentResult || getFlowType(currentResult) !== 'photoRecipe');
+  const isRecipeFlow = screen === 'recipeList' || screen === 'recipeDetail' || (screen === 'generatedResult' && !resultOpenedFromHistory && !!currentResult && getFlowType(currentResult) === 'photoRecipe');
+  const isGenericResultFlow = screen === 'generatedResult' && (!currentResult || getFlowType(currentResult) !== 'photoRecipe' || resultOpenedFromHistory);
 
   let backgroundContent;
   if (isRecipeFlow) {
