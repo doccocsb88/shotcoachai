@@ -100,7 +100,7 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
         ) : (
           <>
             <ActivityIndicator color={colors.primary} size="large" />
-            <Text style={styles.title}>
+            <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
               {selectedTool.id === 'ai_coach' ? 'Finding Better Shot Ideas...' : `Running ${selectedTool.title}`}
             </Text>
             <Text style={styles.subtitle}>{status}</Text>
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: typography.title,
+    fontSize: 24,
     fontWeight: '900',
     marginBottom: 10,
     textAlign: 'center'
