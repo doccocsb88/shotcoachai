@@ -80,6 +80,10 @@ function uploadFileNameForMime(mimeType: string): string {
 }
 
 function buildConservativeImageEditPrompt(userPrompt: string, editingToolId: PhotoAiToolId = 'ai_coach'): string {
+  if (userPrompt.includes('Selected flow: Photo Recipes.')) {
+    return userPrompt.trim();
+  }
+
   if (
     editingToolId === 'ai_coach' ||
     editingToolId === 'enhance_photo' ||

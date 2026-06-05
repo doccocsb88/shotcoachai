@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, ViewStyle, View } from 'react-native';
 
 import { colors, radius, shadows, spacing, typography } from '../../constants/theme';
 
@@ -8,9 +9,10 @@ interface Props {
   variant?: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
   style?: ViewStyle;
+  icon?: ReactNode;
 }
 
-export function PrimaryButton({ title, onPress, variant = 'primary', disabled, style }: Props) {
+export function PrimaryButton({ title, onPress, variant = 'primary', disabled, style, icon }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -24,16 +26,19 @@ export function PrimaryButton({ title, onPress, variant = 'primary', disabled, s
         style
       ]}
     >
-      <Text
-        style={[
-          styles.text,
-          variant === 'primary' && styles.textOnPrimary,
-          variant === 'secondary' && styles.textSecondary,
-          variant === 'ghost' && styles.textGhost
-        ]}
-      >
-        {title}
-      </Text>
+      <View style={styles.contentRow}>
+        {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
+        <Text
+          style={[
+            styles.text,
+            variant === 'primary' && styles.textOnPrimary,
+            variant === 'secondary' && styles.textSecondary,
+            variant === 'ghost' && styles.textGhost
+          ]}
+        >
+          {title}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -45,6 +50,14 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: spacing.lg,
     paddingVertical: 16
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  iconWrap: {
+    marginRight: 8
   },
   primary: {
     backgroundColor: colors.primary,

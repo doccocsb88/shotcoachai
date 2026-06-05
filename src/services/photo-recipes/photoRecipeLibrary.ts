@@ -1,0 +1,646 @@
+import { PhotoRecipe } from '../../models/photoRecipe';
+
+export const PHOTO_RECIPES: PhotoRecipe[] = [
+  {
+    id: 'coastal-blue-day',
+    title: 'Coastal Blue Day',
+    subtitle: 'Bright blue, clean and sunny beach mood.',
+    category: 'beach',
+    thumbnail: require('../../../assets/photo-recipes/coastal-blue-day.png'),
+    tags: ['Beach', 'Daylight'],
+    description: 'Bright blue, clean and sunny beach mood with fresh coastal whites and sky detail.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome inspired',
+      highlight: -2,
+      shadow: 1,
+      color: 2,
+      sharpness: 1,
+      clarity: 0,
+      grain: 'fine',
+      dynamicRange: 'wide',
+      whiteBalance: 'cool daylight'
+    },
+    promptPreset: {
+      mood: 'Fresh coastal atmosphere.',
+      colorPalette: 'Clean whites, turquoise water, bright blue sky.',
+      lighting: 'Bright natural daylight.',
+      contrast: 'Soft-medium contrast.',
+      saturation: 'Moderately vibrant but realistic.',
+      grainDescription: 'Very fine film grain only if it looks natural.',
+      negativePrompt: 'Avoid heavy teal grading, fake tropical colors, HDR skies, or fantasy beach lighting.'
+    }
+  },
+  {
+    id: 'blue-hour',
+    title: 'Blue Hour',
+    subtitle: 'Cool cinematic evening with blue tones.',
+    category: 'night',
+    thumbnail: require('../../../assets/photo-recipes/blue-hour.png'),
+    tags: ['City', 'Evening'],
+    description: 'Cool cinematic evening with blue tones, restrained city lights, and realistic low-light mood.',
+    recipeParameters: {
+      filmSimulation: 'Eterna inspired',
+      highlight: -1,
+      shadow: 1,
+      color: 0,
+      sharpness: 0,
+      clarity: 1,
+      grain: 'fine',
+      dynamicRange: 'wide',
+      whiteBalance: 'cool evening'
+    },
+    promptPreset: {
+      mood: 'Cool cinematic evening.',
+      colorPalette: 'Deep blues, restrained city lights, clean neutral skin tones.',
+      lighting: 'Preserve existing evening or low-light direction.',
+      contrast: 'Medium contrast with controlled highlights.',
+      saturation: 'Natural saturation with restrained neon or city color.',
+      grainDescription: 'Subtle low-light film grain.',
+      negativePrompt: 'Avoid dramatic relighting, cyberpunk colors, heavy glow, or changing night into day.'
+    }
+  },
+  {
+    id: 'afternoon-warm',
+    title: 'Afternoon Warm',
+    subtitle: 'Soft warm indoor light, peaceful afternoon.',
+    category: 'indoor',
+    thumbnail: require('../../../assets/photo-recipes/afternoon-warm.png'),
+    tags: ['Indoor', 'Warm'],
+    description: 'Soft warm indoor light with peaceful afternoon color, gentle highlights, and cozy natural tone.',
+    recipeParameters: {
+      filmSimulation: 'Astia inspired',
+      highlight: -1,
+      shadow: 0,
+      color: 1,
+      sharpness: 0,
+      clarity: -1,
+      grain: 'soft',
+      dynamicRange: 'standard',
+      whiteBalance: 'warm afternoon'
+    },
+    promptPreset: {
+      mood: 'Soft warm afternoon light.',
+      colorPalette: 'Warm neutrals, soft cream highlights, natural skin tones.',
+      lighting: 'Preserve the existing indoor light and make it gently warmer.',
+      contrast: 'Soft contrast.',
+      saturation: 'Slightly rich warm colors without orange cast.',
+      grainDescription: 'Soft fine grain with gentle texture.',
+      negativePrompt: 'Avoid orange skin, heavy vintage filters, artificial sunlight beams, or studio relighting.'
+    }
+  },
+  {
+    id: 'portrait-film',
+    title: 'Portrait Film',
+    subtitle: 'Creamy skin tones and natural film look.',
+    category: 'portrait',
+    thumbnail: require('../../../assets/photo-recipes/portrait-film.png'),
+    tags: ['Portrait', 'Film'],
+    description: 'Creamy skin tones and natural film look with soft portrait color and realistic detail.',
+    recipeParameters: {
+      filmSimulation: 'Pro Neg Hi inspired',
+      highlight: -1,
+      shadow: 0,
+      color: 1,
+      sharpness: 0,
+      clarity: -1,
+      grain: 'fine',
+      dynamicRange: 'wide',
+      whiteBalance: 'warm neutral'
+    },
+    promptPreset: {
+      mood: 'Warm portrait rendering.',
+      colorPalette: 'Creamy skin tones, soft neutrals, gentle warm highlights.',
+      lighting: 'Preserve original light while smoothing harsh tonal transitions.',
+      contrast: 'Soft-medium portrait contrast.',
+      saturation: 'Natural color with slightly richer skin warmth.',
+      grainDescription: 'Fine portrait film grain.',
+      negativePrompt: 'Avoid beauty retouching, plastic skin, makeup, face reshaping, or changed skin tone identity.'
+    }
+  },
+  {
+    id: 'mediterranean-breeze',
+    title: 'Mediterranean Breeze',
+    subtitle: 'Bright Mediterranean light with crisp colors.',
+    category: 'travel',
+    thumbnail: require('../../../assets/photo-recipes/mediterranean-breeze.png'),
+    tags: ['Travel', 'Daylight'],
+    description: 'Bright Mediterranean light with crisp colors, white architecture, blue accents, and clean travel mood.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome inspired',
+      highlight: -1,
+      shadow: 1,
+      color: 2,
+      sharpness: 1,
+      clarity: 1,
+      grain: 'minimal',
+      dynamicRange: 'wide',
+      whiteBalance: 'bright daylight'
+    },
+    promptPreset: {
+      mood: 'Bright Mediterranean sunlight.',
+      colorPalette: 'White architecture, clear blue water, pale stone, clean sky.',
+      lighting: 'Bright daylight with protected highlights.',
+      contrast: 'Clean medium contrast.',
+      saturation: 'Vibrant but realistic travel colors.',
+      grainDescription: 'Minimal clean grain.',
+      negativePrompt: 'Avoid blown white buildings, fake blue skies, over-sharpened edges, or changing architecture.'
+    }
+  },
+  {
+    id: 'beach-walk',
+    title: 'Beach Walk',
+    subtitle: 'Relaxed seaside vibe with natural colors.',
+    category: 'beach',
+    thumbnail: require('../../../assets/photo-recipes/beach-walk.png'),
+    tags: ['Lifestyle', 'Beach'],
+    description: 'Relaxed seaside vibe with natural colors, soft beach contrast, and calm lifestyle warmth.',
+    recipeParameters: {
+      filmSimulation: 'Nostalgic Negative inspired',
+      highlight: -1,
+      shadow: 0,
+      color: 1,
+      sharpness: 0,
+      clarity: -1,
+      grain: 'soft',
+      dynamicRange: 'wide',
+      whiteBalance: 'warm daylight'
+    },
+    promptPreset: {
+      mood: 'Relaxed seaside atmosphere.',
+      colorPalette: 'Soft sand, warm daylight, gentle blue water, natural skin tones.',
+      lighting: 'Preserve natural beach light with soft highlight recovery.',
+      contrast: 'Soft natural contrast.',
+      saturation: 'Subtle warm color richness.',
+      grainDescription: 'Soft film-like grain.',
+      negativePrompt: 'Avoid glamour retouching, fake sunset, tropical fantasy colors, or changing weather.'
+    }
+  },
+  {
+    id: 'fresh-green',
+    title: 'Fresh Green',
+    subtitle: 'Fresh greens and bright natural atmosphere.',
+    category: 'nature',
+    thumbnail: require('../../../assets/photo-recipes/fresh-green.png'),
+    tags: ['Nature', 'Spring'],
+    description: 'Fresh greens and bright natural atmosphere with clean daylight and gentle nature contrast.',
+    recipeParameters: {
+      filmSimulation: 'Velvia inspired',
+      highlight: -1,
+      shadow: 1,
+      color: 2,
+      sharpness: 1,
+      clarity: 1,
+      grain: 'minimal',
+      dynamicRange: 'standard',
+      whiteBalance: 'natural daylight'
+    },
+    promptPreset: {
+      mood: 'Fresh green foliage.',
+      colorPalette: 'Lush greens, clean daylight, natural earth tones.',
+      lighting: 'Preserve outdoor daylight and protect bright leaves.',
+      contrast: 'Medium contrast with clear texture separation.',
+      saturation: 'Richer greens while staying realistic.',
+      grainDescription: 'Minimal grain, clean outdoor rendering.',
+      negativePrompt: 'Avoid neon greens, HDR foliage, fake mist, fantasy forest effects, or changed scenery.'
+    }
+  },
+  {
+    id: 'anime-summer',
+    title: 'Anime Summer',
+    subtitle: 'Bright anime-inspired colors and dreamy mood.',
+    category: 'anime',
+    thumbnail: require('../../../assets/photo-recipes/anime-summer.png'),
+    tags: ['Anime', 'Summer'],
+    description: 'Bright anime-inspired colors and dreamy mood while remaining photorealistic, never illustrated.',
+    recipeParameters: {
+      filmSimulation: 'Bright cinema inspired',
+      highlight: -1,
+      shadow: 1,
+      color: 1,
+      sharpness: 0,
+      clarity: -1,
+      grain: 'soft',
+      dynamicRange: 'wide',
+      whiteBalance: 'warm summer daylight'
+    },
+    promptPreset: {
+      mood: 'Japanese summer movie feeling, but photorealistic.',
+      colorPalette: 'Clear sky blue, soft greens, warm sunlight, gentle nostalgic color.',
+      lighting: 'Preserve original daylight and add only subtle summer warmth if already compatible.',
+      contrast: 'Soft cinematic natural contrast.',
+      saturation: 'Slightly brighter summer color without illustration styling.',
+      grainDescription: 'Very subtle soft grain.',
+      negativePrompt: 'Do not convert to anime, illustration, cartoon, Ghibli style, fantasy, or painted rendering.'
+    }
+  },
+  {
+    id: 'japanese_sea',
+    title: 'Japanese Sea',
+    subtitle: 'Japanese Sea film simulation with Classic Chrome.',
+    category: 'street' as any,
+    thumbnail: require('../../../assets/photo-recipes/japanese_sea.jpg'),
+    tags: ['Street', 'Film'],
+    description: 'A beautiful Classic Chrome simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome',
+      highlight: -1,
+      shadow: -1.5,
+      color: 3,
+      sharpness: 1,
+      clarity: 0,
+      grain: 'Off',
+      dynamicRange: 'DR400',
+      whiteBalance: 'Auto (R:-1, B:2)'
+    },
+    promptPreset: {
+      mood: 'Japanese Sea vibe.',
+      colorPalette: 'Classic Chrome tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Off grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'sakura_street',
+    title: 'Sakura Street',
+    subtitle: 'Sakura Street film simulation with Classic Neg.',
+    category: 'street' as any,
+    thumbnail: require('../../../assets/photo-recipes/sakura_street.jpg'),
+    tags: ['Street', 'Film'],
+    description: 'A beautiful Classic Neg simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Neg',
+      highlight: -1,
+      shadow: -2,
+      color: 2,
+      sharpness: 1,
+      clarity: 0,
+      grain: 'Small Weak',
+      dynamicRange: 'DR200',
+      whiteBalance: 'Auto (R:1, B:-1)'
+    },
+    promptPreset: {
+      mood: 'Sakura Street vibe.',
+      colorPalette: 'Classic Neg tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Small Weak grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'summer_chrome',
+    title: 'Summer Chrome',
+    subtitle: 'Summer Chrome film simulation with Classic Chrome.',
+    category: 'pastel' as any,
+    thumbnail: require('../../../assets/photo-recipes/summer_chrome.jpg'),
+    tags: ['Pastel', 'Film'],
+    description: 'A beautiful Classic Chrome simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome',
+      highlight: -2,
+      shadow: -2,
+      color: 4,
+      sharpness: 0,
+      clarity: -4,
+      grain: 'Strong Large',
+      dynamicRange: 'DR400',
+      whiteBalance: 'Auto (R:5, B:-6)'
+    },
+    promptPreset: {
+      mood: 'Summer Chrome vibe.',
+      colorPalette: 'Classic Chrome tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Strong Large grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'ocean_breeze_whispers',
+    title: 'Ocean Breeze Whispers',
+    subtitle: 'Ocean Breeze Whispers film simulation with Classic Neg.',
+    category: 'ocean' as any,
+    thumbnail: require('../../../assets/photo-recipes/ocean_breeze_whispers.jpg'),
+    tags: ['Ocean', 'Film'],
+    description: 'A beautiful Classic Neg simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Neg',
+      highlight: -1.5,
+      shadow: -1.5,
+      color: 2,
+      sharpness: 0,
+      clarity: 0,
+      grain: 'Off',
+      dynamicRange: 'DR200',
+      whiteBalance: 'Auto White Priority (R:-1, B:-3)'
+    },
+    promptPreset: {
+      mood: 'Ocean Breeze Whispers vibe.',
+      colorPalette: 'Classic Neg tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Off grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'everyday_film',
+    title: 'Everyday Film',
+    subtitle: 'Everyday Film film simulation with Classic Neg.',
+    category: 'lifestyle' as any,
+    thumbnail: require('../../../assets/photo-recipes/everyday_film.jpg'),
+    tags: ['Lifestyle', 'Film'],
+    description: 'A beautiful Classic Neg simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Neg',
+      highlight: -1,
+      shadow: -1,
+      color: 1,
+      sharpness: 0,
+      clarity: 0,
+      grain: 'Weak Small',
+      dynamicRange: 'Auto',
+      whiteBalance: 'Custom (R:-2, B:-1)'
+    },
+    promptPreset: {
+      mood: 'Everyday Film vibe.',
+      colorPalette: 'Classic Neg tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Weak Small grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'kodachrome_g4',
+    title: 'Kodachrome G4',
+    subtitle: 'Kodachrome G4 film simulation with Classic Chrome.',
+    category: 'portrait' as any,
+    thumbnail: require('../../../assets/photo-recipes/kodachrome_g4.jpg'),
+    tags: ['Portrait', 'Film'],
+    description: 'A beautiful Classic Chrome simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome',
+      highlight: 1,
+      shadow: -1,
+      color: 4,
+      sharpness: 0,
+      clarity: 0,
+      grain: 'Off',
+      dynamicRange: 'Auto',
+      whiteBalance: 'Auto (R:1, B:-2)'
+    },
+    promptPreset: {
+      mood: 'Kodachrome G4 vibe.',
+      colorPalette: 'Classic Chrome tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Off grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'golden_hour',
+    title: 'Golden Hour',
+    subtitle: 'Golden Hour film simulation with Classic Chrome.',
+    category: 'urban' as any,
+    thumbnail: require('../../../assets/photo-recipes/golden_hour.jpg'),
+    tags: ['Urban', 'Film'],
+    description: 'A beautiful Classic Chrome simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome',
+      highlight: -2,
+      shadow: -2,
+      color: 1,
+      sharpness: -2,
+      clarity: 0,
+      grain: 'Off',
+      dynamicRange: 'DR Auto',
+      whiteBalance: 'Daylight (R:4, B:-5)'
+    },
+    promptPreset: {
+      mood: 'Golden Hour vibe.',
+      colorPalette: 'Classic Chrome tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Off grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'mist_ocean_ballad',
+    title: 'Mist Ocean Ballad',
+    subtitle: 'Mist Ocean Ballad film simulation with Classic Neg.',
+    category: 'ocean' as any,
+    thumbnail: require('../../../assets/photo-recipes/mist_ocean_ballad.jpg'),
+    tags: ['Ocean', 'Film'],
+    description: 'A beautiful Classic Neg simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Neg',
+      highlight: -2,
+      shadow: -1,
+      color: 3,
+      sharpness: 1,
+      clarity: 3,
+      grain: 'Off',
+      dynamicRange: 'DR200',
+      whiteBalance: 'Auto (R:-1, B:1)'
+    },
+    promptPreset: {
+      mood: 'Mist Ocean Ballad vibe.',
+      colorPalette: 'Classic Neg tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Off grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'tealwoof_diary',
+    title: 'Tealwoof Diary',
+    subtitle: 'Tealwoof Diary film simulation with Classic Chrome.',
+    category: 'travel' as any,
+    thumbnail: require('../../../assets/photo-recipes/tealwoof_diary.jpg'),
+    tags: ['Travel', 'Film'],
+    description: 'A beautiful Classic Chrome simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome',
+      highlight: -2,
+      shadow: -0.5,
+      color: 3,
+      sharpness: -2,
+      clarity: 0,
+      grain: 'Off',
+      dynamicRange: 'DR200',
+      whiteBalance: '6500K (R:-1, B:-3)'
+    },
+    promptPreset: {
+      mood: 'Tealwoof Diary vibe.',
+      colorPalette: 'Classic Chrome tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Off grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'leica_x',
+    title: 'Leica X',
+    subtitle: 'Leica X film simulation with Classic Chrome.',
+    category: 'coastal' as any,
+    thumbnail: require('../../../assets/photo-recipes/leica_x.jpg'),
+    tags: ['Coastal', 'Film'],
+    description: 'A beautiful Classic Chrome simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome',
+      highlight: 2,
+      shadow: -2,
+      color: 4,
+      sharpness: 0,
+      clarity: 0,
+      grain: 'Off',
+      dynamicRange: 'Auto',
+      whiteBalance: 'Auto (R:1, B:-2)'
+    },
+    promptPreset: {
+      mood: 'Leica X vibe.',
+      colorPalette: 'Classic Chrome tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Off grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'sea_salt_summer',
+    title: 'Sea Salt Summer',
+    subtitle: 'Sea Salt Summer film simulation with Classic Neg.',
+    category: 'coastal' as any,
+    thumbnail: require('../../../assets/photo-recipes/sea_salt_summer.jpg'),
+    tags: ['Coastal', 'Film'],
+    description: 'A beautiful Classic Neg simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Neg',
+      highlight: -1.5,
+      shadow: -1.5,
+      color: 2,
+      sharpness: 0,
+      clarity: 0,
+      grain: 'Strong',
+      dynamicRange: 'DR200',
+      whiteBalance: 'Fluorescent Light 1 (R:-3, B:-4)'
+    },
+    promptPreset: {
+      mood: 'Sea Salt Summer vibe.',
+      colorPalette: 'Classic Neg tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Strong grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'modified_ultramax400',
+    title: 'Modified UltraMax400',
+    subtitle: 'Modified UltraMax400 film simulation with Classic Chrome.',
+    category: 'film' as any,
+    thumbnail: require('../../../assets/photo-recipes/modified_ultramax400.jpg'),
+    tags: ['Film', 'Film'],
+    description: 'A beautiful Classic Chrome simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Chrome',
+      highlight: 1,
+      shadow: -1.5,
+      color: 4,
+      sharpness: 0,
+      clarity: 3,
+      grain: 'Weak Small',
+      dynamicRange: 'DR400',
+      whiteBalance: 'Daylight (R:5, B:-5)'
+    },
+    promptPreset: {
+      mood: 'Modified UltraMax400 vibe.',
+      colorPalette: 'Classic Chrome tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Weak Small grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'harbour_holiday',
+    title: 'Harbour Holiday',
+    subtitle: 'Harbour Holiday film simulation with Classic Neg.',
+    category: 'cafe' as any,
+    thumbnail: require('../../../assets/photo-recipes/harbour_holiday.jpg'),
+    tags: ['Cafe', 'Film'],
+    description: 'A beautiful Classic Neg simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Classic Neg',
+      highlight: -1.5,
+      shadow: -1.5,
+      color: 2,
+      sharpness: 0,
+      clarity: 0,
+      grain: 'Weak',
+      dynamicRange: 'DR200',
+      whiteBalance: 'Fluorescent Light 1 (R:-2, B:-5)'
+    },
+    promptPreset: {
+      mood: 'Harbour Holiday vibe.',
+      colorPalette: 'Classic Neg tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Weak grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  },
+  {
+    id: 'coastal_comfort',
+    title: 'Coastal Comfort',
+    subtitle: 'Coastal Comfort film simulation with Nostalgic Neg.',
+    category: 'ocean' as any,
+    thumbnail: require('../../../assets/photo-recipes/coastal_comfort.jpg'),
+    tags: ['Ocean', 'Film'],
+    description: 'A beautiful Nostalgic Neg simulation with unique color grading.',
+    recipeParameters: {
+      filmSimulation: 'Nostalgic Neg',
+      highlight: 0,
+      shadow: 0,
+      color: 1,
+      sharpness: 2,
+      clarity: 0,
+      grain: 'Weak',
+      dynamicRange: 'Auto',
+      whiteBalance: 'Auto White Priority (R:-3, B:3)'
+    },
+    promptPreset: {
+      mood: 'Coastal Comfort vibe.',
+      colorPalette: 'Nostalgic Neg tones.',
+      lighting: 'Natural daylight.',
+      contrast: 'Film-like contrast.',
+      saturation: 'Subtle film saturation.',
+      grainDescription: 'Weak grain.',
+      negativePrompt: 'Avoid modern digital look, HDR, over-saturation.'
+    }
+  }
+];
+
+export function getPhotoRecipe(id: string): PhotoRecipe | undefined {
+  return PHOTO_RECIPES.find(recipe => recipe.id === id);
+}

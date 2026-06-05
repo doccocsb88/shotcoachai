@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, SafeAreaView, StyleSheet } from 'react-native';
+import { Alert, Modal, SafeAreaView, StyleSheet } from 'react-native';
 
 import { useAnalysisStore } from '../store/analysisStore';
 import { HomeScreen } from '../../features/home/HomeScreen';
@@ -9,6 +9,8 @@ import { AnalyzingScreen } from '../../features/analysis/AnalyzingScreen';
 import { AnalysisResultScreen } from '../../features/result/AnalysisResultScreen';
 import { GeneratedResultScreen } from '../../features/result/GeneratedResultScreen';
 import { HistoryScreen } from '../../features/history/HistoryScreen';
+import { RecipeDetailScreen } from '../../features/photo-recipes/RecipeDetailScreen';
+import { RecipeListScreen } from '../../features/photo-recipes/RecipeListScreen';
 import { PoseCollectionScreen } from '../../features/pose-collection/PoseCollectionScreen';
 import { PoseDetailScreen } from '../../features/pose-collection/PoseDetailScreen';
 import { PaywallScreen, PaywallType } from '../../features/paywall/PaywallScreen';
@@ -17,7 +19,11 @@ import { AppWebView } from '../../components/common/AppWebView';
 import { colors } from '../../constants/theme';
 import { AnalysisResult, PickedPhoto } from '../../models/analysis';
 import { getPhotoAiTool, PhotoAiTool } from '../../models/photoAiTool';
+import { PhotoRecipe } from '../../models/photoRecipe';
 import { PoseSeedItem } from '../../features/pose-collection/types';
+import { buildPhotoRecipePrompt } from '../../services/photo-recipes/photoRecipePromptBuilder';
+import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary';
+import { getAiProcessingConsent, setAiProcessingConsent } from '../../services/storage/aiProcessingConsentStorage';
 import { UserManager } from '../../services/user/UserManager';
 import { trackScreenView } from '../../services/tracking/firebaseTracking';
 
@@ -29,12 +35,15 @@ type ScreenName =
   | 'analysisResult'
   | 'generatedResult'
   | 'history'
+  | 'recipeList'
+  | 'recipeDetail'
   | 'poseCollection'
   | 'poseDetail';
 
 export function AppNavigator() {
   const [screen, setScreen] = useState<ScreenName>('home');
   const [selectedPose, setSelectedPose] = useState<PoseSeedItem | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<PhotoRecipe | null>(null);
   const [resultOpenedFromHistory, setResultOpenedFromHistory] = useState(false);
   const [canReturnToAnalysis, setCanReturnToAnalysis] = useState(true);
   const [generatedSuggestionIndex, setGeneratedSuggestionIndex] = useState(0);
@@ -153,6 +162,55 @@ export function AppNavigator() {
     setScreen('generatedResult');
   }, [openAnalyzing, openHome, setCurrentResult]);
   const openHistory = useCallback(() => setScreen('history'), []);
+  const openRecipeList = useCallback(() => {
+    setResultOpenedFromHistory(false);
+    setCanReturnToAnalysis(false);
+    setGeneratedSuggestionIndex(0);
+    setScreen('recipeList');
+  }, []);
+  const openRecipeDetail = useCallback((recipe: PhotoRecipe) => {
+    setSelectedRecipe(recipe);
+    setScreen('recipeDetail');
+  }, []);
+  const openCurrentRecipeDetail = useCallback(() => {
+    const recipe = getRecipeFromResult(useAnalysisStore.getState().currentResult);
+    if (!recipe) return;
+    openRecipeDetail(recipe);
+  }, [openRecipeDetail]);
+  const startRecipeGeneration = useCallback((recipe: PhotoRecipe) => {
+    const latestPhoto = useAnalysisStore.getState().currentPhoto;
+    if (!latestPhoto) {
+      openHome();
+      return;
+    }
+    setSelectedRecipe(recipe);
+    setCurrentResult(createPhotoRecipeResult(latestPhoto, recipe));
+    setResultOpenedFromHistory(false);
+    setGeneratedSuggestionIndex(0);
+    setCanReturnToAnalysis(false);
+    setScreen('generatedResult');
+  }, [openHome, setCurrentResult]);
+  const generateRecipe = useCallback(async (recipe: PhotoRecipe) => {
+    const consentValue = await getAiProcessingConsent();
+    if (consentValue) {
+      startRecipeGeneration(recipe);
+      return;
+    }
+
+    Alert.alert(
+      'AI Processing Notice',
+      'To apply Photo Recipes, the selected photo and recipe prompt will be securely sent to OpenAI for processing.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          onPress: () => {
+            void setAiProcessingConsent().then(() => startRecipeGeneration(recipe));
+          }
+        }
+      ]
+    );
+  }, [startRecipeGeneration]);
   const openPoseCollection = useCallback(() => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(true);
@@ -177,7 +235,7 @@ export function AppNavigator() {
   let content;
 
   if (screen === 'preview') {
-    content = <PhotoPreviewScreen onBack={openHome} onAnalyze={openSelectedPreviewFlow} />;
+    content = <PhotoPreviewScreen onBack={openHome} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={openRecipeList} onOpenPaywall={() => openPaywall('Store')} />;
   } else if (screen === 'poseAssist') {
     content = <PoseAssistScreen onBack={openHome} onContinue={openPreview} />;
   } else if (screen === 'analyzing') {
@@ -196,15 +254,33 @@ export function AppNavigator() {
       <GeneratedResultScreen
         result={currentResult}
         suggestionIndex={generatedSuggestionIndex}
-        onBack={resultOpenedFromHistory ? openHistory : goHome}
+        onBack={resultOpenedFromHistory ? openHistory : (getRecipeFromResult(currentResult) ? openRecipeList : goHome)}
         onBackToAnalysis={() => setScreen('analysisResult')}
         onRetake={openRetakeCapture}
+        onOpenRecipeDetail={getRecipeFromResult(currentResult) ? openCurrentRecipeDetail : undefined}
         openedFromHistory={resultOpenedFromHistory}
         canReturnToAnalysis={canReturnToAnalysis}
       />
     );
   } else if (screen === 'history') {
     content = <HistoryScreen onBack={openHome} onOpenResult={openResultFromHistory} />;
+  } else if (screen === 'recipeList') {
+    content = <RecipeListScreen onBack={openPreview} onSelectRecipe={generateRecipe} onOpenPaywall={() => openPaywall('Store')} />;
+  } else if (screen === 'recipeDetail' && selectedRecipe) {
+    content = (
+      <RecipeDetailScreen
+        recipe={selectedRecipe}
+        onBack={() => {
+          if (currentResult && getRecipeFromResult(currentResult)) {
+            setScreen('generatedResult');
+            return;
+          }
+          openRecipeList();
+        }}
+        onGenerate={generateRecipe}
+        showGenerateAction={false}
+      />
+    );
   } else if (screen === 'poseCollection') {
     content = <PoseCollectionScreen onBack={openHome} onOpenPose={openPoseDetail} />;
   } else if (screen === 'poseDetail' && selectedPose) {
@@ -276,6 +352,40 @@ function createDirectToolResult(photo: PickedPhoto, tool: PhotoAiTool, instructi
       }
     ]
   };
+}
+
+function createPhotoRecipeResult(photo: PickedPhoto, recipe: PhotoRecipe): AnalysisResult {
+  const now = new Date().toISOString();
+
+  return {
+    analysisId: `recipe:${recipe.id}:${Date.now()}`,
+    overallAssessment: recipe.description,
+    originalImageUri: photo.uri,
+    originalImageMimeType: photo.mimeType,
+    createdAt: now,
+    suggestions: [
+      {
+        title: recipe.title,
+        concept: recipe.description,
+        composition: 'Apply this recipe look without changing composition.',
+        camera_angle: 'Preserve the original camera angle and perspective.',
+        changes: [
+          recipe.subtitle,
+          `Mood: ${recipe.promptPreset.mood}`,
+          `Palette: ${recipe.promptPreset.colorPalette}`,
+          `Tags: ${recipe.tags.join(', ')}`
+        ],
+        image_prompt: buildPhotoRecipePrompt(recipe)
+      }
+    ]
+  };
+}
+
+function getRecipeFromResult(result?: AnalysisResult): PhotoRecipe | undefined {
+  const analysisId = result?.sourceAnalysisId ?? result?.analysisId;
+  if (!analysisId?.startsWith('recipe:')) return undefined;
+  const recipeId = analysisId.split(':')[1];
+  return recipeId ? getPhotoRecipe(recipeId) : undefined;
 }
 
 function buildDirectToolImagePrompt(tool: PhotoAiTool, instruction?: string): string {

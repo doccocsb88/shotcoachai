@@ -24,10 +24,14 @@ import { ScreenNavBar } from '../../components/common/ScreenNavBar';
 import { colors, radius, shadows, spacing, typography } from '../../constants/theme';
 import { PHOTO_AI_TOOLS, PhotoAiTool, PhotoAiToolId, getPhotoAiTool } from '../../models/photoAiTool';
 import { getAiProcessingConsent, setAiProcessingConsent } from '../../services/storage/aiProcessingConsentStorage';
+import { UserAccessState, UserManager } from '../../services/user/UserManager';
+import { CrownLockIcon } from '../../components/icons/CrownLockIcon';
 
 interface Props {
   onBack: () => void;
   onAnalyze: () => void;
+  onOpenRecipes: () => void;
+  onOpenPaywall: () => void;
 }
 
 type PreviewStep = 'flows' | 'instructions';
@@ -79,7 +83,7 @@ const toolPromptTags: Record<PhotoAiToolId, string[]> = {
   smooth_skin: ['Portrait', 'Skin texture', 'Natural retouch']
 };
 
-export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
+export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPaywall }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
   const selectedToolId = useAnalysisStore(state => state.selectedPhotoAiTool);
   const setSelectedTool = useAnalysisStore(state => state.setSelectedPhotoAiTool);
@@ -95,6 +99,13 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
   const [hasAiProcessingConsent, setHasAiProcessingConsent] = useState<boolean | null>(null);
   const [isConsentVisible, setConsentVisible] = useState(false);
   const [isToolsSheetVisible, setToolsSheetVisible] = useState(false);
+  const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
+
+  useEffect(() => {
+    const unsubscribe = UserManager.subscribe(setAccessState);
+    void UserManager.refresh();
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -168,6 +179,10 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
   };
 
   const generateDirectEdit = () => {
+    if (!UserManager.canUseAiTool(selectedTool.id)) {
+      onOpenPaywall();
+      return;
+    }
     const rawInstruction = instruction.trim();
     const suggestionInstruction = selectedQuickSuggestion
       ? selectedTool.quickSuggestionInstructions?.[selectedQuickSuggestion] ?? selectedQuickSuggestion
@@ -225,6 +240,14 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
               iconId="enhance_photo"
               onPress={openEditTools}
             />
+
+            <FlowCard
+              accent="purple"
+              title="Photo Recipes"
+              subtitle="Apply curated film looks, color, light and mood."
+              iconId="restore_color"
+              onPress={onOpenRecipes}
+            />
           </ScrollView>
         ) : null}
 
@@ -270,7 +293,11 @@ export function PhotoPreviewScreen({ onBack, onAnalyze }: Props) {
 
         {step === 'instructions' ? (
           <View style={styles.actions}>
-            <PrimaryButton title="Generate" onPress={generateDirectEdit} />
+            <PrimaryButton 
+              title="Generate" 
+              icon={!UserManager.canUseAiTool(selectedTool.id) ? <CrownLockIcon color={colors.white} size={20} /> : undefined}
+              onPress={generateDirectEdit} 
+            />
           </View>
         ) : null}
 
@@ -967,18 +994,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
-    minHeight: 138,
-    padding: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 14,
     width: '48%',
     ...shadows.soft
   },
   toolIconWrap: {
     alignItems: 'center',
-    borderRadius: radius.lg,
-    height: 62,
+    height: 54,
     justifyContent: 'center',
     marginBottom: 8,
-    width: 62
+    width: 54
   },
   toolTitle: {
     color: colors.text,

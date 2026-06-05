@@ -22,6 +22,7 @@ import { PHOTO_AI_TOOLS, PhotoAiToolId } from '../../models/photoAiTool';
 import { generateEditedImage } from '../../services/openai/generateImage';
 import { saveImageToLibrary, shareImage } from '../../services/share/shareGuide';
 import { useAnalysisStore } from '../../core/store/analysisStore';
+import { UserManager } from '../../services/user/UserManager';
 
 const IMAGE_GENERATION_TIMEOUT_MS = 90_000;
 const GENERATE_EDIT_ERROR_MESSAGE = 'We could not create your AI edit right now. Please check your connection and try again.';
@@ -116,6 +117,15 @@ export function GeneratedResultScreen({
       );
 
       setGeneratedImageUri(uri);
+
+      if (isDirectToolResult && directToolId) {
+        void UserManager.trackAiToolUsed(directToolId);
+      } else if (isPhotoRecipeResult) {
+        const recipeId = result.analysisId.startsWith('recipe:') ? result.analysisId.split(':')[1] : undefined;
+        if (recipeId) {
+          void UserManager.trackRecipeUsed(recipeId);
+        }
+      }
 
       const updatedResult = mergeSuggestionGeneration(result, suggestionIndex, uri);
       const historyResult = createGeneratedHistoryResult(updatedResult, suggestionIndex, uri);
