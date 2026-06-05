@@ -23,6 +23,7 @@ import { getPhotoAiTool, PhotoAiTool } from '../../models/photoAiTool';
 import { PhotoRecipe } from '../../models/photoRecipe';
 import { PoseSeedItem } from '../../features/pose-collection/types';
 import { buildPhotoRecipePrompt } from '../../services/photo-recipes/photoRecipePromptBuilder';
+import { buildPhotoRecipePromptV2 } from '../../services/photo-recipes/photoRecipePromptBuilderV2';
 import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary';
 import { getAiProcessingConsent, setAiProcessingConsent } from '../../services/storage/aiProcessingConsentStorage';
 import { UserManager } from '../../services/user/UserManager';
@@ -460,17 +461,19 @@ function createPhotoRecipeResult(photo: PickedPhoto, recipe: PhotoRecipe): Analy
     createdAt: now,
     suggestions: [
       {
-        title: recipe.title,
-        concept: recipe.description,
+        title: recipe.title || recipe.name || 'Photo Recipe',
+        concept: recipe.description || recipe.mood || 'Apply photo recipe',
         composition: 'Apply this recipe look without changing composition.',
         camera_angle: 'Preserve the original camera angle and perspective.',
         changes: [
-          recipe.subtitle,
-          `Mood: ${recipe.promptPreset.mood}`,
-          `Palette: ${recipe.promptPreset.colorPalette}`,
-          `Tags: ${recipe.tags.join(', ')}`
-        ],
-        image_prompt: buildPhotoRecipePrompt(recipe)
+          recipe.subtitle || recipe.name || recipe.title || '',
+          `Mood: ${recipe.promptPreset?.mood || recipe.mood || 'Standard'}`,
+          recipe.promptPreset?.colorPalette ? `Palette: ${recipe.promptPreset.colorPalette}` : '',
+          recipe.tags?.length ? `Tags: ${recipe.tags.join(', ')}` : ''
+        ].filter(Boolean) as string[],
+        image_prompt: process.env.EXPO_PUBLIC_PHOTO_RECIPE_VERSION === 'v2' 
+          ? buildPhotoRecipePromptV2(recipe) 
+          : buildPhotoRecipePrompt(recipe)
       }
     ]
   };
