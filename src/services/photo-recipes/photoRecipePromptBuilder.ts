@@ -1,100 +1,57 @@
 import { PhotoRecipe } from '../../models/photoRecipe';
 import { translateRecipeParameters } from './recipeTranslator';
 
-const GLOBAL_NEGATIVE_PROMPT = [
-  'Avoid HDR.',
-  'Avoid oversaturation.',
-  'Avoid plastic skin.',
-  'Avoid AI beauty filters.',
-  'Avoid changing age.',
-  'Avoid changing ethnicity.',
-  'Avoid changing facial structure.',
-  'Avoid changing body proportions.',
-  'Avoid fantasy elements.',
-  'Avoid replacing objects.',
-  'Avoid changing weather dramatically.',
-  'Avoid changing time of day dramatically.'
-];
-
 export function buildPhotoRecipePrompt(recipe: PhotoRecipe): string {
   const visualIntent = translateRecipeParameters(recipe.recipeParameters);
 
   return `
-Edit the uploaded photo using the selected Photo Recipe.
-
-Selected flow: Photo Recipes.
-Selected recipe: ${recipe.title}.
+Edit the uploaded photo using the selected Photo Recipe: ${recipe.title}.
 
 The uploaded image is the source of truth.
 
-Goal:
-Apply the selected photography recipe look through realistic color, tone, grain, contrast, and mood adjustments only.
-The result must remain a practical photo reference that the user could realistically shoot again.
+Task:
+Apply a non-destructive realistic photo color grade only.
+Do not reconstruct, repaint, regenerate, retouch, or reinterpret the image content.
 
-Priority order:
-1. Preserve identity.
-2. Preserve clothing.
-3. Preserve hairstyle and accessories.
-4. Preserve body shape and facial features.
-5. Preserve pose.
-6. Preserve camera angle and perspective.
-7. Preserve environment, background layout, scene geometry, and composition.
-8. Apply only the recipe look.
+Preservation priority:
+1. Preserve the exact same person, identity, face, age appearance, skin tone identity, body shape, pose, hairstyle, clothing, and accessories.
+2. Preserve the exact same camera angle, perspective, crop, framing, and composition.
+3. Preserve the exact same background layout, objects, location, weather, time of day, and scene geometry.
+4. Apply only the selected recipe look through color, tone, contrast, grain, and mood.
 
-Recipe layer:
-- Recipe name: ${recipe.title}.
+Recipe:
+- Name: ${recipe.title}
+- Film simulation reference: ${recipe.recipeParameters.filmSimulation}
 - Mood: ${recipe.promptPreset.mood}
-- Color palette: ${recipe.promptPreset.colorPalette}
+- Palette: ${recipe.promptPreset.colorPalette}
 - Lighting: ${recipe.promptPreset.lighting}
 - Contrast: ${recipe.promptPreset.contrast}
 - Saturation: ${recipe.promptPreset.saturation}
 - Grain: ${recipe.promptPreset.grainDescription}
-- Film simulation reference: ${recipe.recipeParameters.filmSimulation}
-- Dynamic range: ${recipe.recipeParameters.dynamicRange}
 - White balance: ${recipe.recipeParameters.whiteBalance}
+- Dynamic range: ${recipe.recipeParameters.dynamicRange}
 
-Translated visual intent:
-- Highlight intent: ${visualIntent.highlightIntent}
-- Shadow intent: ${visualIntent.shadowIntent}
-- Color intent: ${visualIntent.colorIntent}
-- Sharpness intent: ${visualIntent.sharpnessIntent}
-- Clarity intent: ${visualIntent.clarityIntent}
+Recipe strength:
+Subtle to medium, around 35–45%.
+Skin tone protection: high.
+Geometry preservation: absolute.
 
-Strict preservation rules:
-- Preserve the exact same person and identity.
-- Preserve the same face, facial structure, expression, age appearance, skin tone identity, hairstyle, body shape, and realistic anatomy.
-- Preserve the same clothing, accessories, colors, patterns, and visible garment details.
-- Preserve the same pose, framing, crop, camera angle, perspective, and composition.
-- Preserve the same background layout, objects, location, scene geometry, and environment.
-- Preserve the original scene mood unless the recipe only subtly shifts color and tone.
-
-Allowed adjustments:
-- Realistic tonal adjustment.
-- Natural color palette shift based on the selected recipe.
-- Highlight and shadow tuning based on the translated visual intent.
-- Subtle film-like grain if requested by the recipe.
-- Mild natural sharpness or clarity adjustment based on the recipe.
-- Subtle white balance shift based on the recipe while keeping skin tones believable.
+Allowed:
+- ${visualIntent.highlightIntent}
+- ${visualIntent.shadowIntent}
+- ${visualIntent.colorIntent}
+- ${visualIntent.sharpnessIntent}
+- ${visualIntent.clarityIntent}
+- Realistic color palette shift based on the recipe
+- Fine film-like grain if requested
 
 Not allowed:
-- Do not change the subject.
-- Do not change identity, face, body shape, pose, outfit, hairstyle, or accessories.
-- Do not replace the background.
-- Do not add or remove objects.
-- Do not change composition, crop, camera angle, or perspective.
-- Do not create fantasy elements.
-- Do not create an AI-generated portrait look.
-- Do not apply beauty retouching, makeup, plastic skin, or influencer styling.
-- Do not change weather or time of day dramatically.
-- Do not convert the image into anime, illustration, cartoon, painting, or CGI.
-
-Recipe-specific negative prompt:
-${recipe.promptPreset.negativePrompt}
-
-Global negative prompt:
-${GLOBAL_NEGATIVE_PROMPT.join('\n')}
+- Do not change identity, face, body, pose, outfit, hairstyle, accessories, background, objects, crop, perspective, weather, or time of day.
+- Do not add new water, sky, clouds, objects, people, sunlight, or fantasy elements.
+- Do not apply beauty retouching, makeup, plastic skin, HDR, heavy teal grading, fake tropical colors, over-saturation, cyberpunk colors, anime, illustration, painting, or CGI.
+- ${recipe.promptPreset.negativePrompt}
 
 Output:
-Return a realistic high-quality photo edit that looks like the same original photo with only the selected Photo Recipe look applied.
+Return the same original photo with only a realistic ${recipe.title} recipe color grade applied.
 `.trim();
 }

@@ -30,8 +30,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(8, 18, 34, 0.88)',
     borderRadius: radius.pill,
     flexDirection: 'column',
-    maxWidth: '90%',
-    paddingHorizontal: 40,
+    maxWidth: '95%',
+    paddingHorizontal: 24,
     paddingVertical: 12,
     ...shadows.button
   },
