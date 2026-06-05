@@ -558,7 +558,7 @@ export const PHOTO_RECIPES: PhotoRecipe[] = [
     subtitle: 'Modified UltraMax400 film simulation with Classic Chrome.',
     category: 'film' as any,
     thumbnail: require('../../../assets/photo-recipes/modified_ultramax400.jpg'),
-    tags: ['Film', 'Film'],
+    tags: ['Film'],
     description: 'A beautiful Classic Chrome simulation with unique color grading.',
     recipeParameters: {
       filmSimulation: 'Classic Chrome',
