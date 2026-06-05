@@ -17,7 +17,7 @@ import { PaywallScreen, PaywallType } from '../../features/paywall/PaywallScreen
 import { LegalDocument, SettingView } from '../../features/settings/SettingView';
 import { AppWebView } from '../../components/common/AppWebView';
 import { colors } from '../../constants/theme';
-import { AnalysisResult, PickedPhoto } from '../../models/analysis';
+import { AnalysisResult, getFlowType, PickedPhoto } from '../../models/analysis';
 import { getPhotoAiTool, PhotoAiTool } from '../../models/photoAiTool';
 import { PhotoRecipe } from '../../models/photoRecipe';
 import { PoseSeedItem } from '../../features/pose-collection/types';
@@ -234,8 +234,8 @@ export function AppNavigator() {
 
   let content;
 
-  const isRecipeFlow = screen === 'recipeList' || screen === 'recipeDetail' || (screen === 'generatedResult' && !!currentResult && !!getRecipeFromResult(currentResult));
-  const isGenericResultFlow = screen === 'generatedResult' && (!currentResult || !getRecipeFromResult(currentResult));
+  const isRecipeFlow = screen === 'recipeList' || screen === 'recipeDetail' || (screen === 'generatedResult' && !!currentResult && getFlowType(currentResult) === 'photoRecipe');
+  const isGenericResultFlow = screen === 'generatedResult' && (!currentResult || getFlowType(currentResult) !== 'photoRecipe');
 
   let backgroundContent;
   if (isRecipeFlow) {
@@ -424,6 +424,7 @@ function createDirectToolResult(photo: PickedPhoto, tool: PhotoAiTool, instructi
 
   return {
     analysisId: `direct:${tool.id}:${Date.now()}`,
+    flowType: 'editingTool',
     overallAssessment: tool.detail,
     originalImageUri: photo.uri,
     originalImageMimeType: photo.mimeType,
@@ -446,6 +447,7 @@ function createPhotoRecipeResult(photo: PickedPhoto, recipe: PhotoRecipe): Analy
 
   return {
     analysisId: `recipe:${recipe.id}:${Date.now()}`,
+    flowType: 'photoRecipe',
     overallAssessment: recipe.description,
     originalImageUri: photo.uri,
     originalImageMimeType: photo.mimeType,
@@ -469,8 +471,8 @@ function createPhotoRecipeResult(photo: PickedPhoto, recipe: PhotoRecipe): Analy
 }
 
 function getRecipeFromResult(result?: AnalysisResult): PhotoRecipe | undefined {
-  const analysisId = result?.sourceAnalysisId ?? result?.analysisId;
-  if (!analysisId?.startsWith('recipe:')) return undefined;
+  if (!result || getFlowType(result) !== 'photoRecipe') return undefined;
+  const analysisId = result.sourceAnalysisId ?? result.analysisId;
   const recipeId = analysisId.split(':')[1];
   return recipeId ? getPhotoRecipe(recipeId) : undefined;
 }

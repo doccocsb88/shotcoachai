@@ -194,8 +194,11 @@ export interface SuggestionGenerationEntry {
   qualityEvaluation?: ImageQualityEvaluation;
 }
 
+export type FlowType = 'aiCoach' | 'photoRecipe' | 'editingTool';
+
 export interface AnalysisResult {
   analysisId: string;
+  flowType?: FlowType;
   sourceAnalysisId?: string;
   overallAssessment: string;
   suggestions: Suggestion[];
@@ -300,4 +303,20 @@ export interface PickedPhoto {
   fileName?: string;
   mimeType: string;
   fileSize?: number;
+}
+
+export function getFlowType(result: AnalysisResult): FlowType {
+  if (result.flowType) {
+    return result.flowType;
+  }
+  
+  const targetAnalysisId = result.sourceAnalysisId?.startsWith('recipe:') ? result.sourceAnalysisId : result.analysisId;
+  
+  if (targetAnalysisId.startsWith('recipe:')) {
+    return 'photoRecipe';
+  }
+  if (result.analysisId.startsWith('direct:')) {
+    return 'editingTool';
+  }
+  return 'aiCoach';
 }

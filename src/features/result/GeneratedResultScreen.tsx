@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { BeforeAfterSlider } from '../../components/beforeAfter/BeforeAfterSlider';
 import { ForegroundToast } from '../../components/common/ForegroundToast';
@@ -8,13 +8,15 @@ import {
   ChevronLeftIcon,
   DownloadOutlineIcon,
   MoreHorizontalIcon,
-  ShareOutlineIcon
+  ShareOutlineIcon,
+  XIcon
 } from '../../components/icons/ResultActionIcons';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius, shadows, typography } from '../../constants/theme';
 import {
   AnalysisResult,
   createGeneratedHistoryResult,
+  getFlowType,
   getStoredGenerationUri,
   mergeSuggestionGeneration
 } from '../../models/analysis';
@@ -23,6 +25,8 @@ import { generateEditedImage } from '../../services/openai/generateImage';
 import { saveImageToLibrary, shareImage } from '../../services/share/shareGuide';
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { UserManager } from '../../services/user/UserManager';
+import { PHOTO_RECIPES } from '../../services/photo-recipes/photoRecipeLibrary';
+import { RecipeDetailScreen } from '../photo-recipes/RecipeDetailScreen';
 
 const IMAGE_GENERATION_TIMEOUT_MS = 90_000;
 const GENERATE_EDIT_ERROR_MESSAGE = 'We could not create your AI edit right now. Please check your connection and try again.';
@@ -72,12 +76,19 @@ export function GeneratedResultScreen({
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [retrySuggestionIndex, setRetrySuggestionIndex] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [recipeSheetVisible, setRecipeSheetVisible] = useState(false);
+  const [tipSheetVisible, setTipSheetVisible] = useState(false);
 
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
-  const isDirectToolResult = result.analysisId.startsWith('direct:');
-  const isPhotoRecipeResult = result.analysisId.startsWith('recipe:') || result.sourceAnalysisId?.startsWith('recipe:');
+  const flowType = getFlowType(result);
+  const isDirectToolResult = flowType === 'editingTool';
+  const isPhotoRecipeResult = flowType === 'photoRecipe';
   const directToolId = getDirectToolId(result.analysisId);
+
+  const targetAnalysisId = result.sourceAnalysisId && (result.sourceAnalysisId.startsWith('recipe:') || result.sourceAnalysisId.startsWith('direct:')) ? result.sourceAnalysisId : result.analysisId;
+  const recipeId = isPhotoRecipeResult && targetAnalysisId.startsWith('recipe:') ? targetAnalysisId.split(':')[1] : undefined;
+  const recipe = recipeId ? PHOTO_RECIPES.find(r => r.id === recipeId) : undefined;
 
   useEffect(() => {
     setGenerationError(null);
@@ -121,7 +132,6 @@ export function GeneratedResultScreen({
       if (isDirectToolResult && directToolId) {
         void UserManager.trackAiToolUsed(directToolId);
       } else if (isPhotoRecipeResult) {
-        const recipeId = result.analysisId.startsWith('recipe:') ? result.analysisId.split(':')[1] : undefined;
         if (recipeId) {
           void UserManager.trackRecipeUsed(recipeId);
         }
@@ -208,12 +218,16 @@ export function GeneratedResultScreen({
   }, [selectedSuggestion, tipCardDescription]);
 
   const openTipDetail = () => {
-    Alert.alert(selectedSuggestion?.title ?? tipCardTitle, tipDetailBody);
+    setTipSheetVisible(true);
   };
 
   const openHeaderDetail = () => {
     if (isPhotoRecipeResult) {
-      onOpenRecipeDetail?.();
+      if (recipe) {
+        setRecipeSheetVisible(true);
+      } else {
+        onOpenRecipeDetail?.();
+      }
       return;
     }
     openTipDetail();
@@ -398,6 +412,41 @@ export function GeneratedResultScreen({
               <ForegroundToast />
             </View>
           ) : null}
+
+          <Modal animationType="slide" transparent visible={recipeSheetVisible} onRequestClose={() => setRecipeSheetVisible(false)}>
+            <View style={styles.sheetOverlay}>
+              <Pressable style={styles.sheetBackdrop} onPress={() => setRecipeSheetVisible(false)} />
+              <View style={styles.sheetContentWrap}>
+                {recipe && (
+                  <RecipeDetailScreen 
+                    recipe={recipe} 
+                    onBack={() => setRecipeSheetVisible(false)} 
+                    onGenerate={() => {}} 
+                    showGenerateAction={false} 
+                    asSheet={true} 
+                    onClose={() => setRecipeSheetVisible(false)} 
+                  />
+                )}
+              </View>
+            </View>
+          </Modal>
+
+          <Modal animationType="slide" transparent visible={tipSheetVisible} onRequestClose={() => setTipSheetVisible(false)}>
+            <View style={styles.sheetOverlay}>
+              <Pressable style={styles.sheetBackdrop} onPress={() => setTipSheetVisible(false)} />
+              <View style={[styles.sheetContentWrap, styles.tipSheetWrap]}>
+                <View style={styles.sheetHeader}>
+                  <Text style={styles.sheetTitle} numberOfLines={1}>{selectedSuggestion?.title ?? tipCardTitle}</Text>
+                  <Pressable onPress={() => setTipSheetVisible(false)} style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+                    <XIcon size={24} color={colors.text} />
+                  </Pressable>
+                </View>
+                <ScrollView contentContainerStyle={styles.tipSheetContent}>
+                  <Text style={styles.tipSheetBody}>{tipDetailBody}</Text>
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
       </View>
     </Screen>
   );
@@ -778,5 +827,52 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72
+  },
+  sheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(11, 27, 52, 0.42)'
+  },
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFillObject
+  },
+  sheetContentWrap: {
+    height: '85%'
+  },
+  tipSheetWrap: {
+    height: '50%',
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    overflow: 'hidden'
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14
+  },
+  sheetTitle: {
+    color: colors.text,
+    fontSize: typography.headline,
+    fontWeight: '900',
+    flex: 1,
+    marginRight: 16
+  },
+  closeButton: {
+    padding: 4
+  },
+  tipSheetContent: {
+    padding: 20,
+    paddingBottom: 40
+  },
+  tipSheetBody: {
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600'
   }
 });

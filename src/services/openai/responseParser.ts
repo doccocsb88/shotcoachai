@@ -41,6 +41,7 @@ export function parseAnalysisResponse(
 
   return {
     analysisId: `${Date.now()}`,
+    flowType: 'aiCoach',
     overallAssessment: asString(parsed.overall_assessment),
     suggestions: normalizeSuggestions(parsed.suggestions).slice(0, 3),
     visualOutput: {
@@ -76,6 +77,7 @@ export function buildAnalysisResultFromProductionFlow(input: {
 
   return {
     analysisId: productionAnalysis.analysis_id || `${Date.now()}`,
+    flowType: 'aiCoach',
     overallAssessment: productionAnalysis.overall_assessment,
     suggestions,
     productionAnalysis,
@@ -105,6 +107,7 @@ export function buildAnalysisResultFromCoachV2Flow(input: {
 
   return {
     analysisId: `coach-v2:${Date.now()}`,
+    flowType: 'aiCoach',
     overallAssessment: coachAnalysisV2.overall_assessment,
     suggestions,
     productionAnalysis: coachAnalysisV2ToLegacyAnalysis(coachAnalysisV2),

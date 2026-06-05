@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { Screen } from '../../components/common/Screen';
 import { ScreenNavBar } from '../../components/common/ScreenNavBar';
 import { colors, radius, shadows, typography } from '../../constants/theme';
+import { XIcon } from '../../components/icons/ResultActionIcons';
 import { PhotoRecipe } from '../../models/photoRecipe';
 import { translateRecipeParameters } from '../../services/photo-recipes/recipeTranslator';
 
@@ -12,16 +13,26 @@ interface Props {
   onBack: () => void;
   onGenerate: (recipe: PhotoRecipe) => void | Promise<void>;
   showGenerateAction?: boolean;
+  asSheet?: boolean;
+  onClose?: () => void;
 }
 
-export function RecipeDetailScreen({ recipe, onBack, onGenerate, showGenerateAction = true }: Props) {
+export function RecipeDetailScreen({ recipe, onBack, onGenerate, showGenerateAction = true, asSheet, onClose }: Props) {
   const visualIntent = translateRecipeParameters(recipe.recipeParameters);
 
-  return (
-    <Screen scroll={false}>
-      <View style={styles.root}>
+  const content = (
+    <View style={asSheet ? styles.sheetContainer : styles.root}>
+      {asSheet ? (
+        <View style={styles.sheetHeader}>
+          <Text style={styles.sheetTitle} numberOfLines={1}>{recipe.title}</Text>
+          <Pressable onPress={onClose} style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+            <XIcon size={24} color={colors.text} />
+          </Pressable>
+        </View>
+      ) : (
         <ScreenNavBar title={recipe.title} leadingLabel="Back" onLeadingPress={onBack} />
-        <ScrollView
+      )}
+      <ScrollView
           contentContainerStyle={[styles.content, !showGenerateAction && styles.contentWithoutAction]}
           showsVerticalScrollIndicator={false}
         >
@@ -77,8 +88,13 @@ export function RecipeDetailScreen({ recipe, onBack, onGenerate, showGenerateAct
           </View>
         ) : null}
       </View>
-    </Screen>
   );
+
+  if (asSheet) {
+    return content;
+  }
+
+  return <Screen scroll={false}>{content}</Screen>;
 }
 
 function RecipeSection({ title, children }: { title: string; children: ReactNode }) {
@@ -102,6 +118,30 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1
+  },
+  sheetContainer: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    flex: 1,
+    overflow: 'hidden'
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14
+  },
+  sheetTitle: {
+    color: colors.text,
+    fontSize: typography.headline,
+    fontWeight: '900'
+  },
+  closeButton: {
+    padding: 4
   },
   content: {
     paddingBottom: 120,

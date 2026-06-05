@@ -79,3 +79,12 @@ export function MoreHorizontalIcon({ size = 22, color }: IconProps) {
     </Svg>
   );
 }
+
+export function XIcon({ size = 24, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Line x1={18} y1={6} x2={6} y2={18} stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
+      <Line x1={6} y1={6} x2={18} y2={18} stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}

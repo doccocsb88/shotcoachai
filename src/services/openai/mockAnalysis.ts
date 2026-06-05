@@ -119,6 +119,7 @@ export function createMockAnalysisResult(
 
   return {
     analysisId,
+    flowType: 'aiCoach',
     overallAssessment: productionAnalysis.overall_assessment,
     suggestions: [
       {
