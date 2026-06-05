@@ -728,8 +728,10 @@ function AiProcessingConsentModal({
   onCancel: () => void;
   onContinue: () => void;
 }) {
+  if (!visible) return null;
+
   return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel} statusBarTranslucent>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 999, elevation: 999 }]}>
       <View style={styles.modalRoot}>
         <Pressable
           accessibilityLabel="Cancel AI processing consent"
@@ -764,7 +766,7 @@ function AiProcessingConsentModal({
           </View>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 }
 

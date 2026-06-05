@@ -100,7 +100,9 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
         ) : (
           <>
             <ActivityIndicator color={colors.primary} size="large" />
-            <Text style={styles.title}>Running {selectedTool.title}</Text>
+            <Text style={styles.title}>
+              {selectedTool.id === 'ai_coach' ? 'Finding Better Shot Ideas...' : `Running ${selectedTool.title}`}
+            </Text>
             <Text style={styles.subtitle}>{status}</Text>
             <View style={styles.toastDock}>
               <ForegroundToast />

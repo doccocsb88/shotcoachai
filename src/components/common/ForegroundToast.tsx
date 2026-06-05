@@ -4,15 +4,19 @@ import { colors, radius, shadows, typography } from '../../constants/theme';
 
 interface Props {
   message?: string;
+  subtitle?: string;
 }
 
 export function ForegroundToast({
-  message = 'Keep the app open while AI is working.'
+  message = 'Creating your photo...',
+  subtitle = 'Please keep this screen open until your result is ready.'
 }: Props) {
   return (
     <View pointerEvents="none" style={styles.toast}>
-      <Text style={styles.icon}>✨</Text>
-      <Text style={styles.message}>{message}</Text>
+      <View style={styles.textContainer}>
+        <Text style={styles.message} numberOfLines={1} adjustsFontSizeToFit>{message}</Text>
+        {subtitle ? <Text style={styles.subtitle} numberOfLines={1} adjustsFontSizeToFit>{subtitle}</Text> : null}
+      </View>
     </View>
   );
 }
@@ -26,18 +30,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     maxWidth: '100%',
-    paddingHorizontal: 14,
+    paddingHorizontal: 8,
     paddingVertical: 10,
     ...shadows.button
   },
-  icon: {
-    fontSize: 14
+  textContainer: {
+    flexShrink: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 2
   },
   message: {
     color: colors.white,
-    flexShrink: 1,
     fontSize: typography.caption,
     fontWeight: '800',
-    lineHeight: 18
+    lineHeight: 18,
+    textAlign: 'center'
+  },
+  subtitle: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
+    textAlign: 'center'
   }
 });

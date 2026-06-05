@@ -234,6 +234,33 @@ export function AppNavigator() {
 
   let content;
 
+  const isRecipeFlow = screen === 'recipeList' || screen === 'recipeDetail' || (screen === 'generatedResult' && !!currentResult && !!getRecipeFromResult(currentResult));
+  const isGenericResultFlow = screen === 'generatedResult' && (!currentResult || !getRecipeFromResult(currentResult));
+
+  let backgroundContent;
+  if (isRecipeFlow) {
+    if (resultOpenedFromHistory) {
+      backgroundContent = <HistoryScreen onBack={openHome} onOpenResult={openResultFromHistory} />;
+    } else {
+      backgroundContent = <PhotoPreviewScreen onBack={openHome} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={openRecipeList} onOpenPaywall={() => openPaywall('Store')} />;
+    }
+  } else if (isGenericResultFlow) {
+    if (resultOpenedFromHistory) {
+      backgroundContent = <HistoryScreen onBack={openHome} onOpenResult={openResultFromHistory} />;
+    } else if (canReturnToAnalysis) {
+      backgroundContent = (
+        <AnalysisResultScreen
+          result={currentResult!}
+          onOpenPaywall={openPaywall}
+          onBack={goHome}
+          onSelectSuggestion={index => openGeneratedResult(index, undefined, false)}
+        />
+      );
+    } else {
+      backgroundContent = <PhotoPreviewScreen onBack={openHome} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={openRecipeList} onOpenPaywall={() => openPaywall('Store')} />;
+    }
+  }
+
   if (screen === 'preview') {
     content = <PhotoPreviewScreen onBack={openHome} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={openRecipeList} onOpenPaywall={() => openPaywall('Store')} />;
   } else if (screen === 'poseAssist') {
@@ -298,7 +325,7 @@ export function AppNavigator() {
     );
   }
 
-  const contentShell = screen === 'home' ? content : <SafeAreaView style={styles.safeContent}>{content}</SafeAreaView>;
+  const contentShell = screen === 'home' ? content : <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
 
   return (
     <>
@@ -317,9 +344,69 @@ export function AppNavigator() {
         visible={legalDocument !== null}
         onClose={() => setLegalDocument(null)}
       />
-      <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
-        <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
+      <Modal 
+        animationType="slide" 
+        visible={isRecipeFlow} 
+        onRequestClose={() => {
+          if (screen === 'recipeDetail') {
+            openRecipeList();
+          } else {
+            openPreview();
+          }
+        }}
+      >
+        <SafeAreaView style={styles.safeContent}>
+          {screen === 'recipeList' && <RecipeListScreen onBack={openPreview} onSelectRecipe={generateRecipe} onOpenPaywall={() => openPaywall('Store')} />}
+          {(screen === 'recipeDetail' || screen === 'generatedResult') && selectedRecipe && (
+            <RecipeDetailScreen
+              recipe={selectedRecipe}
+              onBack={() => openRecipeList()}
+              onGenerate={generateRecipe}
+              showGenerateAction={false}
+            />
+          )}
+        </SafeAreaView>
+
+        <Modal 
+          animationType="slide" 
+          visible={screen === 'generatedResult' && !!currentResult && !!getRecipeFromResult(currentResult)} 
+          onRequestClose={() => {
+            resultOpenedFromHistory ? openHistory() : openRecipeList();
+          }}
+        >
+          <SafeAreaView style={styles.safeContent}>
+            {screen === 'generatedResult' && content}
+          </SafeAreaView>
+          
+          <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
+            <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
+          </Modal>
+        </Modal>
+
+        <Modal animationType="slide" visible={paywallOpen && screen !== 'generatedResult'} onRequestClose={closePaywall} statusBarTranslucent transparent>
+          <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
+        </Modal>
       </Modal>
+
+      <Modal 
+        animationType="slide" 
+        visible={isGenericResultFlow} 
+        onRequestClose={() => {
+          if (resultOpenedFromHistory) openHistory();
+          else if (canReturnToAnalysis) setScreen('analysisResult');
+          else goHome();
+        }}
+      >
+        <SafeAreaView style={styles.safeContent}>
+          {isGenericResultFlow && content}
+        </SafeAreaView>
+      </Modal>
+
+      {!(isRecipeFlow || isGenericResultFlow) && (
+        <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
+          <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
+        </Modal>
+      )}
     </>
   );
 }
