@@ -51,6 +51,7 @@ interface Props {
   onBack: () => void;
   onBackToAnalysis: () => void;
   onRetake: (referenceUri: string) => void;
+  onOpenRecipeDetail?: () => void;
   openedFromHistory?: boolean;
   canReturnToAnalysis?: boolean;
 }
@@ -61,6 +62,7 @@ export function GeneratedResultScreen({
   onBack,
   onBackToAnalysis,
   onRetake,
+  onOpenRecipeDetail,
   openedFromHistory = false,
   canReturnToAnalysis = true
 }: Props) {
@@ -73,6 +75,7 @@ export function GeneratedResultScreen({
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
   const isDirectToolResult = result.analysisId.startsWith('direct:');
+  const isPhotoRecipeResult = result.analysisId.startsWith('recipe:') || result.sourceAnalysisId?.startsWith('recipe:');
   const directToolId = getDirectToolId(result.analysisId);
 
   useEffect(() => {
@@ -122,10 +125,6 @@ export function GeneratedResultScreen({
       setGeneratedImageUri(null);
       setGenerationError(GENERATE_EDIT_ERROR_MESSAGE);
       setRetrySuggestionIndex(suggestionIndex);
-      Alert.alert('AI Edit failed', GENERATE_EDIT_ERROR_MESSAGE, [
-        { text: 'Close', style: 'cancel' },
-        { text: 'Retry', onPress: () => void generateSuggestion(suggestionIndex) }
-      ]);
     } finally {
       setIsGenerating(false);
     }
@@ -202,6 +201,14 @@ export function GeneratedResultScreen({
     Alert.alert(selectedSuggestion?.title ?? tipCardTitle, tipDetailBody);
   };
 
+  const openHeaderDetail = () => {
+    if (isPhotoRecipeResult) {
+      onOpenRecipeDetail?.();
+      return;
+    }
+    openTipDetail();
+  };
+
   const retryGeneration = () => {
     if (retrySuggestionIndex === null || isGenerating) {
       return;
@@ -239,19 +246,23 @@ export function GeneratedResultScreen({
             <Text style={styles.resultHeaderTitle} numberOfLines={1}>
               ShotCoach AI
             </Text>
-            <Pressable
-              accessibilityLabel="Show tip detail"
-              accessibilityRole="button"
-              disabled={headerActionsDisabled}
-              onPress={openTipDetail}
-              style={({ pressed }) => [
-                styles.headerIconCircle,
-                headerActionsDisabled && styles.headerIconDisabled,
-                pressed && !headerActionsDisabled && styles.pressed
-              ]}
-            >
-              <MoreHorizontalIcon size={20} color={colors.text} />
-            </Pressable>
+            {isDirectToolResult ? (
+              <View style={styles.headerIconPlaceholder} />
+            ) : (
+              <Pressable
+                accessibilityLabel={isPhotoRecipeResult ? 'Show recipe detail' : 'Show tip detail'}
+                accessibilityRole="button"
+                disabled={headerActionsDisabled || (isPhotoRecipeResult && !onOpenRecipeDetail)}
+                onPress={openHeaderDetail}
+                style={({ pressed }) => [
+                  styles.headerIconCircle,
+                  (headerActionsDisabled || (isPhotoRecipeResult && !onOpenRecipeDetail)) && styles.headerIconDisabled,
+                  pressed && !headerActionsDisabled && styles.pressed
+                ]}
+              >
+                <MoreHorizontalIcon size={20} color={colors.text} />
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.comparisonSection}>
@@ -360,7 +371,7 @@ export function GeneratedResultScreen({
               </Pressable>
             </View>
 
-            {openedFromHistory || isDirectToolResult ? null : (
+            {openedFromHistory || isDirectToolResult || isPhotoRecipeResult ? null : (
               <Pressable
                 accessibilityLabel="Choose another creative direction"
                 accessibilityRole="button"
@@ -406,6 +417,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 44,
     ...shadows.soft
+  },
+  headerIconPlaceholder: {
+    height: 44,
+    width: 44
   },
   headerIconDisabled: {
     opacity: 0.4
