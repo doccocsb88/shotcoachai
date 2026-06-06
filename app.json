@@ -10,6 +10,11 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#F6F8FE"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "co.q7labs.shotcoachai",
