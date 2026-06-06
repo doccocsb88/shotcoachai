@@ -2,23 +2,38 @@ import * as FileSystem from 'expo-file-system';
 
 const IMAGE_DIR = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}shotcoach-images/`;
 
+export function resolveLocalImageUri(imageUri: string | undefined): string | undefined {
+  if (!imageUri) return undefined;
+  if (imageUri.startsWith('http') || imageUri.startsWith('mock_')) return imageUri;
+
+  // Fix changing iOS simulator/device UUIDs by extracting the filename
+  // and appending it to the current app's document/cache directory.
+  const match = imageUri.match(/shotcoach-images\/([^/]+)$/);
+  if (match) {
+    return `${IMAGE_DIR}${match[1]}`;
+  }
+
+  return imageUri;
+}
+
 export async function persistImageFile(imageUri: string, filePrefix: string): Promise<string> {
-  if (!imageUri || imageUri.startsWith('mock_')) {
-    return imageUri;
+  const resolvedUri = resolveLocalImageUri(imageUri);
+  if (!resolvedUri || resolvedUri.startsWith('mock_') || resolvedUri.startsWith('http')) {
+    return resolvedUri || imageUri;
   }
 
   await ensureImageDir();
-  const sourceUri = normalizeFileUri(imageUri);
+  const sourceUri = normalizeFileUri(resolvedUri);
   const info = await FileSystem.getInfoAsync(sourceUri);
   if (!info.exists) {
-    return imageUri;
+    return resolvedUri;
   }
 
   if (sourceUri.startsWith(IMAGE_DIR)) {
     return sourceUri;
   }
 
-  const dest = `${IMAGE_DIR}${filePrefix}-${Date.now()}${inferExtension(imageUri)}`;
+  const dest = `${IMAGE_DIR}${filePrefix}-${Date.now()}${inferExtension(resolvedUri)}`;
   await FileSystem.copyAsync({
     from: sourceUri,
     to: dest
