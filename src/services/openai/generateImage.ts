@@ -194,7 +194,6 @@ export async function generateEditedImage(
   if (isGptImageFamily(model)) {
     form.append('quality', resolveImageEditQuality(editingToolId));
     form.append('output_format', 'png');
-    form.append('input_fidelity', 'high');
   }
 
   if (isDallE2(model)) {
