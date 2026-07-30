@@ -15,7 +15,6 @@ export function ForegroundToast({
 }: Props) {
   return (
     <View pointerEvents="none" style={styles.toast}>
-      <Text style={styles.toastMeta}>AI GENERATION ACTIVE</Text>
       <View style={styles.textContainer}>
         <Text style={styles.message} numberOfLines={isIOS ? 1 : undefined} adjustsFontSizeToFit={isIOS}>
           {message}
@@ -41,16 +40,8 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     maxWidth: '95%',
     paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingVertical: 14,
     ...shadows.button
-  },
-  toastMeta: {
-    color: colors.primary,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.9,
-    marginBottom: 5,
-    textTransform: 'uppercase'
   },
   textContainer: {
     alignItems: 'center',
