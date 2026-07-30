@@ -91,8 +91,8 @@ android {
         applicationId 'co.q7labs.shotcoachai'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
-        versionName "0.1.1"
+        versionCode 9
+        versionName "0.1.2"
         // Enable 16 KB page size support (Android 15+)
         externalNativeBuild {
             cmake {

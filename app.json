@@ -2,10 +2,10 @@
   "expo": {
     "name": "AI Photo Coach",
     "slug": "shotcoach-ai",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "jsEngine": "jsc",
+    "jsEngine": "hermes",
     "newArchEnabled": false,
     "assetBundlePatterns": [
       "**/*"
