@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Image, Pressable, SafeAreaView, StyleSheet, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { AnalysisResult } from '../../models/analysis';
 import { ChevronLeftIcon, DownloadOutlineIcon, ShareOutlineIcon } from '../../components/icons/ResultActionIcons';
@@ -36,7 +36,7 @@ export function ImageResultView({ result, onBack }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconButton}>
           <ChevronLeftIcon color="#fff" size={28} />
@@ -57,7 +57,7 @@ export function ImageResultView({ result, onBack }: Props) {
           <ShareOutlineIcon color="#fff" size={26} />
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

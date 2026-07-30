@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
@@ -205,7 +205,6 @@ function HistoryGridItem({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.select({ android: (StatusBar.currentHeight || 24) + 16, ios: 0 }),
     position: 'relative'
   },
   bodyWrap: {

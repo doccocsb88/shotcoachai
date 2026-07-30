@@ -17,3 +17,11 @@ yarn-error.*
 !.env.example
 tmp/
 .codex/
+codex-onboarding-loop
+codex-review-loop
+CreateAds
+app-store-screenshots
+.codex-skill-staging
+output
+docs
+canvas

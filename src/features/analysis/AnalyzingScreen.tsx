@@ -86,6 +86,10 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
+        <View pointerEvents="none" style={styles.heroAtmosphere}>
+          <View style={styles.heroGlowTop} />
+          <View style={styles.heroGlowSide} />
+        </View>
         <Image source={{ uri: photo.uri }} style={[styles.thumbnail, { height: previewHeight, width: previewWidth }]} />
         {error ? (
           <>
@@ -117,14 +121,39 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+    backgroundColor: colors.background,
     flex: 1,
     justifyContent: 'center',
+    overflow: 'hidden',
     padding: 24
   },
+  heroAtmosphere: {
+    ...StyleSheet.absoluteFillObject
+  },
+  heroGlowTop: {
+    backgroundColor: '#E8F4FF',
+    borderBottomLeftRadius: 180,
+    borderBottomRightRadius: 180,
+    height: 280,
+    left: -40,
+    opacity: 0.95,
+    position: 'absolute',
+    right: -40,
+    top: -70
+  },
+  heroGlowSide: {
+    backgroundColor: 'rgba(110, 168, 255, 0.18)',
+    borderRadius: 220,
+    height: 340,
+    position: 'absolute',
+    right: -120,
+    top: 180,
+    width: 340
+  },
   thumbnail: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.58)',
+    borderColor: 'rgba(255,255,255,0.9)',
+    borderRadius: radius.xl,
     borderWidth: 1,
     marginBottom: 28,
     resizeMode: 'cover'

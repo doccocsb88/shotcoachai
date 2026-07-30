@@ -3,7 +3,7 @@ import { Alert, Linking, Modal, Platform, Pressable, SafeAreaView, ScrollView, S
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { LEGAL_URLS, SUPPORT_EMAIL } from '../../constants/legal';
-import { colors, radius, shadows } from '../../constants/theme';
+import { colors, radius } from '../../constants/theme';
 import { PurchaseService } from '../../services/purchase/PurchaseService';
 
 const APP_STORE_ID = '6773058480';
@@ -264,7 +264,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     marginBottom: 22,
     overflow: 'hidden',
-    ...shadows.soft
+    shadowColor: '#0B1B34',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    elevation: 2
   },
   settingsRow: {
     alignItems: 'center',

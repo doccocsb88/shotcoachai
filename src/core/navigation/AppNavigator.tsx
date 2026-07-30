@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, SafeAreaView, StyleSheet } from 'react-native';
+import { Alert, Modal, SafeAreaView, StyleSheet, View } from 'react-native';
 
 import { useAnalysisStore } from '../store/analysisStore';
 import { HomeScreen } from '../../features/home/HomeScreen';
@@ -346,6 +346,7 @@ export function AppNavigator() {
       <Modal 
         animationType="slide" 
         visible={isRecipeFlow} 
+        statusBarTranslucent
         onRequestClose={() => {
           if (screen === 'recipeDetail') {
             openRecipeList();
@@ -354,7 +355,7 @@ export function AppNavigator() {
           }
         }}
       >
-        <SafeAreaView style={styles.safeContent}>
+        <View style={styles.safeContent}>
           {screen === 'recipeList' && <RecipeListScreen onBack={openPreview} onSelectRecipe={generateRecipe} onOpenPaywall={() => openPaywall('Store')} />}
           {(screen === 'recipeDetail' || screen === 'generatedResult') && selectedRecipe && (
             <RecipeDetailScreen
@@ -364,18 +365,19 @@ export function AppNavigator() {
               showGenerateAction={false}
             />
           )}
-        </SafeAreaView>
+        </View>
 
         <Modal 
           animationType="slide" 
           visible={screen === 'generatedResult' && !!currentResult && !!getRecipeFromResult(currentResult)} 
+          statusBarTranslucent
           onRequestClose={() => {
             resultOpenedFromHistory ? openHistory() : openRecipeList();
           }}
         >
-          <SafeAreaView style={styles.safeContent}>
+          <View style={styles.safeContent}>
             {screen === 'generatedResult' && content}
-          </SafeAreaView>
+          </View>
           
           <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
             <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
@@ -390,15 +392,16 @@ export function AppNavigator() {
       <Modal 
         animationType="slide" 
         visible={isGenericResultFlow} 
+        statusBarTranslucent
         onRequestClose={() => {
           if (resultOpenedFromHistory) openHistory();
           else if (canReturnToAnalysis) setScreen('analysisResult');
           else goHome();
         }}
       >
-        <SafeAreaView style={styles.safeContent}>
+        <View style={styles.safeContent}>
           {isGenericResultFlow && content}
-        </SafeAreaView>
+        </View>
       </Modal>
 
       {!(isRecipeFlow || isGenericResultFlow) && (
@@ -410,6 +413,7 @@ export function AppNavigator() {
       <Modal 
         animationType="slide" 
         visible={!!imageViewerResult} 
+        statusBarTranslucent
         onRequestClose={() => setImageViewerResult(null)}
       >
         {imageViewerResult && <ImageResultView result={imageViewerResult} onBack={() => setImageViewerResult(null)} />}

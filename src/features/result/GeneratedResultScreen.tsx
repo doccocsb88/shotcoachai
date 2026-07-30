@@ -253,6 +253,10 @@ export function GeneratedResultScreen({
   return (
     <Screen scroll={false}>
       <View style={styles.resultChromeRoot}>
+          <View pointerEvents="none" style={styles.heroAtmosphere}>
+            <View style={styles.heroGlowTop} />
+            <View style={styles.heroGlowSide} />
+          </View>
           <View style={styles.resultHeader}>
             <Pressable
               accessibilityLabel={openedFromHistory || !canReturnToAnalysis ? 'Back' : 'Back to creative directions'}
@@ -456,30 +460,54 @@ const styles = StyleSheet.create({
   resultChromeRoot: {
     backgroundColor: colors.background,
     flex: 1,
+    overflow: 'hidden',
     paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
+  },
+  heroAtmosphere: {
+    ...StyleSheet.absoluteFillObject
+  },
+  heroGlowTop: {
+    backgroundColor: '#E8F4FF',
+    borderBottomLeftRadius: 180,
+    borderBottomRightRadius: 180,
+    height: 280,
+    left: -40,
+    opacity: 0.95,
+    position: 'absolute',
+    right: -40,
+    top: -70
+  },
+  heroGlowSide: {
+    backgroundColor: 'rgba(110, 168, 255, 0.22)',
+    borderRadius: 220,
+    height: 360,
+    position: 'absolute',
+    right: -120,
+    top: 130,
+    width: 360
   },
   resultHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingBottom: 8,
+    paddingBottom: 6,
     paddingHorizontal: 16,
-    paddingTop: 10
+    paddingTop: 4
   },
   headerIconCircle: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 20,
     borderWidth: 1,
-    height: 44,
+    height: 40,
     justifyContent: 'center',
-    width: 44,
+    width: 40,
     ...shadows.soft
   },
   headerIconPlaceholder: {
-    height: 44,
-    width: 44
+    height: 40,
+    width: 40
   },
   headerIconDisabled: {
     opacity: 0.4
@@ -488,20 +516,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 17,
-    fontWeight: '800',
-    marginHorizontal: 12,
+    fontWeight: '900',
+    marginHorizontal: 10,
     textAlign: 'center'
   },
   comparisonSection: {
     flex: 1,
-    marginBottom: 4,
+    marginBottom: 8,
     minHeight: 200,
-    paddingHorizontal: 16
+    paddingHorizontal: 12
   },
   comparisonCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.xl,
+    backgroundColor: 'rgba(255,255,255,0.52)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    borderRadius: 34,
     borderWidth: 1,
     flex: 1,
     overflow: 'hidden',
@@ -514,15 +542,15 @@ const styles = StyleSheet.create({
   generationErrorOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    backgroundColor: 'rgba(8, 18, 34, 0.18)',
+    backgroundColor: 'rgba(232, 244, 255, 0.78)',
     justifyContent: 'center',
     padding: 22
   },
   generationErrorCard: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'rgba(255,255,255,0.96)',
+    borderRadius: radius.lg,
     borderWidth: 1,
     padding: 18,
     width: '100%',
@@ -549,7 +577,7 @@ const styles = StyleSheet.create({
   },
   closeErrorButton: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: '#EAF3FF',
     borderRadius: radius.pill,
     flex: 1,
     justifyContent: 'center',
@@ -563,7 +591,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: '#2F6BFF',
     borderRadius: radius.pill,
     flex: 1,
     justifyContent: 'center',
@@ -643,9 +671,9 @@ const styles = StyleSheet.create({
     marginTop: -1
   },
   actionDock: {
-    paddingBottom: 10,
+    paddingBottom: 12,
     paddingHorizontal: 16,
-    paddingTop: 2
+    paddingTop: 4
   },
   generatingToastOverlay: {
     bottom: 88,
@@ -661,9 +689,9 @@ const styles = StyleSheet.create({
   },
   sideActionButton: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.sm + 2,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderColor: 'rgba(255,255,255,0.96)',
+    borderRadius: 18,
     borderWidth: 1,
     flex: 1,
     gap: 3,
@@ -680,12 +708,12 @@ const styles = StyleSheet.create({
   },
   saveFab: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 29,
-    height: 58,
+    backgroundColor: '#2F6BFF',
+    borderRadius: 31,
+    height: 62,
     justifyContent: 'center',
     marginHorizontal: 2,
-    width: 58,
+    width: 62,
     ...shadows.button
   },
   saveFabLabel: {
@@ -705,7 +733,7 @@ const styles = StyleSheet.create({
   anotherDirectionText: {
     color: colors.primary,
     fontSize: typography.caption,
-    fontWeight: '600'
+    fontWeight: '700'
   },
   analysisRoot: {
     backgroundColor: colors.background,

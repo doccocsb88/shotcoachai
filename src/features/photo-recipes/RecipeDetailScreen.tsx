@@ -33,48 +33,50 @@ export function RecipeDetailScreen({ recipe, onBack, onGenerate, showGenerateAct
         <ScreenNavBar title={recipe.title} leadingLabel="Back" onLeadingPress={onBack} />
       )}
       <ScrollView
-          contentContainerStyle={[styles.content, !showGenerateAction && styles.contentWithoutAction]}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.heroCard}>
-            <View style={styles.heroHeader}>
-              <Image source={recipe.thumbnail} style={styles.heroThumbnail} resizeMode="cover" />
-              <View style={styles.heroTextWrap}>
-                <Text style={styles.title}>{recipe.title}</Text>
-                <Text style={styles.subtitle}>{recipe.subtitle}</Text>
-              </View>
-            </View>
-            <Text style={styles.description}>{recipe.description}</Text>
-            <View style={styles.tagRow}>
-              {recipe.tags.map(tag => (
-                <Text key={tag} style={styles.tag}>{tag}</Text>
-              ))}
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, !showGenerateAction && styles.contentWithoutAction]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroCard}>
+          <View style={styles.heroHeader}>
+            <Image source={recipe.thumbnail} style={styles.heroThumbnail} resizeMode="cover" />
+            <View style={styles.heroTextWrap}>
+              <Text style={styles.title}>{recipe.title}</Text>
+              <Text style={styles.subtitle}>{recipe.subtitle}</Text>
             </View>
           </View>
+          <Text style={styles.description}>{recipe.description}</Text>
+          <View style={styles.tagRow}>
+            {recipe.tags.map(tag => (
+              <Text key={tag} style={styles.tag}>{tag}</Text>
+            ))}
+          </View>
+        </View>
 
-          <RecipeSection title="Look">
-            <InfoRow label="Mood" value={recipe.promptPreset.mood} />
-            <InfoRow label="Palette" value={recipe.promptPreset.colorPalette} />
-            <InfoRow label="Lighting" value={recipe.promptPreset.lighting} />
-            <InfoRow label="Contrast" value={recipe.promptPreset.contrast} />
-            <InfoRow label="Saturation" value={recipe.promptPreset.saturation} />
-            <InfoRow label="Grain" value={recipe.promptPreset.grainDescription} />
-          </RecipeSection>
+        <RecipeSection title="Look">
+          <InfoRow label="Mood" value={recipe.promptPreset.mood} />
+          <InfoRow label="Palette" value={recipe.promptPreset.colorPalette} />
+          <InfoRow label="Lighting" value={recipe.promptPreset.lighting} />
+          <InfoRow label="Contrast" value={recipe.promptPreset.contrast} />
+          <InfoRow label="Saturation" value={recipe.promptPreset.saturation} />
+          <InfoRow label="Grain" value={recipe.promptPreset.grainDescription} />
+        </RecipeSection>
 
-          <RecipeSection title="Translated Intent">
-            <InfoRow label="Highlights" value={visualIntent.highlightIntent} />
-            <InfoRow label="Shadows" value={visualIntent.shadowIntent} />
-            <InfoRow label="Color" value={visualIntent.colorIntent} />
-            <InfoRow label="Sharpness" value={visualIntent.sharpnessIntent} />
-            <InfoRow label="Clarity" value={visualIntent.clarityIntent} />
-          </RecipeSection>
+        <RecipeSection title="Translated Intent">
+          <InfoRow label="Highlights" value={visualIntent.highlightIntent} />
+          <InfoRow label="Shadows" value={visualIntent.shadowIntent} />
+          <InfoRow label="Color" value={visualIntent.colorIntent} />
+          <InfoRow label="Sharpness" value={visualIntent.sharpnessIntent} />
+          <InfoRow label="Clarity" value={visualIntent.clarityIntent} />
+        </RecipeSection>
 
-          <RecipeSection title="Safety">
-            <Text style={styles.safetyText}>
-              Preserves identity, outfit, pose, camera angle, composition, and background. Applies only the selected recipe look.
-            </Text>
-          </RecipeSection>
-        </ScrollView>
+        <RecipeSection title="Safety">
+          <Text style={styles.safetyText}>
+            Preserves identity, outfit, pose, camera angle, composition, and background. Applies only the selected recipe look.
+          </Text>
+        </RecipeSection>
+      </ScrollView>
 
         {showGenerateAction ? (
           <View style={styles.actions}>
@@ -142,6 +144,9 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4
+  },
+  scroll: {
+    flex: 1
   },
   content: {
     paddingBottom: 120,

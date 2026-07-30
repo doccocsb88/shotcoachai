@@ -12,6 +12,8 @@ import { colors } from '../../constants/theme';
 
 const SPLIT_MIN = 0.06;
 const SPLIT_MAX = 0.94;
+const glassBlue = '#2F6BFF';
+const glassBorder = 'rgba(255, 255, 255, 0.72)';
 
 export interface BeforeAfterSliderProps {
   beforeUri: string;
@@ -79,10 +81,15 @@ export function BeforeAfterSlider({ beforeUri, afterUri, isLoadingAfter }: Befor
               />
             ) : (
               <View style={[styles.afterLoadingFill, { width: layout.width, height: layout.height }]}>
-                <ActivityIndicator size="large" color={colors.primary} />
+                <View style={styles.loadingCrosshair}>
+                  <View style={styles.loadingCrosshairHorizontal} />
+                  <View style={styles.loadingCrosshairVertical} />
+                </View>
+                <ActivityIndicator size="large" color={glassBlue} />
                 {isLoadingAfter ? (
-                  <Text style={styles.afterLoadingCaption}>Creating your AI edit…</Text>
+                  <Text style={styles.afterLoadingCaption}>Making your photo look better…</Text>
                 ) : null}
+                <Text style={styles.afterLoadingCode}>This usually takes a moment</Text>
               </View>
             )}
           </View>
@@ -133,6 +140,7 @@ export function BeforeAfterSlider({ beforeUri, afterUri, isLoadingAfter }: Befor
                   }
                 ]}
               >
+                <View style={styles.dividerHandleLine} />
                 <View style={styles.dividerHandleArrows}>
                   <Text style={styles.dividerHandleArrow}>←</Text>
                   <Text style={styles.dividerHandleArrow}>→</Text>
@@ -149,8 +157,8 @@ export function BeforeAfterSlider({ beforeUri, afterUri, isLoadingAfter }: Befor
 const styles = StyleSheet.create({
   comparisonRoot: {
     flex: 1,
-    width: '100%',
-    height: '100%'
+    height: '100%',
+    width: '100%'
   },
   comparisonImageClip: {
     overflow: 'hidden'
@@ -163,43 +171,80 @@ const styles = StyleSheet.create({
   },
   afterLoadingFill: {
     alignItems: 'center',
-    backgroundColor: colors.primaryLight,
+    backgroundColor: '#EEF5FF',
+    borderLeftColor: 'rgba(255,255,255,0.7)',
+    borderLeftWidth: 1,
     justifyContent: 'center'
   },
+  loadingCrosshair: {
+    alignItems: 'center',
+    height: 52,
+    justifyContent: 'center',
+    marginBottom: 18,
+    position: 'relative',
+    width: 52
+  },
+  loadingCrosshairHorizontal: {
+    backgroundColor: glassBlue,
+    height: 1,
+    position: 'absolute',
+    width: 52
+  },
+  loadingCrosshairVertical: {
+    backgroundColor: glassBlue,
+    height: 52,
+    position: 'absolute',
+    width: 1
+  },
   afterLoadingCaption: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 12
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 12,
+    textAlign: 'center'
+  },
+  afterLoadingCode: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 10,
+    textAlign: 'center'
   },
   badgePill: {
-    borderRadius: 10,
+    borderRadius: 999,
+    borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 6,
     position: 'absolute',
-    top: 14,
+    top: 12,
     zIndex: 4
   },
   badgeBefore: {
-    backgroundColor: 'rgba(30, 41, 59, 0.78)',
-    left: 14
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderColor: glassBorder,
+    left: 12
   },
   badgeAfterPill: {
     backgroundColor: colors.primary,
-    right: 14
+    borderColor: 'rgba(47, 107, 255, 0.35)',
+    right: 12
   },
   badgeBeforeText: {
-    color: colors.white,
-    fontSize: 13,
-    fontWeight: '800'
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase'
   },
   badgeAfterText: {
     color: colors.white,
-    fontSize: 13,
-    fontWeight: '800'
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+    textTransform: 'uppercase'
   },
   dividerLine: {
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     position: 'absolute',
     top: 0,
     width: 3,
@@ -207,27 +252,33 @@ const styles = StyleSheet.create({
   },
   dividerHandle: {
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderColor: glassBorder,
     borderRadius: 24,
-    elevation: 4,
-    height: 48,
+    borderWidth: 1,
+    height: 46,
     justifyContent: 'center',
+    overflow: 'hidden',
     position: 'absolute',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    width: 48,
+    width: 46,
     zIndex: 4
+  },
+  dividerHandleLine: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    bottom: 0,
+    left: 21.5,
+    position: 'absolute',
+    top: 0,
+    width: 3
   },
   dividerHandleArrows: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 2
+    gap: 4
   },
   dividerHandleArrow: {
-    color: '#0f172a',
-    fontSize: 11,
+    color: glassBlue,
+    fontSize: 12,
     fontWeight: '900'
   }
 });

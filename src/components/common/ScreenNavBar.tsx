@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing, typography } from '../../constants/theme';
 
-const sideSlotMinWidth = 72;
+const sideSlotMinWidth = 56;
+const androidTopInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
 
 interface Props {
   title: string;
@@ -57,9 +58,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
-    paddingBottom: spacing.sm,
+    minHeight: androidTopInset + 52,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm
+    paddingTop: androidTopInset
   },
   sideSlot: {
     minWidth: sideSlotMinWidth
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     flex: 1,
-    fontSize: typography.headline,
+    fontSize: 20,
     fontWeight: '900',
     textAlign: 'center'
   },

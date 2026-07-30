@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, shadows, typography } from '../../constants/theme';
+import { colors, shadows, typography } from '../../constants/theme';
 
 interface Props {
   message?: string;
@@ -15,9 +15,16 @@ export function ForegroundToast({
 }: Props) {
   return (
     <View pointerEvents="none" style={styles.toast}>
+      <Text style={styles.toastMeta}>AI GENERATION ACTIVE</Text>
       <View style={styles.textContainer}>
-        <Text style={styles.message} numberOfLines={isIOS ? 1 : undefined} adjustsFontSizeToFit={isIOS}>{message}</Text>
-        {subtitle ? <Text style={styles.subtitle} numberOfLines={isIOS ? 1 : undefined} adjustsFontSizeToFit={isIOS}>{subtitle}</Text> : null}
+        <Text style={styles.message} numberOfLines={isIOS ? 1 : undefined} adjustsFontSizeToFit={isIOS}>
+          {message}
+        </Text>
+        {subtitle ? (
+          <Text style={styles.subtitle} numberOfLines={isIOS ? 2 : undefined} adjustsFontSizeToFit={isIOS}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -27,29 +34,39 @@ const styles = StyleSheet.create({
   toast: {
     alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: 'rgba(8, 18, 34, 0.88)',
-    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'rgba(255,255,255,0.98)',
+    borderRadius: 24,
+    borderWidth: 1,
     flexDirection: 'column',
     maxWidth: '95%',
-    paddingHorizontal: 24,
+    paddingHorizontal: 18,
     paddingVertical: 12,
     ...shadows.button
   },
+  toastMeta: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
   textContainer: {
     alignItems: 'center',
-    gap: 2
+    gap: 3
   },
   message: {
-    color: colors.white,
-    fontSize: typography.caption,
-    fontWeight: '800',
-    lineHeight: 18,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 19,
     textAlign: 'center'
   },
   subtitle: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 12,
-    fontWeight: '500',
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
     lineHeight: 16,
     textAlign: 'center'
   }

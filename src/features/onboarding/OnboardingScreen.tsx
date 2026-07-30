@@ -13,7 +13,7 @@ import {
   View
 } from 'react-native';
 
-import { colors, radius, shadows } from '../../constants/theme';
+import { colors, radius } from '../../constants/theme';
 import { prepareAdsTrackingForOnboarding } from '../../services/ads/mobileAds';
 
 /** Local onboarding art: page1 = Snap any photo, page2 = 3 smart tips, page3 = Before/after preview. */
@@ -182,12 +182,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     justifyContent: 'center',
     minHeight: 58,
-    ...shadows.soft
+    shadowColor: '#0B1B34',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    elevation: 2
   },
   continueBtnFinal: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
-    ...shadows.button
+    shadowColor: '#2F6BFF',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 5
   },
   continueBtnText: {
     color: colors.primary,
