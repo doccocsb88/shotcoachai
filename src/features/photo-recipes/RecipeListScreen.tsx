@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '../../components/common/Screen';
 import { ScreenNavBar } from '../../components/common/ScreenNavBar';
@@ -53,13 +53,24 @@ export function RecipeListScreen({ onBack, onSelectRecipe, onOpenPaywall }: Prop
     <Screen scroll={false}>
       <View style={styles.root}>
         <ScreenNavBar title="Photo Recipes" leadingLabel="Back" onLeadingPress={onBack} />
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.recipeGrid}>
-            {PHOTO_RECIPES.map(recipe => (
-              <RecipeCard key={recipe.id} recipe={recipe} isLocked={!UserManager.canUseRecipe(recipe.id)} onPress={() => handleSelectRecipe(recipe)} />
-            ))}
-          </View>
-        </ScrollView>
+        <FlatList
+          data={PHOTO_RECIPES}
+          keyExtractor={item => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.recipeGridRow}
+          renderItem={({ item }) => (
+            <RecipeCard
+              recipe={item}
+              isLocked={!UserManager.canUseRecipe(item.id)}
+              onPress={() => handleSelectRecipe(item)}
+            />
+          )}
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+        />
       </View>
     </Screen>
   );
@@ -99,20 +110,22 @@ const styles = StyleSheet.create({
   root: {
     flex: 1
   },
+  scroll: {
+    flex: 1
+  },
   content: {
     paddingBottom: 24,
     paddingHorizontal: 12,
     paddingTop: 14
   },
-  recipeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    justifyContent: 'space-between'
+  recipeGridRow: {
+    justifyContent: 'space-between',
+    marginBottom: 12
   },
   recipeCard: {
     aspectRatio: 0.62,
     backgroundColor: '#06161B',
+    marginBottom: 0,
     borderRadius: radius.md,
     overflow: 'hidden',
     width: '48%'

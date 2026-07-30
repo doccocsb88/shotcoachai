@@ -89,7 +89,12 @@ class PurchaseModule(private val reactContext: ReactApplicationContext) :
     private val billingClient: BillingClient by lazy {
         BillingClient.newBuilder(reactContext)
             .setListener(purchasesUpdatedListener)
-            .enablePendingPurchases()
+            .enablePendingPurchases(
+                PendingPurchasesParams.newBuilder()
+                    .enableOneTimeProducts()
+                    .build()
+            )
+            .enableAutoServiceReconnection()
             .build()
     }
 
@@ -273,15 +278,20 @@ class PurchaseModule(private val reactContext: ReactApplicationContext) :
                 .setProductList(productList)
                 .build()
 
-            val result = CompletableDeferred<Pair<BillingResult, List<ProductDetails>>>()
+            val result = CompletableDeferred<QueryProductDetailsResultWrapper>()
 
-            billingClient.queryProductDetailsAsync(params) { billingResult, detailsList ->
-                result.complete(Pair(billingResult, detailsList))
+            billingClient.queryProductDetailsAsync(params) { billingResult, queryProductDetailsResult ->
+                result.complete(
+                    QueryProductDetailsResultWrapper(
+                        billingResult = billingResult,
+                        productDetailsList = queryProductDetailsResult.productDetailsList,
+                    )
+                )
             }
 
-            val (billingResult, detailsList) = result.await()
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                allDetails.addAll(detailsList)
+            val queryResult = result.await()
+            if (queryResult.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                allDetails.addAll(queryResult.productDetailsList)
             }
         }
 
@@ -429,4 +439,9 @@ class PurchaseModule(private val reactContext: ReactApplicationContext) :
 private data class PurchasesResult(
     val billingResult: BillingResult,
     val purchasesList: List<Purchase>
+)
+
+private data class QueryProductDetailsResultWrapper(
+    val billingResult: BillingResult,
+    val productDetailsList: List<ProductDetails>
 )

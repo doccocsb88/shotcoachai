@@ -14,8 +14,15 @@ import {
 import { PurchaseTracking } from '../../services/tracking/purchaseTracking';
 import { UserManager } from '../../services/user/UserManager';
 
-const paywallHeroImage = require('../../../assets/paywall/paywall-hero.png');
+const paywallHeroImages = [
+  require('../../../assets/paywall/carousel/hero-best-shot.png'),
+  require('../../../assets/paywall/carousel/hero-compose.png'),
+  require('../../../assets/paywall/carousel/hero-recipes.png'),
+  require('../../../assets/paywall/carousel/hero-edit-tools.png')
+] as const;
 const paywallHeroHeightRatio = 1024 / 1536;
+const heroLoopCopies = 3;
+const heroAutoScrollIntervalMs = 2800;
 
 type LegalDocument = {
   title: string;
@@ -53,7 +60,7 @@ const configuredPlans: PaywallPlan[] = [
   },
   {
     id: 'co.q7labs.shotcoachai.lifetime1',
-    description: 'One-time unlock with lifetime access.'
+    description: 'One-time lifetime unlock.'
   }
 ];
 const defaultProductId: PurchaseProductId = 'co.q7labs.shotcoachai.monthlytrial1';
@@ -62,6 +69,7 @@ const closeButtonTop = Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight ?? 
 export function PaywallScreen({ onBack, paywallType }: Props) {
   const { width } = useWindowDimensions();
   const impressionTrackedRef = useRef(false);
+  const heroScrollRef = useRef<ScrollView | null>(null);
   const [products, setProducts] = useState<PurchaseProduct[]>([]);
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [storeUnavailableMessage, setStoreUnavailableMessage] = useState<string | null>(null);
@@ -69,6 +77,14 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
   const [busyProductId, setBusyProductId] = useState<PurchaseProductId | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
+  const [heroIndex, setHeroIndex] = useState<number>(paywallHeroImages.length);
+
+  const heroCardWidth = width;
+  const heroSideGap = 0;
+  const heroSnapInterval = heroCardWidth + heroSideGap;
+  const heroLoopImages = useMemo(() => {
+    return Array.from({ length: heroLoopCopies }, () => [...paywallHeroImages]).flat();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -105,6 +121,27 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const initialOffset = heroSnapInterval * paywallHeroImages.length;
+    const timeoutId = setTimeout(() => {
+      heroScrollRef.current?.scrollTo({ x: initialOffset, animated: false });
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [heroSnapInterval]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setHeroIndex(currentIndex => {
+        const nextIndex = currentIndex + 1;
+        heroScrollRef.current?.scrollTo({ x: nextIndex * heroSnapInterval, animated: true });
+        return nextIndex;
+      });
+    }, heroAutoScrollIntervalMs);
+
+    return () => clearInterval(intervalId);
+  }, [heroSnapInterval]);
 
   const productById = useMemo(() => {
     return products.reduce<Partial<Record<PurchaseProductId, PurchaseProduct>>>((acc, product) => {
@@ -199,8 +236,52 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
         <Text style={styles.closeButtonText}>×</Text>
       </Pressable>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { height: width * paywallHeroHeightRatio, width }]}>
-          <Image source={paywallHeroImage} style={styles.heroImage} resizeMode="cover" />
+        <View style={[styles.hero, { height: heroCardWidth * paywallHeroHeightRatio, width }]}>
+          <ScrollView
+            ref={heroScrollRef}
+            contentContainerStyle={styles.heroCarouselContent}
+            horizontal
+            decelerationRate="fast"
+            disableIntervalMomentum
+            onMomentumScrollEnd={event => {
+              const offsetX = event.nativeEvent.contentOffset.x;
+              const rawIndex = Math.round(offsetX / heroSnapInterval);
+              const normalizedIndex = ((rawIndex % paywallHeroImages.length) + paywallHeroImages.length) % paywallHeroImages.length;
+              const middleIndex = paywallHeroImages.length + normalizedIndex;
+
+              setHeroIndex(middleIndex);
+
+              if (rawIndex !== middleIndex) {
+                heroScrollRef.current?.scrollTo({ x: middleIndex * heroSnapInterval, animated: false });
+              }
+            }}
+            onScrollBeginDrag={() => {
+              const offsetIndex = Math.round(heroIndex);
+              setHeroIndex(offsetIndex);
+            }}
+            pagingEnabled={false}
+            scrollEventThrottle={16}
+            showsHorizontalScrollIndicator={false}
+            snapToAlignment="start"
+            snapToInterval={heroSnapInterval}
+            style={styles.heroCarousel}
+          >
+            {heroLoopImages.map((source, index) => (
+              <View
+                key={`paywall-hero-${index}`}
+                style={[
+                  styles.heroCard,
+                  {
+                    height: heroCardWidth * paywallHeroHeightRatio,
+                    marginRight: index === heroLoopImages.length - 1 ? heroSideGap : heroSideGap,
+                    width: heroCardWidth
+                  }
+                ]}
+              >
+                <Image source={source} style={styles.heroImage} resizeMode="cover" />
+              </View>
+            ))}
+          </ScrollView>
         </View>
 
         <View style={styles.benefits}>
@@ -243,13 +324,21 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
                   ]}
                 >
                   <View style={styles.planCopy}>
-                    <View style={styles.planTitleRow}>
-                      <Text style={styles.planTitle}>{plan.product.displayName}</Text>
-                      {plan.badge ? <Text style={styles.badge}>{plan.badge}</Text> : null}
-                    </View>
-                    <Text style={styles.planSubtitle}>{plan.description}</Text>
+                    <Text style={styles.planTitle}>{formatPlanTitle(plan.product.displayName)}</Text>
+                    <Text numberOfLines={1} style={styles.planSubtitle}>
+                      {plan.description}
+                    </Text>
                   </View>
-                  <Text style={styles.planPrice}>{plan.product.displayPrice}</Text>
+                  <View style={styles.planMeta}>
+                    {plan.badge ? (
+                      <Text numberOfLines={1} style={styles.badge}>
+                        {plan.badge}
+                      </Text>
+                    ) : (
+                      <View style={styles.badgeSpacer} />
+                    )}
+                    <Text style={styles.planPrice}>{plan.product.displayPrice}</Text>
+                  </View>
                 </Pressable>
               );
             })
@@ -356,6 +445,10 @@ function CircleCheck() {
   );
 }
 
+function formatPlanTitle(displayName: string) {
+  return displayName.replace(/^ShotCoach Pro\s+/i, '');
+}
+
 const styles = StyleSheet.create({
   root: {
     backgroundColor: colors.background,
@@ -389,6 +482,17 @@ const styles = StyleSheet.create({
     marginLeft: -spacing.lg,
     ...shadows.button
   },
+  heroCarousel: {
+    overflow: 'visible'
+  },
+  heroCarouselContent: {
+    paddingLeft: 0,
+    paddingRight: 0
+  },
+  heroCard: {
+    borderRadius: 0,
+    overflow: 'hidden'
+  },
   heroImage: {
     height: '100%',
     width: '100%'
@@ -413,14 +517,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg
   },
   planCard: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
-    padding: spacing.md,
+    minHeight: 98,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm - 1,
     ...shadows.soft
   },
   planCardSelected: {
@@ -433,17 +539,24 @@ const styles = StyleSheet.create({
   planCopy: {
     flex: 1
   },
-  planTitleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm
+  planMeta: {
+    alignItems: 'flex-end',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    minHeight: 72,
+    paddingRight: 2,
+    position: 'relative'
   },
   planTitle: {
     color: colors.text,
     fontSize: 18,
     fontWeight: '900'
   },
+  badgeSpacer: {
+    minHeight: 0
+  },
   badge: {
+    alignSelf: 'flex-end',
     backgroundColor: colors.accent,
     borderRadius: radius.pill,
     color: colors.text,
@@ -451,7 +564,10 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     overflow: 'hidden',
     paddingHorizontal: 8,
-    paddingVertical: 3
+    paddingVertical: 3,
+    position: 'absolute',
+    right: 0,
+    top: -2
   },
   planSubtitle: {
     color: colors.textMuted,
