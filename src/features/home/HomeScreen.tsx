@@ -1,51 +1,57 @@
-import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import { useEffect, useState } from 'react';
+import { Alert, FlatList, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Image, Linking, Platform, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius, shadows, spacing } from '../../constants/theme';
 import { PickedPhoto } from '../../models/analysis';
 import { UserAccessState, UserManager } from '../../services/user/UserManager';
+import { PHOTO_RECIPES } from '../../services/photo-recipes/photoRecipeLibrary';
+import { CrownLockIcon } from '../../components/icons/CrownLockIcon';
+import { PHOTO_AI_TOOLS, PhotoAiToolId } from '../../models/photoAiTool';
+import { ToolImageIcon } from '../../components/icons/ToolImageIcon';
+import { RecipeCard } from '../photo-recipes/components/RecipeCard';
 
-const galleryIcon = require('../../../assets/icons/image-gallery.png');
 const historyIcon = require('../../../assets/icons/history.png');
+const galleryIcon = require('../../../assets/icons/image-gallery.png');
+
+import Svg, { Path, Rect, Circle } from 'react-native-svg';
+
+function CameraSvgIcon({ color = '#1A1A1A', size = 24 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <Circle cx="12" cy="13" r="4" />
+    </Svg>
+  );
+}
+
+export type CameraIntent =
+  | { type: 'coach' }
+  | { type: 'tool'; toolId: PhotoAiToolId }
+  | { type: 'recipe'; recipeId: string };
 
 interface Props {
-  onOpenPreview: () => void;
-  onOpenPoseAssist: () => void;
+  onOpenCamera: (intent: CameraIntent) => void;
   onOpenMenu: () => void;
   onOpenHistory: () => void;
   onOpenPaywall: () => void;
-  referenceImageUri?: string | null;
+  onOpenRecipeList: () => void;
 }
 
 const navBarTopPadding = Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight || 24) + spacing.md;
-const dockBottomPadding = Platform.OS === 'ios' ? 32 : spacing.sm;
-const cameraFallbackBackground = '#05070B';
-const focusTopInset = navBarTopPadding + 88;
-const focusBottomInset = dockBottomPadding + 132;
 
 export function HomeScreen({
-  onOpenPreview,
-  onOpenPoseAssist,
+  onOpenCamera,
   onOpenMenu,
   onOpenHistory,
   onOpenPaywall,
-  referenceImageUri
+  onOpenRecipeList
 }: Props) {
-  const cameraRef = useRef<CameraView>(null);
-  const { width } = useWindowDimensions();
-  const setCurrentPhoto = useAnalysisStore(state => state.setCurrentPhoto);
-  const cameraMode = useAnalysisStore(state => state.cameraMode);
-  const setPoseAiSelectedTemplateId = useAnalysisStore(state => state.setPoseAiSelectedTemplateId);
-  const [cameraPermission, requestCameraPermission, getCameraPermission] = useCameraPermissions();
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
-  const referenceWidth = Math.round((width * 2) / 5);
+  const setCurrentPhoto = useAnalysisStore(state => state.setCurrentPhoto);
 
   useEffect(() => {
     const unsubscribe = UserManager.subscribe(setAccessState);
@@ -53,617 +59,265 @@ export function HomeScreen({
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    if (cameraPermission && !cameraPermission.granted && cameraPermission.canAskAgain) {
-      void requestCameraPermission();
-    }
-  }, [cameraPermission, requestCameraPermission]);
 
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', state => {
-      if (state === 'active') {
-        void getCameraPermission();
-      }
-    });
 
-    return () => subscription.remove();
-  }, [getCameraPermission]);
-
-  const openCameraSettings = async () => {
-    try {
-      await Linking.openSettings();
-    } catch {
-      Alert.alert('Settings unavailable', 'Please open Settings and allow camera access for ShotCoach AI.');
-    }
-  };
-
-  const choosePhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow photo access to choose an image.');
+  const handleSelectRecipe = (recipeId: string) => {
+    if (!UserManager.canUseRecipe(recipeId)) {
+      onOpenPaywall();
       return;
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: false,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1
-    });
-
-    await handlePickerResult(result);
+    onOpenCamera({ type: 'recipe', recipeId });
   };
 
-  const takePhoto = async () => {
-    if (isCapturing) return;
-    await UserManager.ensureReady();
-    if (!UserManager.canStartCapture()) {
-      showCaptureLimitPaywall();
-      return;
-    }
-
-    const permission = cameraPermission?.granted
-      ? cameraPermission
-      : await requestCameraPermission();
-    if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow camera access in Settings to take a photo.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Settings', onPress: openCameraSettings }
-      ]);
-      return;
-    }
-
-    try {
-      setIsCapturing(true);
-      const photo = await cameraRef.current?.takePictureAsync({ quality: 1 });
-      if (!photo) return;
-      await handleCapturedPhoto(photo);
-    } catch {
-      Alert.alert('Capture failed', 'Please try taking the photo again.');
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
-  const swapCamera = () => {
-    if (isCapturing) return;
-    setCameraFacing(current => (current === 'back' ? 'front' : 'back'));
-  };
-
-  const showCaptureLimitPaywall = () => {
-    Alert.alert(
-      'Unlock unlimited captures',
-      'Free users can capture up to 3 photos. Upgrade to ShotCoach Pro for unlimited shooting.',
-      [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Upgrade', onPress: onOpenPaywall }
-      ]
-    );
-  };
-
-  const handlePickerResult = async (result: ImagePicker.ImagePickerResult) => {
-    if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
-
-    if (asset.width < 512 || asset.height < 512) {
-      Alert.alert('Image too small', 'Please choose a photo at least 512px wide and tall.');
-      return;
-    }
-
-    const picked: PickedPhoto = {
-      uri: asset.uri,
-      width: asset.width,
-      height: asset.height,
-      fileName: asset.fileName ?? undefined,
-      mimeType: asset.mimeType ?? 'image/jpeg',
-      fileSize: asset.fileSize
-    };
-
-    await UserManager.trackCaptureStarted();
-    setCurrentPhoto(picked);
-    if (cameraMode === 'pose_ai') {
-      setPoseAiSelectedTemplateId(undefined);
-      onOpenPoseAssist();
-    } else {
-      onOpenPreview();
-    }
-  };
-
-  const handleCapturedPhoto = async (asset: { uri: string; width: number; height: number }) => {
-    if (asset.width < 512 || asset.height < 512) {
-      Alert.alert('Image too small', 'Please choose a photo at least 512px wide and tall.');
-      return;
-    }
-
-    const picked: PickedPhoto = {
-      uri: asset.uri,
-      width: asset.width,
-      height: asset.height,
-      mimeType: 'image/jpeg'
-    };
-
-    await UserManager.trackCaptureStarted();
-    setCurrentPhoto(picked);
-    if (cameraMode === 'pose_ai') {
-      setPoseAiSelectedTemplateId(undefined);
-      onOpenPoseAssist();
-    } else {
-      onOpenPreview();
-    }
-  };
-
-  const renderCameraPreview = () => {
-    if (!cameraPermission) {
-      return (
-        <View style={styles.cameraFallback}>
-          <Text style={styles.cameraFallbackText}>Preparing camera</Text>
-        </View>
-      );
-    }
-
-    if (!cameraPermission.granted) {
-      return (
-        <View style={styles.cameraFallback}>
-          <View style={styles.permissionCard}>
-            <View style={styles.permissionIconWrap}>
-              <CameraPermissionIcon />
-            </View>
-            <Text style={styles.permissionTitle}>Camera Permission Required</Text>
-            <Text style={styles.permissionSubtitle}>
-              Allow camera access to capture a photo and start your AI pose analysis.
-            </Text>
-            <Pressable
-              accessibilityLabel="Open settings to allow camera access"
-              accessibilityRole="button"
-              onPress={openCameraSettings}
-              style={({ pressed }) => [styles.permissionButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.permissionButtonText}>Open Settings</Text>
-            </Pressable>
-          </View>
-        </View>
-      );
-    }
-
-    return <CameraView ref={cameraRef} facing={cameraFacing} style={styles.cameraView} />;
-  };
+  const featuredRecipes = PHOTO_RECIPES.slice(0, 5);
 
   return (
     <Screen scroll={false}>
       <View style={styles.root}>
-        <View style={styles.previewLayer}>
-          {renderCameraPreview()}
-          <View style={styles.focusMarkTopLeft} />
-          <View style={styles.focusMarkTopRight} />
-          <View style={styles.focusMarkBottomLeft} />
-          <View style={styles.focusMarkBottomRight} />
-          <Text style={styles.cameraHint}>Frame the full shooting pose</Text>
-          {!accessState.isPremium ? (
-            <Text style={styles.freeQuotaPill}>
-              {UserManager.remainingFreeCaptures()} free capture{UserManager.remainingFreeCaptures() === 1 ? '' : 's'} left
-            </Text>
-          ) : null}
-          {referenceImageUri ? (
-            <View style={[styles.referencePreview, { width: referenceWidth }]}>
-              <Image source={{ uri: referenceImageUri }} style={styles.referencePreviewImage} resizeMode="cover" />
-              <View style={styles.referencePreviewLabel}>
-                <Text style={styles.referencePreviewLabelText}>Reference</Text>
-              </View>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={[styles.navBar, { paddingTop: navBarTopPadding }]}>
-          <Pressable
-            accessibilityLabel="Open menu"
-            accessibilityRole="button"
-            onPress={onOpenMenu}
-            style={({ pressed }) => [styles.navIconButton, pressed && styles.pressed]}
-          >
-            <Text style={styles.menuIcon}>☰</Text>
+        <View style={[styles.header, { paddingTop: navBarTopPadding }]}>
+          <Pressable onPress={onOpenMenu} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+            <Text style={styles.iconText}>☰</Text>
           </Pressable>
-          <View style={styles.navCenter}>
-            <Text style={styles.navTitle} numberOfLines={1}>
-              ShotCoach AI
-            </Text>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.greetingText}>Good Morning,</Text>
+            <Text style={styles.titleText}>ShotCoach AI</Text>
           </View>
-          <Pressable
-            accessibilityLabel="Open history"
-            accessibilityRole="button"
-            onPress={onOpenHistory}
-            style={({ pressed }) => [styles.navIconButton, pressed && styles.pressed]}
-          >
-            <Image source={historyIcon} style={styles.navButtonIcon} />
+          <Pressable onPress={onOpenHistory} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+            <Image source={historyIcon} style={styles.headerIcon} />
           </Pressable>
         </View>
 
-        <View style={[styles.bottomDock, { paddingBottom: dockBottomPadding }]}>
-          <Pressable
-            accessibilityLabel="Open photo library"
-            accessibilityRole="button"
-            onPress={choosePhoto}
-            style={({ pressed }) => [styles.galleryThumbWrap, pressed && styles.pressed]}
-          >
-            <Image source={galleryIcon} style={styles.galleryIcon} />
-          </Pressable>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.heroContainer}>
+            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => onOpenCamera({ type: 'coach' })}>
+              <LinearGradient colors={['#FFCBA4', '#FF9B9B']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                <View style={styles.heroContent}>
+                  <View style={styles.heroIconWrapper}>
+                    <CameraSvgIcon color="#1A1A1A" size={28} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.heroTitle}>AI Camera Coach</Text>
+                    <Text style={styles.heroSubtitle}>Guided compositions & settings</Text>
+                  </View>
+                </View>
+                <View style={styles.heroButton}>
+                  <Text style={styles.heroButtonText}>Start Coach</Text>
+                </View>
+              </LinearGradient>
+            </Pressable>
+          </View>
 
-          <Pressable
-            accessibilityLabel="Capture photo"
-            accessibilityRole="button"
-            onPress={takePhoto}
-            disabled={isCapturing}
-            style={({ pressed }) => [styles.captureButton, (pressed || isCapturing) && styles.pressed]}
-          >
-            <View style={styles.captureInner} />
-          </Pressable>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>AI Edit Tools</Text>
+          </View>
+          <Text style={styles.sectionSubtitle}>Enhance a photo instantly with AI.</Text>
+          
+          <View style={styles.toolGrid}>
+            {PHOTO_AI_TOOLS.filter(t => t.id !== 'ai_coach').map(tool => (
+              <Pressable
+                key={tool.id}
+                onPress={() => onOpenCamera({ type: 'tool', toolId: tool.id })}
+                style={({ pressed }) => [styles.toolCard, pressed && styles.pressed]}
+              >
+                <View style={styles.toolIconWrap}>
+                  <ToolImageIcon id={tool.id} size={28} />
+                </View>
+                <Text style={styles.toolTitle} numberOfLines={1}>{tool.shortTitle}</Text>
+              </Pressable>
+            ))}
+          </View>
 
-          <Pressable
-            accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
-            accessibilityRole="button"
-            disabled={isCapturing}
-            onPress={swapCamera}
-            style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
-          >
-            <CameraSwapIcon />
-          </Pressable>
-        </View>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Featured Photo Recipes</Text>
+            <Pressable onPress={onOpenRecipeList}>
+              <Text style={styles.sectionLink}>See All</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.sectionSubtitle}>Swipe for inspiration</Text>
+
+          <FlatList
+            horizontal
+            data={featuredRecipes}
+            keyExtractor={item => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recipesList}
+            renderItem={({ item }) => (
+              <RecipeCard
+                recipe={item}
+                isLocked={!UserManager.canUseRecipe(item.id)}
+                onPress={() => handleSelectRecipe(item.id)}
+                style={styles.recipeCard}
+              />
+            )}
+          />
+        </ScrollView>
       </View>
     </Screen>
   );
 }
 
-function CameraPermissionIcon() {
-  const stroke = colors.primary;
-
-  return (
-    <Svg height={34} viewBox="0 0 24 24" width={34}>
-      <Path
-        d="M4 8.5h3.2L8.8 6h6.4l1.6 2.5H20a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7.5a2 2 0 0 1 2-2Z"
-        fill="none"
-        stroke={stroke}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-      />
-      <Path
-        d="M12 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"
-        fill="none"
-        stroke={stroke}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-      />
-      <Path
-        d="M18 5v4"
-        fill="none"
-        stroke={colors.danger}
-        strokeLinecap="round"
-        strokeWidth={2}
-      />
-      <Path
-        d="M18 12h.01"
-        fill="none"
-        stroke={colors.danger}
-        strokeLinecap="round"
-        strokeWidth={3}
-      />
-    </Svg>
-  );
-}
-
-function CameraSwapIcon() {
-  return (
-    <Svg height={28} viewBox="0 0 24 24" width={28}>
-      <Path
-        d="M7.2 7.8A7 7 0 0 1 18.4 9"
-        fill="none"
-        stroke={colors.text}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-      <Path
-        d="M18.4 5.4V9h-3.6"
-        fill="none"
-        stroke={colors.text}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-      <Path
-        d="M16.8 16.2A7 7 0 0 1 5.6 15"
-        fill="none"
-        stroke={colors.text}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-      <Path
-        d="M5.6 18.6V15h3.6"
-        fill="none"
-        stroke={colors.text}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-    </Svg>
-  );
-}
-
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: colors.background,
+    backgroundColor: '#FAFAF8',
     flex: 1
   },
-  previewLayer: {
-    ...StyleSheet.absoluteFillObject,
+  header: {
     alignItems: 'center',
-    backgroundColor: cameraFallbackBackground,
-    justifyContent: 'center',
-    zIndex: 0
-  },
-  cameraView: {
-    ...StyleSheet.absoluteFillObject
-  },
-  cameraFallback: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    backgroundColor: cameraFallbackBackground,
-    justifyContent: 'center'
-  },
-  cameraFallbackText: {
-    color: colors.surface,
-    fontSize: 15,
-    fontWeight: '800'
-  },
-  permissionCard: {
-    alignItems: 'center',
-    paddingHorizontal: 34,
-    width: '100%'
-  },
-  permissionIconWrap: {
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    height: 68,
-    justifyContent: 'center',
-    marginBottom: 18,
-    width: 68
-  },
-  permissionTitle: {
-    color: colors.white,
-    fontSize: 22,
-    fontWeight: '900',
-    marginBottom: 8,
-    textAlign: 'center'
-  },
-  permissionSubtitle: {
-    color: 'rgba(255, 255, 255, 0.72)',
-    fontSize: 15,
-    lineHeight: 22,
-    maxWidth: 300,
-    textAlign: 'center'
-  },
-  permissionButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    justifyContent: 'center',
-    marginTop: 22,
-    minHeight: 52,
-    paddingHorizontal: 24,
-    ...shadows.soft
-  },
-  permissionButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '900'
-  },
-  navBar: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(247, 250, 255, 0.94)',
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    left: 0,
-    paddingBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 2
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md
   },
-  navIconButton: {
+  iconButton: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    borderColor: 'rgba(0,0,0,0.05)',
+    borderRadius: radius.full,
     borderWidth: 1,
     height: 44,
     justifyContent: 'center',
     width: 44,
     ...shadows.soft
   },
-  menuIcon: {
+  iconText: {
     color: colors.text,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
-    marginTop: -1
+    marginTop: -2
   },
-  navTitle: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '900',
-    textAlign: 'center'
-  },
-  navCenter: {
-    alignItems: 'center',
-    flex: 1,
-    marginHorizontal: spacing.sm
-  },
-  navButtonIcon: {
-    height: 24,
+  headerIcon: {
+    height: 22,
     tintColor: colors.text,
-    width: 24
+    width: 22
   },
-  cameraHint: {
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    bottom: 108,
-    color: colors.text,
+  headerTitleContainer: {
+    alignItems: 'center'
+  },
+  greetingText: {
+    color: colors.textLight,
     fontSize: 13,
-    fontWeight: '700',
-    overflow: 'hidden',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    position: 'absolute',
-    ...shadows.soft
+    fontWeight: '600'
   },
-  freeQuotaPill: {
-    alignSelf: 'center',
-    backgroundColor: 'rgba(8, 18, 34, 0.72)',
-    borderRadius: radius.pill,
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: '800',
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    position: 'absolute',
-    top: navBarTopPadding + 72
+  titleText: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '900'
   },
-  referencePreview: {
-    aspectRatio: 3 / 4,
-    backgroundColor: colors.surface,
-    borderColor: colors.white,
-    borderRadius: radius.lg,
-    borderWidth: 2,
-    overflow: 'hidden',
-    position: 'absolute',
-    right: 18,
-    top: navBarTopPadding + 76,
+  scroll: {
+    flex: 1
+  },
+  content: {
+    paddingBottom: 40,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md
+  },
+  heroContainer: {
+    marginBottom: spacing.xl
+  },
+  heroCard: {
+    borderRadius: 24,
+    height: 140,
     ...shadows.card
   },
-  referencePreviewImage: {
-    height: '100%',
+  heroGradient: {
+    borderRadius: 24,
+    flex: 1,
+    padding: spacing.lg,
+    justifyContent: 'space-between'
+  },
+  heroContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md
+  },
+  heroIconWrapper: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 16,
+    height: 52,
+    justifyContent: 'center',
+    width: 52
+  },
+  heroTitle: {
+    color: '#1A1A1A',
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 4
+  },
+  heroSubtitle: {
+    color: 'rgba(26,26,26,0.7)',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  heroButton: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: radius.full,
+    flexDirection: 'row',
+    height: 44,
+    justifyContent: 'center',
     width: '100%'
   },
-  referencePreviewLabel: {
-    backgroundColor: 'rgba(15, 23, 42, 0.72)',
-    borderRadius: radius.pill,
-    left: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    position: 'absolute',
-    top: 8
-  },
-  referencePreviewLabelText: {
-    color: colors.white,
-    fontSize: 11,
+  heroButtonText: {
+    color: '#1A1A1A',
+    fontSize: 15,
     fontWeight: '800'
   },
-  focusMarkTopLeft: {
-    borderColor: colors.primary,
-    borderLeftWidth: 3,
-    borderTopWidth: 3,
-    height: 52,
-    left: 20,
-    position: 'absolute',
-    top: focusTopInset,
-    width: 52
-  },
-  focusMarkTopRight: {
-    borderColor: colors.primary,
-    borderRightWidth: 3,
-    borderTopWidth: 3,
-    height: 52,
-    position: 'absolute',
-    right: 20,
-    top: focusTopInset,
-    width: 52
-  },
-  focusMarkBottomLeft: {
-    borderBottomWidth: 3,
-    borderColor: colors.primary,
-    borderLeftWidth: 3,
-    bottom: focusBottomInset,
-    height: 52,
-    left: 20,
-    position: 'absolute',
-    width: 52
-  },
-  focusMarkBottomRight: {
-    borderBottomWidth: 3,
-    borderColor: colors.primary,
-    borderRightWidth: 3,
-    bottom: focusBottomInset,
-    height: 52,
-    position: 'absolute',
-    right: 20,
-    width: 52
-  },
-  bottomDock: {
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    bottom: 0,
+  sectionHeader: {
+    alignItems: 'flex-end',
     flexDirection: 'row',
-    gap: spacing.md,
     justifyContent: 'space-between',
-    left: 0,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    position: 'absolute',
-    right: 0,
-    zIndex: 2
+    marginBottom: 4
   },
-  galleryThumbWrap: {
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '900'
+  },
+  sectionLink: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2
+  },
+  sectionSubtitle: {
+    color: colors.textLight,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: spacing.md
+  },
+  toolGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  toolCard: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    height: 58,
+    width: '25%',
+  },
+  toolIconWrap: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    height: 60,
     justifyContent: 'center',
-    width: 58,
+    marginBottom: 8,
+    width: 60,
     ...shadows.soft
   },
-  galleryIcon: {
-    height: 28,
-    tintColor: colors.text,
-    width: 28
+  toolTitle: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
   },
-  swapCameraButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    height: 58,
-    justifyContent: 'center',
-    width: 58,
-    ...shadows.soft
+  recipesList: {
+    paddingRight: spacing.lg
   },
-  captureButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-    borderRadius: 40,
-    borderWidth: 4,
-    height: 78,
-    justifyContent: 'center',
-    width: 78,
-    ...shadows.button
-  },
-  captureInner: {
-    backgroundColor: colors.accent,
-    borderRadius: 27,
-    height: 54,
-    width: 54
+  recipeCard: {
+    marginRight: spacing.md,
+    width: 144
   },
   pressed: {
     opacity: 0.75
