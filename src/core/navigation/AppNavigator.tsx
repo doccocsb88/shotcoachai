@@ -58,6 +58,8 @@ export function AppNavigator() {
   const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
   const [imageViewerResult, setImageViewerResult] = useState<AnalysisResult | null>(null);
   const [cameraIntent, setCameraIntent] = useState<CameraIntent>({ type: 'coach' });
+  const [recipeListSource, setRecipeListSource] = useState<'home' | 'preview'>('home');
+  const [cameraSource, setCameraSource] = useState<'home' | 'recipeList'>('home');
   const hydrateHistory = useAnalysisStore(state => state.hydrateHistory);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const currentResult = useAnalysisStore(state => state.currentResult);
@@ -143,11 +145,12 @@ export function AppNavigator() {
     setRetakeReferenceUri(null);
     setScreen('home');
   }, []);
-  const openCamera = useCallback((intent: CameraIntent = { type: 'coach' }) => {
+  const openCamera = useCallback((intent: CameraIntent = { type: 'coach' }, source: 'home' | 'recipeList' = 'home') => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
     setCameraIntent(intent);
+    setCameraSource(source);
     setScreen('camera');
   }, []);
   const openSelectedPreviewFlow = useCallback(() => {
@@ -174,10 +177,11 @@ export function AppNavigator() {
     setScreen('generatedResult');
   }, [openAnalyzing, openHome, setCurrentResult]);
   const openHistory = useCallback(() => setScreen('history'), []);
-  const openRecipeList = useCallback(() => {
+  const openRecipeList = useCallback((source: 'home' | 'preview' = 'home') => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(false);
     setGeneratedSuggestionIndex(0);
+    setRecipeListSource(source);
     setScreen('recipeList');
   }, []);
   const openRecipeDetail = useCallback((recipe: PhotoRecipe) => {
@@ -227,7 +231,7 @@ export function AppNavigator() {
   const handleSelectRecipeFromList = useCallback((recipe: PhotoRecipe) => {
     const latestPhoto = useAnalysisStore.getState().currentPhoto;
     if (!latestPhoto) {
-      openCamera({ type: 'recipe', recipeId: recipe.id });
+      openCamera({ type: 'recipe', recipeId: recipe.id }, 'recipeList');
     } else {
       generateRecipe(recipe);
     }
@@ -242,7 +246,7 @@ export function AppNavigator() {
       openPreview('instructions');
     } else if (cameraIntent.type === 'recipe') {
       if (cameraIntent.recipeId === 'all') {
-        openRecipeList();
+        openRecipeList('home');
       } else {
         const recipe = getPhotoRecipe(cameraIntent.recipeId);
         if (recipe) startRecipeGeneration(recipe);
@@ -310,7 +314,14 @@ export function AppNavigator() {
   }
 
   if (screen === 'preview') {
-    content = <PhotoPreviewScreen initialStep={previewInitialStep} onBack={openHome} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={openRecipeList} onOpenPaywall={() => openPaywall('Store')} />;
+    const handlePreviewBack = () => {
+      if (previewInitialStep === 'instructions') {
+        openCamera(cameraIntent, cameraSource);
+      } else {
+        openHome();
+      }
+    };
+    content = <PhotoPreviewScreen initialStep={previewInitialStep} onBack={handlePreviewBack} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={() => openRecipeList('preview')} onOpenPaywall={() => openPaywall('Store')} />;
   } else if (screen === 'poseAssist') {
     content = <PoseAssistScreen onBack={openHome} onContinue={openPreview} />;
   } else if (screen === 'analyzing') {
@@ -363,10 +374,17 @@ export function AppNavigator() {
   } else if (screen === 'camera') {
     content = (
       <CameraScreen
-        onBack={openHome}
+        onBack={() => {
+          if (cameraSource === 'recipeList') {
+            openRecipeList(recipeListSource);
+          } else {
+            openHome();
+          }
+        }}
         onPhotoSelected={handlePhotoSelected}
         onOpenPaywall={openPaywall}
         referenceImageUri={retakeReferenceUri}
+        intent={cameraIntent}
       />
     );
   } else {
@@ -376,7 +394,7 @@ export function AppNavigator() {
         onOpenMenu={() => setMenuOpen(true)}
         onOpenHistory={openHistory}
         onOpenPaywall={openPaywall}
-        onOpenRecipeList={openRecipeList}
+        onOpenRecipeList={() => openRecipeList('home')}
       />
     );
   }
@@ -406,18 +424,18 @@ export function AppNavigator() {
         statusBarTranslucent
         onRequestClose={() => {
           if (screen === 'recipeDetail') {
-            openRecipeList();
+            openRecipeList(recipeListSource);
           } else {
-            cameraIntent.type === 'recipe' ? openHome() : openPreview();
+            recipeListSource === 'home' ? openHome() : openPreview();
           }
         }}
       >
         <View style={styles.safeContent}>
-          {screen === 'recipeList' && <RecipeListScreen onBack={cameraIntent.type === 'recipe' ? openHome : openPreview} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} />}
+          {screen === 'recipeList' && <RecipeListScreen onBack={recipeListSource === 'home' ? openHome : openPreview} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} />}
           {(screen === 'recipeDetail') && selectedRecipe && (
             <RecipeDetailScreen
               recipe={selectedRecipe}
-              onBack={() => openRecipeList()}
+              onBack={() => openRecipeList(recipeListSource)}
               onGenerate={generateRecipe}
               showGenerateAction={false}
             />

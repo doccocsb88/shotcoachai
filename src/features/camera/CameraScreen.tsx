@@ -9,6 +9,9 @@ import { Screen } from '../../components/common/Screen';
 import { colors, radius, shadows, spacing } from '../../constants/theme';
 import { PickedPhoto } from '../../models/analysis';
 import { UserAccessState, UserManager } from '../../services/user/UserManager';
+import { CameraIntent } from '../home/HomeScreen';
+import { getPhotoAiTool } from '../../models/photoAiTool';
+import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary';
 
 const galleryIcon = require('../../../assets/icons/image-gallery.png');
 const historyIcon = require('../../../assets/icons/history.png');
@@ -18,6 +21,7 @@ interface Props {
   onPhotoSelected: () => void;
   onOpenPaywall: () => void;
   referenceImageUri?: string | null;
+  intent?: CameraIntent;
 }
 
 const navBarTopPadding = Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight || 24) + spacing.md;
@@ -30,7 +34,8 @@ export function CameraScreen({
   onBack,
   onPhotoSelected,
   onOpenPaywall,
-  referenceImageUri
+  referenceImageUri,
+  intent
 }: Props) {
   const cameraRef = useRef<CameraView>(null);
   const { width } = useWindowDimensions();
@@ -40,6 +45,7 @@ export function CameraScreen({
   const [cameraPermission, requestCameraPermission, getCameraPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
+  const [zoom, setZoom] = useState(0);
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
   const referenceWidth = Math.round((width * 2) / 5);
 
@@ -216,7 +222,7 @@ export function CameraScreen({
       );
     }
 
-    return <CameraView ref={cameraRef} facing={cameraFacing} style={styles.cameraView} />;
+    return <CameraView ref={cameraRef} facing={cameraFacing} style={styles.cameraView} zoom={zoom} />;
   };
 
   return (
@@ -228,7 +234,6 @@ export function CameraScreen({
           <View style={styles.focusMarkTopRight} />
           <View style={styles.focusMarkBottomLeft} />
           <View style={styles.focusMarkBottomRight} />
-          <Text style={styles.cameraHint}>Frame the full shooting pose</Text>
           {!accessState.isPremium ? (
             <Text style={styles.freeQuotaPill}>
               {UserManager.remainingFreeCaptures()} free capture{UserManager.remainingFreeCaptures() === 1 ? '' : 's'} left
@@ -254,11 +259,44 @@ export function CameraScreen({
             <Text style={styles.menuIcon}>←</Text>
           </Pressable>
           <View style={styles.navCenter}>
-            <Text style={styles.navTitle} numberOfLines={1}>
-              Camera
-            </Text>
+            <Pressable style={styles.featurePill}>
+              <View style={styles.featurePillIcon}>
+                <Text style={{color: 'white', fontSize: 12}}>🔲</Text>
+              </View>
+              <View>
+                <Text style={styles.featurePillTitle}>
+                  {intent?.type === 'coach' ? 'Composition Coach' : 
+                   intent?.type === 'tool' ? (getPhotoAiTool(intent.toolId)?.shortTitle ?? 'Quick Edit') : 
+                   intent?.type === 'recipe' ? (getPhotoRecipe(intent.recipeId)?.title ?? 'Recipe') : 'Quick Edit'}
+                </Text>
+                <Text style={styles.featurePillSubtitle}>
+                  {intent?.type === 'coach' ? 'real-time guidance ∨' : 
+                   intent?.type === 'tool' ? 'AI Edit Tool ∨' : 
+                   intent?.type === 'recipe' ? 'Photo Recipe ∨' : 'AI guidance on ∨'}
+                </Text>
+              </View>
+            </Pressable>
           </View>
-          <View style={styles.navIconButtonPlaceholder} />
+          <View style={{flexDirection: 'row', gap: 8}}>
+            <Pressable style={styles.navIconButton}>
+              <Text style={{color: '#FFF', fontSize: 18}}>⚡</Text>
+            </Pressable>
+            <Pressable style={styles.navIconButton}>
+              <Text style={{color: '#FFF', fontSize: 20, fontWeight: 'bold'}}>⋮</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.zoomContainer}>
+          <Pressable onPress={() => setZoom(0)} style={[styles.zoomButton, zoom === 0 && styles.zoomButtonActive]}>
+            <Text style={[styles.zoomText, zoom === 0 && styles.zoomTextActive]}>0.5</Text>
+          </Pressable>
+          <Pressable onPress={() => setZoom(0.05)} style={[styles.zoomButton, zoom === 0.05 && styles.zoomButtonActive]}>
+            <Text style={[styles.zoomText, zoom === 0.05 && styles.zoomTextActive]}>1x</Text>
+          </Pressable>
+          <Pressable onPress={() => setZoom(0.1)} style={[styles.zoomButton, zoom === 0.1 && styles.zoomButtonActive]}>
+            <Text style={[styles.zoomText, zoom === 0.1 && styles.zoomTextActive]}>2</Text>
+          </Pressable>
         </View>
 
         <View style={[styles.bottomDock, { paddingBottom: dockBottomPadding }]}>
@@ -341,7 +379,7 @@ function CameraSwapIcon() {
       <Path
         d="M7.2 7.8A7 7 0 0 1 18.4 9"
         fill="none"
-        stroke={colors.text}
+        stroke={colors.white}
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2.2}
@@ -349,7 +387,7 @@ function CameraSwapIcon() {
       <Path
         d="M18.4 5.4V9h-3.6"
         fill="none"
-        stroke={colors.text}
+        stroke={colors.white}
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2.2}
@@ -357,7 +395,7 @@ function CameraSwapIcon() {
       <Path
         d="M16.8 16.2A7 7 0 0 1 5.6 15"
         fill="none"
-        stroke={colors.text}
+        stroke={colors.white}
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2.2}
@@ -365,7 +403,7 @@ function CameraSwapIcon() {
       <Path
         d="M5.6 18.6V15h3.6"
         fill="none"
-        stroke={colors.text}
+        stroke={colors.white}
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2.2}
@@ -447,9 +485,7 @@ const styles = StyleSheet.create({
   },
   navBar: {
     alignItems: 'center',
-    backgroundColor: 'rgba(247, 250, 255, 0.94)',
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
+    backgroundColor: 'transparent',
     flexDirection: 'row',
     justifyContent: 'space-between',
     left: 0,
@@ -462,26 +498,23 @@ const styles = StyleSheet.create({
   },
   navIconButton: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 22,
     height: 44,
     justifyContent: 'center',
-    width: 44,
-    ...shadows.soft
+    width: 44
   },
   navIconButtonPlaceholder: {
     width: 44
   },
   menuIcon: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 22,
     fontWeight: '800',
     marginTop: -1
   },
   navTitle: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 17,
     fontWeight: '900',
     textAlign: 'center'
@@ -491,26 +524,66 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: spacing.sm
   },
+  featurePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8
+  },
+  featurePillIcon: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  featurePillTitle: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  featurePillSubtitle: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    fontWeight: '500'
+  },
+  zoomContainer: {
+    position: 'absolute',
+    bottom: dockBottomPadding + 100,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+    padding: 4,
+    gap: 4,
+    zIndex: 3
+  },
+  zoomButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomButtonActive: {
+    backgroundColor: '#FFF'
+  },
+  zoomText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  zoomTextActive: {
+    color: '#000'
+  },
   navButtonIcon: {
     height: 24,
-    tintColor: colors.text,
+    tintColor: colors.white,
     width: 24
-  },
-  cameraHint: {
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    bottom: 108,
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-    overflow: 'hidden',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    position: 'absolute',
-    ...shadows.soft
   },
   freeQuotaPill: {
     alignSelf: 'center',
@@ -611,30 +684,24 @@ const styles = StyleSheet.create({
   },
   galleryThumbWrap: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 29,
     height: 58,
     justifyContent: 'center',
-    width: 58,
-    ...shadows.soft
+    width: 58
   },
   galleryIcon: {
     height: 28,
-    tintColor: colors.text,
+    tintColor: colors.white,
     width: 28
   },
   swapCameraButton: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 29,
     height: 58,
     justifyContent: 'center',
-    width: 58,
-    ...shadows.soft
+    width: 58
   },
   captureButton: {
     alignItems: 'center',

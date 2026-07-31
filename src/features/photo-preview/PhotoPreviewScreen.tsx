@@ -142,7 +142,7 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
   };
 
   const handleBackPress = () => {
-    if (step === 'instructions') {
+    if (step === 'instructions' && initialStep !== 'instructions') {
       setStep('flows');
       setToolsSheetVisible(true);
       return;
