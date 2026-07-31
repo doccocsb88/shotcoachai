@@ -3,6 +3,7 @@
     "name": "AI Photo Coach",
     "slug": "shotcoach-ai",
     "version": "0.1.2",
+    "icon": "./assets/app-icon.png",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "jsEngine": "hermes",
@@ -22,6 +23,11 @@
       "googleServicesFile": "./ios/AIPhotoCoach/GoogleService-Info.plist"
     },
     "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon-foreground.png",
+        "monochromeImage": "./assets/app-icon-monochrome.png",
+        "backgroundColor": "#2F6BFF"
+      },
       "package": "co.q7labs.shotcoachai",
       "permissions": [
         "android.permission.CAMERA",
