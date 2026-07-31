@@ -90,25 +90,26 @@ export function HomeScreen({
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroContainer}>
             <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => onOpenCamera({ type: 'coach' })}>
-              <LinearGradient colors={['#6EA8FF', '#2F6BFF']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <View style={styles.heroContent}>
-                  <View style={styles.heroIconWrapper}>
-                    <CameraSvgIcon color="#1A1A1A" size={28} />
+                  <View style={styles.heroLeftCol}>
+                    <Text style={styles.heroTitle}>Your AI Camera{'\n'}Coach</Text>
+                    <Text style={styles.heroSubtitle}>Get real-time guidance{'\n'}for a better shot.</Text>
+                    <View style={styles.heroButton}>
+                      <Text style={styles.heroButtonText}>Start coaching</Text>
+                      <Text style={styles.heroButtonArrow}>→</Text>
+                    </View>
                   </View>
-                  <View style={{ flex: 1, marginLeft: spacing.md }}>
-                    <Text style={[styles.heroTitle, { color: '#FFFFFF' }]}>AI Camera Coach</Text>
-                    <Text style={[styles.heroSubtitle, { color: 'rgba(255, 255, 255, 0.9)' }]}>Guided compositions & settings</Text>
+                  <View style={styles.heroRightCol}>
+                    <CameraSvgIcon color="#FFFFFF" size={80} />
                   </View>
-                </View>
-                <View style={[styles.heroButton, { backgroundColor: '#FFFFFF' }]}>
-                  <Text style={[styles.heroButtonText, { color: '#2F6BFF' }]}>Start Coach</Text>
                 </View>
               </LinearGradient>
             </Pressable>
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>AI Edit Tools</Text>
+            <Text style={styles.sectionTitle}>Quick edit</Text>
           </View>
           <Text style={styles.sectionSubtitle}>Enhance a photo instantly with AI.</Text>
           
@@ -128,12 +129,12 @@ export function HomeScreen({
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Photo Recipes</Text>
+            <Text style={styles.sectionTitle}>Featured recipes</Text>
             <Pressable onPress={onOpenRecipeList}>
               <Text style={styles.sectionLink}>See All</Text>
             </Pressable>
           </View>
-          <Text style={styles.sectionSubtitle}>Swipe for inspiration</Text>
+          <Text style={styles.sectionSubtitle}>Try a look in one tap</Text>
 
           <FlatList
             horizontal
@@ -172,12 +173,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     borderColor: 'rgba(0,0,0,0.05)',
-    borderRadius: radius.full,
+    borderRadius: radius.pill,
     borderWidth: 1,
     height: 44,
     justifyContent: 'center',
-    width: 44,
-    ...shadows.soft
+    width: 44
   },
   iconText: {
     color: colors.text,
@@ -216,50 +216,59 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     borderRadius: 24,
-    height: 164,
+    overflow: 'hidden',
     ...shadows.card
   },
   heroGradient: {
-    borderRadius: 24,
     flex: 1,
     padding: spacing.lg,
-    justifyContent: 'space-between'
   },
   heroContent: {
     flexDirection: 'row',
-    alignItems: 'center'
-  },
-  heroIconWrapper: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 16,
-    height: 52,
+    justifyContent: 'space-between'
+  },
+  heroLeftCol: {
+    flex: 1,
+    paddingRight: spacing.md
+  },
+  heroRightCol: {
+    alignItems: 'center',
     justifyContent: 'center',
-    width: 52
+    width: 100
   },
   heroTitle: {
-    color: '#1A1A1A',
-    fontSize: 22,
+    color: '#FFFFFF',
+    fontSize: 24,
     fontWeight: '900',
-    marginBottom: 4
+    marginBottom: 6,
+    lineHeight: 28
   },
   heroSubtitle: {
-    color: 'rgba(26,26,26,0.7)',
+    color: 'rgba(255,255,255,0.9)',
     fontSize: 14,
-    fontWeight: '600'
+    fontWeight: '500',
+    marginBottom: 20,
+    lineHeight: 20
   },
   heroButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
     borderRadius: radius.pill,
     flexDirection: 'row',
-    height: 48,
-    justifyContent: 'center',
-    width: '100%'
+    height: 44,
+    paddingHorizontal: spacing.lg,
+    alignSelf: 'flex-start'
   },
   heroButtonText: {
-    color: '#1A1A1A',
+    color: '#2563EB',
     fontSize: 15,
+    fontWeight: '800',
+    marginRight: 6
+  },
+  heroButtonArrow: {
+    color: '#2563EB',
+    fontSize: 18,
     fontWeight: '800'
   },
   sectionHeader: {
