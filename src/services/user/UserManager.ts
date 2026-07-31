@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 import { PurchaseService } from '../purchase/PurchaseService';
 
@@ -85,7 +85,7 @@ class ShotCoachUserManager {
     }
 
     const nextCount = Math.min(this.state.freeCaptureCount + 1, FREE_CAPTURE_LIMIT);
-    await AsyncStorage.setItem(CAPTURE_COUNT_KEY, String(nextCount));
+    await EncryptedStorage.setItem(CAPTURE_COUNT_KEY, String(nextCount));
     this.setState({ freeCaptureCount: nextCount });
     return this.state;
   }
@@ -113,7 +113,7 @@ class ShotCoachUserManager {
   async trackAiToolUsed(toolId: string): Promise<UserAccessState> {
     if (this.state.isPremium || this.state.usedAiTools.includes(toolId)) return this.state;
     const nextTools = [...this.state.usedAiTools, toolId];
-    await AsyncStorage.setItem(USED_AI_TOOLS_KEY, JSON.stringify(nextTools));
+    await EncryptedStorage.setItem(USED_AI_TOOLS_KEY, JSON.stringify(nextTools));
     this.setState({ usedAiTools: nextTools });
     return this.state;
   }
@@ -125,13 +125,13 @@ class ShotCoachUserManager {
   async trackRecipeUsed(recipeId: string): Promise<UserAccessState> {
     if (this.state.isPremium || this.state.usedRecipes.includes(recipeId)) return this.state;
     const nextRecipes = [...this.state.usedRecipes, recipeId];
-    await AsyncStorage.setItem(USED_RECIPES_KEY, JSON.stringify(nextRecipes));
+    await EncryptedStorage.setItem(USED_RECIPES_KEY, JSON.stringify(nextRecipes));
     this.setState({ usedRecipes: nextRecipes });
     return this.state;
   }
 
   private async loadFreeCaptureCount(): Promise<number> {
-    const raw = await AsyncStorage.getItem(CAPTURE_COUNT_KEY);
+    const raw = await EncryptedStorage.getItem(CAPTURE_COUNT_KEY);
     const value = Number(raw);
     return Number.isFinite(value) ? Math.max(0, Math.min(value, FREE_CAPTURE_LIMIT)) : 0;
   }
@@ -146,7 +146,7 @@ class ShotCoachUserManager {
 
   private async loadUsedItems(key: string): Promise<string[]> {
     try {
-      const raw = await AsyncStorage.getItem(key);
+      const raw = await EncryptedStorage.getItem(key);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];

@@ -90,18 +90,18 @@ export function HomeScreen({
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroContainer}>
             <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => onOpenCamera({ type: 'coach' })}>
-              <LinearGradient colors={['#FFCBA4', '#FF9B9B']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <LinearGradient colors={['#6EA8FF', '#2F6BFF']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <View style={styles.heroContent}>
                   <View style={styles.heroIconWrapper}>
                     <CameraSvgIcon color="#1A1A1A" size={28} />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.heroTitle}>AI Camera Coach</Text>
-                    <Text style={styles.heroSubtitle}>Guided compositions & settings</Text>
+                  <View style={{ flex: 1, marginLeft: spacing.md }}>
+                    <Text style={[styles.heroTitle, { color: '#FFFFFF' }]}>AI Camera Coach</Text>
+                    <Text style={[styles.heroSubtitle, { color: 'rgba(255, 255, 255, 0.9)' }]}>Guided compositions & settings</Text>
                   </View>
                 </View>
-                <View style={styles.heroButton}>
-                  <Text style={styles.heroButtonText}>Start Coach</Text>
+                <View style={[styles.heroButton, { backgroundColor: '#FFFFFF' }]}>
+                  <Text style={[styles.heroButtonText, { color: '#2F6BFF' }]}>Start Coach</Text>
                 </View>
               </LinearGradient>
             </Pressable>
@@ -120,7 +120,7 @@ export function HomeScreen({
                 style={({ pressed }) => [styles.toolCard, pressed && styles.pressed]}
               >
                 <View style={styles.toolIconWrap}>
-                  <ToolImageIcon id={tool.id} size={28} />
+                  <ToolImageIcon id={tool.id} size={34} />
                 </View>
                 <Text style={styles.toolTitle} numberOfLines={1}>{tool.shortTitle}</Text>
               </Pressable>
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     borderRadius: 24,
-    height: 140,
+    height: 164,
     ...shadows.card
   },
   heroGradient: {
@@ -227,8 +227,7 @@ const styles = StyleSheet.create({
   },
   heroContent: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md
+    alignItems: 'center'
   },
   heroIconWrapper: {
     alignItems: 'center',
@@ -252,9 +251,9 @@ const styles = StyleSheet.create({
   heroButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: radius.full,
+    borderRadius: radius.pill,
     flexDirection: 'row',
-    height: 44,
+    height: 48,
     justifyContent: 'center',
     width: '100%'
   },
@@ -289,26 +288,32 @@ const styles = StyleSheet.create({
   toolGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    rowGap: spacing.lg,
+    rowGap: spacing.md,
     marginBottom: spacing.xl,
   },
   toolCard: {
     alignItems: 'center',
-    width: '25%',
+    width: '20%',
   },
   toolIconWrap: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: 18,
-    height: 60,
+    borderRadius: 16,
+    height: 56,
     justifyContent: 'center',
-    marginBottom: 8,
-    width: 60,
-    ...shadows.soft
+    marginBottom: 6,
+    width: 56,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1
   },
   toolTitle: {
     color: colors.text,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     textAlign: 'center',
   },
