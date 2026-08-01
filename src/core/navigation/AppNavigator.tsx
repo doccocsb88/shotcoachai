@@ -57,7 +57,7 @@ export function AppNavigator() {
   const [paywallType, setPaywallType] = useState<PaywallType>('DirectStore');
   const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
   const [imageViewerResult, setImageViewerResult] = useState<AnalysisResult | null>(null);
-  const [cameraIntent, setCameraIntent] = useState<CameraIntent>({ type: 'coach' });
+  const [cameraIntent, setCameraIntent] = useState<CameraIntent>({ type: 'coach', mode: 'comprehensive' });
   const [recipeListSource, setRecipeListSource] = useState<'home' | 'preview'>('home');
   const [cameraSource, setCameraSource] = useState<'home' | 'recipeList'>('home');
   const hydrateHistory = useAnalysisStore(state => state.hydrateHistory);
@@ -145,7 +145,7 @@ export function AppNavigator() {
     setRetakeReferenceUri(null);
     setScreen('home');
   }, []);
-  const openCamera = useCallback((intent: CameraIntent = { type: 'coach' }, source: 'home' | 'recipeList' = 'home') => {
+  const openCamera = useCallback((intent: CameraIntent = { type: 'coach', mode: 'comprehensive' }, source: 'home' | 'recipeList' = 'home') => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);

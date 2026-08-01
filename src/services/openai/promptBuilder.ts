@@ -1,5 +1,6 @@
 import { CoachDirectionV2, CoachPhotoAnalysisV2 } from '../../models/analysis';
 import { getPhotoAiTool, PhotoAiToolId } from '../../models/photoAiTool';
+import { CoachMode } from '../../core/store/analysisStore';
 
 export const buildVisionAnalysisPrompt = () => `
 You are a professional photography director and visual analysis engine.
@@ -59,7 +60,16 @@ Return STRICT JSON only:
 }
 `;
 
-export const buildCoachVisionAnalysisPromptV2 = () => `
+const getModeFocusInstructions = (mode: CoachMode) => {
+  switch (mode) {
+    case 'composition': return '- rule of thirds\\n- leading lines\\n- balance\\n- subject placement\\n- symmetry\\n- background distractions';
+    case 'frame': return '- framing\\n- camera distance\\n- crop ratio\\n- headroom\\n- camera angle (high/low)\\n- perspective';
+    case 'pose': return '- pose readability\\n- body language\\n- hand and limb placement\\n- posture\\n- expression\\n- naturalness';
+    case 'comprehensive': default: return '- composition\\n- framing\\n- camera distance\\n- subject placement\\n- pose readability\\n- lighting quality\\n- subject separation\\n- background distractions\\n- realism\\n- social media usefulness';
+  }
+};
+
+export const buildCoachVisionAnalysisPromptV2 = (mode: CoachMode = 'comprehensive') => `
 You are ShotCoach, a professional photography coach.
 
 Analyze the uploaded photo and return structured JSON only.
@@ -67,17 +77,8 @@ Analyze the uploaded photo and return structured JSON only.
 Product goal:
 ShotCoach helps users create a realistic photography coaching reference for retaking a better version of the same photo.
 
-Focus on:
-- composition
-- framing
-- camera distance
-- subject placement
-- pose readability
-- lighting quality
-- subject separation
-- background distractions
-- realism
-- social media usefulness
+Focus strictly on the selected coaching mode: \${mode.toUpperCase()}
+\${getModeFocusInstructions(mode)}
 
 Safety rules:
 - Do not suggest changing identity, face, body shape, outfit, hairstyle, background, location, weather, time of day, or lighting style.
@@ -141,24 +142,19 @@ Return STRICT JSON only:
 }
 `;
 
-export const buildCoachDirectionPromptV2 = () => `
-You are ShotCoach, a professional photography coach.
+export const buildCoachDirectionPromptV2 = (mode: CoachMode = 'comprehensive') => `
+You are ShotCoach, a professional photography coach giving direct, highly actionable physical instructions to the user.
 
-Create exactly 3 safe creative directions from the provided PhotoAnalysis JSON.
+Create exactly 1 safe creative direction from the provided PhotoAnalysis JSON.
+The advice must focus primarily on the selected coaching mode: ${mode.toUpperCase()}.
 
-These directions will be used to generate realistic AI photo references.
+CRITICAL: Your "summary" field must be highly specific, actionable advice spoken directly to the user (e.g. "Take a step back, hold the camera lower, and stand up straight with your hands out of your pockets."). DO NOT use generic phrases like "adjust angle" or "improve composition". Be extremely precise, step-by-step, and physical.
 
-The goal is not to redesign the photo.
-The goal is to show better ways to photograph the same person in the same scene.
-
-Prioritize improvements in this order:
-1. Framing
-2. Crop
-3. Camera distance
-4. Subject placement
-5. Composition
-6. Subject separation
-7. Minimal pose refinement only if safe
+Prioritize improvements in this order based on the mode:
+${mode === 'composition' ? '1. Specific subject placement (e.g., move subject to the left third)\n2. Aligning leading lines\n3. Balancing background elements' : ''}
+${mode === 'frame' ? '1. Specific camera distance (e.g., take two steps closer)\n2. Specific camera angle (e.g., lower the phone to chest level)\n3. Headroom adjustments' : ''}
+${mode === 'pose' ? '1. Specific body language (e.g., stand up straight, uncross arms)\n2. Specific limb placement (e.g., put one hand in your pocket, relax shoulders)\n3. Expression (e.g., smile naturally without tilting your head)' : ''}
+${mode === 'comprehensive' ? '1. Specific framing & camera distance (e.g., take a step back)\n2. Specific subject placement\n3. Specific posture changes (e.g., stand taller, uncross legs)' : ''}
 
 Do not suggest:
 - new background
@@ -193,13 +189,13 @@ Return STRICT JSON only:
 {
   "directions": [
     {
-      "id": "close_crop",
-      "title": "Soft Close-Up",
-      "summary": "A closer crop that strengthens facial connection while keeping the original mood.",
-      "composition_change": "tighter vertical crop around face and upper torso",
-      "camera_distance_change": "slightly closer camera distance",
-      "subject_placement_change": "keep subject near center with balanced headroom",
-      "pose_refinement": "preserve the original pose; only minimal refinement if safe",
+      "id": "actionable_guidance",
+      "title": "Actionable Guidance",
+      "summary": "Highly specific, step-by-step physical instruction spoken directly to the user (e.g., 'Take a step back and hold the camera at chest level').",
+      "composition_change": "highly specific composition change",
+      "camera_distance_change": "highly specific camera distance change",
+      "subject_placement_change": "highly specific subject placement change",
+      "pose_refinement": "highly specific physical pose adjustment",
       "lighting_preservation": "preserve the same light direction and color temperature",
       "edit_strength": "low | medium | high",
       "identity_risk": "low | medium | high",

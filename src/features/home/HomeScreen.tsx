@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Image, ImageBackground, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { useAnalysisStore } from '../../core/store/analysisStore';
+import { CoachMode, useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius, shadows, spacing } from '../../constants/theme';
 import { PickedPhoto } from '../../models/analysis';
@@ -29,7 +29,7 @@ function CameraSvgIcon({ color = '#1A1A1A', size = 24 }: { color?: string; size?
 }
 
 export type CameraIntent =
-  | { type: 'coach' }
+  | { type: 'coach', mode: CoachMode }
   | { type: 'tool'; toolId: PhotoAiToolId }
   | { type: 'recipe'; recipeId: string };
 
@@ -51,6 +51,7 @@ export function HomeScreen({
   onOpenRecipeList
 }: Props) {
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
+  const [coachMenuVisible, setCoachMenuVisible] = useState(false);
   const setCurrentPhoto = useAnalysisStore(state => state.setCurrentPhoto);
 
   useEffect(() => {
@@ -89,7 +90,7 @@ export function HomeScreen({
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroContainer}>
-            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => onOpenCamera({ type: 'coach' })}>
+            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => setCoachMenuVisible(true)}>
               <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <View style={styles.heroContent}>
                   <View style={styles.heroLeftCol}>
@@ -153,6 +154,52 @@ export function HomeScreen({
           />
         </ScrollView>
       </View>
+      <Modal
+        visible={coachMenuVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCoachMenuVisible(false)}
+      >
+        <View style={styles.coachMenuOverlay}>
+          <Pressable style={styles.coachMenuBackdrop} onPress={() => setCoachMenuVisible(false)} />
+          <View style={styles.coachMenuSheet}>
+            <View style={styles.coachMenuDragHandle} />
+            <Text style={styles.coachMenuTitle}>Choose Your Coach</Text>
+            
+            <Pressable 
+              style={styles.coachMenuOption}
+              onPress={() => { setCoachMenuVisible(false); onOpenCamera({ type: 'coach', mode: 'composition' }); }}
+            >
+              <Text style={styles.coachMenuOptionTitle}>Composition Coach</Text>
+              <Text style={styles.coachMenuOptionSubtitle}>Rule of thirds, balance & framing</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.coachMenuOption}
+              onPress={() => { setCoachMenuVisible(false); onOpenCamera({ type: 'coach', mode: 'frame' }); }}
+            >
+              <Text style={styles.coachMenuOptionTitle}>Frame Coach</Text>
+              <Text style={styles.coachMenuOptionSubtitle}>Distance, crop & camera angle</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.coachMenuOption}
+              onPress={() => { setCoachMenuVisible(false); onOpenCamera({ type: 'coach', mode: 'pose' }); }}
+            >
+              <Text style={styles.coachMenuOptionTitle}>Pose Coach</Text>
+              <Text style={styles.coachMenuOptionSubtitle}>Body language & expression</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.coachMenuOption}
+              onPress={() => { setCoachMenuVisible(false); onOpenCamera({ type: 'coach', mode: 'comprehensive' }); }}
+            >
+              <Text style={styles.coachMenuOptionTitle}>Comprehensive Analysis</Text>
+              <Text style={styles.coachMenuOptionSubtitle}>Full aesthetic review</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -335,5 +382,51 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75
+  },
+  coachMenuOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)'
+  },
+  coachMenuBackdrop: {
+    ...StyleSheet.absoluteFillObject
+  },
+  coachMenuSheet: {
+    backgroundColor: '#1E1E1E',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingTop: 12
+  },
+  coachMenuDragHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#333',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20
+  },
+  coachMenuTitle: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16
+  },
+  coachMenuOption: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12
+  },
+  coachMenuOptionTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4
+  },
+  coachMenuOptionSubtitle: {
+    color: '#AAA',
+    fontSize: 13
   }
 });

@@ -5,6 +5,7 @@ import { DEFAULT_PHOTO_AI_TOOL_ID, PhotoAiToolId } from '../../models/photoAiToo
 import { loadHistory, persistHistory } from '../../services/storage/historyStorage';
 
 export type CameraMode = 'classic' | 'pose_ai';
+export type CoachMode = 'composition' | 'frame' | 'pose' | 'comprehensive';
 
 interface AnalysisStore {
   currentPhoto?: PickedPhoto;
@@ -17,6 +18,7 @@ interface AnalysisStore {
   poseAiSelectedTemplateId?: string;
   selectedPhotoAiTool: PhotoAiToolId;
   selectedPhotoAiInstruction?: string;
+  coachMode: CoachMode;
 
   setCurrentPhoto: (photo: PickedPhoto) => void;
   setAnalyzing: (value: boolean) => void;
@@ -31,6 +33,7 @@ interface AnalysisStore {
   setSelectedPhotoAiTool: (toolId: PhotoAiToolId) => void;
   setSelectedPhotoAiEdit: (toolId: PhotoAiToolId, instruction?: string) => void;
   setSelectedPhotoAiInstruction: (instruction?: string) => void;
+  setCoachMode: (mode: CoachMode) => void;
   clearCurrent: () => void;
 }
 
@@ -40,6 +43,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   historyLoaded: false,
   cameraMode: 'classic',
   selectedPhotoAiTool: DEFAULT_PHOTO_AI_TOOL_ID,
+  coachMode: 'comprehensive',
 
   setCurrentPhoto: photo =>
     set({
@@ -74,6 +78,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   setSelectedPhotoAiEdit: (toolId, instruction) =>
     set({ selectedPhotoAiTool: toolId, selectedPhotoAiInstruction: instruction }),
   setSelectedPhotoAiInstruction: instruction => set({ selectedPhotoAiInstruction: instruction }),
+  setCoachMode: mode => set({ coachMode: mode }),
   clearCurrent: () =>
     set({
       currentPhoto: undefined,

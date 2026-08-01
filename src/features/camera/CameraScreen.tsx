@@ -1,7 +1,7 @@
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Image, Linking, Platform, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, ActivityIndicator, AppState, Image, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
@@ -12,6 +12,8 @@ import { UserAccessState, UserManager } from '../../services/user/UserManager';
 import { CameraIntent } from '../home/HomeScreen';
 import { getPhotoAiTool } from '../../models/photoAiTool';
 import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary';
+import { useAnalyzePhoto } from '../analysis/useAnalyzePhoto';
+import { generateEditedImage } from '../../services/openai/generateImage';
 
 const galleryIcon = require('../../../assets/icons/image-gallery.png');
 const historyIcon = require('../../../assets/icons/history.png');
@@ -46,7 +48,14 @@ export function CameraScreen({
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
   const [zoom, setZoom] = useState(0);
+  const clearCurrent = useAnalysisStore(state => state.clearCurrent);
+  const setCoachMode = useAnalysisStore(state => state.setCoachMode);
+  const isAnalyzing = useAnalysisStore(state => state.isAnalyzing);
+  const currentResult = useAnalysisStore(state => state.currentResult);
+  const { analyze } = useAnalyzePhoto();
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [realtimeGeneratedImageUri, setRealtimeGeneratedImageUri] = useState<string | null>(null);
   const referenceWidth = Math.round((width * 2) / 5);
 
   useEffect(() => {
@@ -54,6 +63,17 @@ export function CameraScreen({
     void UserManager.refresh();
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (intent?.type === 'coach' && intent.mode !== 'comprehensive' && currentResult && !realtimeGeneratedImageUri) {
+      // Keep it active indefinitely until the next capture, no timeout needed.
+    }
+  }, [currentResult, intent, realtimeGeneratedImageUri]);
+
+  const clearRealtimeState = useCallback(() => {
+    clearCurrent();
+    setRealtimeGeneratedImageUri(null);
+  }, [clearCurrent]);
 
   useEffect(() => {
     if (cameraPermission && !cameraPermission.granted && cameraPermission.canAskAgain) {
@@ -165,7 +185,26 @@ export function CameraScreen({
     if (cameraMode === 'pose_ai') {
       setPoseAiSelectedTemplateId(undefined);
     }
-    onPhotoSelected();
+    clearRealtimeState();
+    
+    if (intent?.type === 'coach' && intent.mode !== 'comprehensive') {
+      useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
+      try {
+        const parsed = await analyze(picked.uri, picked.mimeType);
+        const imagePrompt = parsed.suggestions[0]?.image_prompt;
+        if (imagePrompt) {
+          setIsGeneratingImage(true);
+          const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
+          setRealtimeGeneratedImageUri(generatedUri);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsGeneratingImage(false);
+      }
+    } else {
+      onPhotoSelected();
+    }
   };
 
   const handleCapturedPhoto = async (asset: { uri: string; width: number; height: number }) => {
@@ -186,7 +225,26 @@ export function CameraScreen({
     if (cameraMode === 'pose_ai') {
       setPoseAiSelectedTemplateId(undefined);
     }
-    onPhotoSelected();
+    clearRealtimeState();
+    
+    if (intent?.type === 'coach' && intent.mode !== 'comprehensive') {
+      useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
+      try {
+        const parsed = await analyze(picked.uri, picked.mimeType);
+        const imagePrompt = parsed.suggestions[0]?.image_prompt;
+        if (imagePrompt) {
+          setIsGeneratingImage(true);
+          const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
+          setRealtimeGeneratedImageUri(generatedUri);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsGeneratingImage(false);
+      }
+    } else {
+      onPhotoSelected();
+    }
   };
 
   const renderCameraPreview = () => {
@@ -234,17 +292,36 @@ export function CameraScreen({
           <View style={styles.focusMarkTopRight} />
           <View style={styles.focusMarkBottomLeft} />
           <View style={styles.focusMarkBottomRight} />
+          
+          {(isAnalyzing || isGeneratingImage) && (
+            <View style={styles.realtimeLoadingOverlay}>
+              <ActivityIndicator size="large" color={colors.white} />
+              <Text style={styles.realtimeLoadingText}>
+                {isAnalyzing ? 'Analyzing shot...' : 'Generating reference...'}
+              </Text>
+            </View>
+          )}
+
           {!accessState.isPremium ? (
             <Text style={styles.freeQuotaPill}>
               {UserManager.remainingFreeCaptures()} free capture{UserManager.remainingFreeCaptures() === 1 ? '' : 's'} left
             </Text>
           ) : null}
-          {referenceImageUri ? (
+          {(referenceImageUri || realtimeGeneratedImageUri) ? (
             <View style={[styles.referencePreview, { width: referenceWidth }]}>
-              <Image source={{ uri: referenceImageUri }} style={styles.referencePreviewImage} resizeMode="cover" />
+              <Image 
+                source={{ uri: realtimeGeneratedImageUri || referenceImageUri || '' }} 
+                style={styles.referencePreviewImage} 
+                resizeMode="cover" 
+              />
               <View style={styles.referencePreviewLabel}>
                 <Text style={styles.referencePreviewLabelText}>Reference</Text>
               </View>
+              {realtimeGeneratedImageUri && (
+                <Pressable onPress={clearRealtimeState} style={styles.referencePreviewClose}>
+                  <Text style={styles.realtimeGuidanceCloseText}>✕</Text>
+                </Pressable>
+              )}
             </View>
           ) : null}
         </View>
@@ -265,7 +342,11 @@ export function CameraScreen({
               </View>
               <View>
                 <Text style={styles.featurePillTitle}>
-                  {intent?.type === 'coach' ? 'Composition Coach' : 
+                  {intent?.type === 'coach' ? (
+                     intent.mode === 'composition' ? 'Composition Coach' :
+                     intent.mode === 'frame' ? 'Frame Coach' :
+                     intent.mode === 'pose' ? 'Pose Coach' : 'Comprehensive Coach'
+                   ) : 
                    intent?.type === 'tool' ? (getPhotoAiTool(intent.toolId)?.shortTitle ?? 'Quick Edit') : 
                    intent?.type === 'recipe' ? (getPhotoRecipe(intent.recipeId)?.title ?? 'Recipe') : 'Quick Edit'}
                 </Text>
@@ -299,7 +380,7 @@ export function CameraScreen({
           </Pressable>
         </View>
 
-        <View style={[styles.bottomDock, { paddingBottom: dockBottomPadding }]}>
+        <View style={styles.secondaryControlsRow}>
           <Pressable
             accessibilityLabel="Open photo library"
             accessibilityRole="button"
@@ -308,6 +389,36 @@ export function CameraScreen({
           >
             <Image source={galleryIcon} style={styles.galleryIcon} />
           </Pressable>
+          <Pressable
+            accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
+            accessibilityRole="button"
+            disabled={isCapturing}
+            onPress={swapCamera}
+            style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
+          >
+            <CameraSwapIcon />
+          </Pressable>
+        </View>
+
+        <View style={[styles.bottomDock, { paddingBottom: dockBottomPadding }]}>
+          {intent?.type === 'coach' ? (
+            <View style={styles.leftDockContent}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modeListScroll}>
+                {[
+                  { id: 'composition', label: 'Composition' },
+                  { id: 'frame', label: 'Frame' },
+                  { id: 'pose', label: 'Pose' },
+                  { id: 'comprehensive', label: 'Analyze' }
+                ].map(mode => (
+                  <Pressable key={mode.id} onPress={() => { setCoachMode(mode.id as any); if (intent.type === 'coach') intent.mode = mode.id as any; }}>
+                    <Text style={[styles.modeText, intent.mode === mode.id && styles.modeTextActive]}>{mode.label}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : (
+            <View style={styles.leftDockContent} />
+          )}
 
           <Pressable
             accessibilityLabel="Capture photo"
@@ -318,16 +429,8 @@ export function CameraScreen({
           >
             <View style={styles.captureInner} />
           </Pressable>
-
-          <Pressable
-            accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
-            accessibilityRole="button"
-            disabled={isCapturing}
-            onPress={swapCamera}
-            style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
-          >
-            <CameraSwapIcon />
-          </Pressable>
+          
+          <View style={styles.rightDockContent} />
         </View>
       </View>
     </Screen>
@@ -673,14 +776,43 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     bottom: 0,
     flexDirection: 'row',
-    gap: spacing.md,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     left: 0,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     position: 'absolute',
     right: 0,
     zIndex: 2
+  },
+  leftDockContent: {
+    flex: 1,
+    alignItems: 'flex-end',
+    paddingRight: 16
+  },
+  rightDockContent: {
+    flex: 1
+  },
+  secondaryControlsRow: {
+    position: 'absolute',
+    bottom: focusBottomInset - 20,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    zIndex: 3
+  },
+  modeListScroll: {
+    gap: 16,
+    alignItems: 'center',
+    paddingLeft: 20
+  },
+  modeText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  modeTextActive: {
+    color: '#FFD700'
   },
   galleryThumbWrap: {
     alignItems: 'center',
@@ -722,5 +854,58 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75
+  },
+  realtimeLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10
+  },
+  realtimeLoadingText: {
+    color: colors.white,
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  realtimeGuidanceOverlay: {
+    position: 'absolute',
+    top: navBarTopPadding + 140,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(20, 20, 20, 0.85)',
+    borderRadius: 16,
+    padding: 16,
+    zIndex: 10,
+    maxHeight: 200,
+    ...shadows.card
+  },
+  realtimeGuidanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  realtimeGuidanceTitle: {
+    color: '#FFD700',
+    fontSize: 14,
+    fontWeight: '800'
+  },
+  realtimeGuidanceClose: {
+    padding: 4
+  },
+  realtimeGuidanceCloseText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  realtimeGuidanceScroll: {
+    flexGrow: 0
+  },
+  realtimeGuidanceText: {
+    color: colors.white,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '500'
   }
 });
