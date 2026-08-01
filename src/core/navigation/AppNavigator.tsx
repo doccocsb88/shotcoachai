@@ -4,7 +4,6 @@ import { Alert, Modal, SafeAreaView, StyleSheet, View } from 'react-native';
 import { useAnalysisStore } from '../store/analysisStore';
 import { HomeScreen, CameraIntent } from '../../features/home/HomeScreen';
 import { CameraScreen } from '../../features/camera/CameraScreen';
-import { PhotoPreviewScreen } from '../../features/photo-preview/PhotoPreviewScreen';
 import { PoseAssistScreen } from '../../features/pose-assist/PoseAssistScreen';
 import { AnalyzingScreen } from '../../features/analysis/AnalyzingScreen';
 import { AnalysisResultScreen } from '../../features/result/AnalysisResultScreen';
@@ -33,7 +32,6 @@ import { trackScreenView } from '../../services/tracking/firebaseTracking';
 type ScreenName =
   | 'home'
   | 'camera'
-  | 'preview'
   | 'poseAssist'
   | 'analyzing'
   | 'analysisResult'
@@ -58,7 +56,7 @@ export function AppNavigator() {
   const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
   const [imageViewerResult, setImageViewerResult] = useState<AnalysisResult | null>(null);
   const [cameraIntent, setCameraIntent] = useState<CameraIntent>({ type: 'coach', mode: 'comprehensive' });
-  const [recipeListSource, setRecipeListSource] = useState<'home' | 'preview'>('home');
+  const [recipeListSource, setRecipeListSource] = useState<'home'>('home');
   const [cameraSource, setCameraSource] = useState<'home' | 'recipeList'>('home');
   const hydrateHistory = useAnalysisStore(state => state.hydrateHistory);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
@@ -113,19 +111,7 @@ export function AppNavigator() {
 
   const openResultFromHistory = useCallback((result: AnalysisResult) => {
     setImageViewerResult(result);
-  }, []);
-
-  const [previewInitialStep, setPreviewInitialStep] = useState<'flows' | 'instructions'>('flows');
-
-  const openPreview = useCallback((initialStep: 'flows' | 'instructions' = 'flows') => {
-    setResultOpenedFromHistory(false);
-    setCanReturnToAnalysis(true);
-    setGeneratedSuggestionIndex(0);
-    setRetakeReferenceUri(null);
-    setPreviewInitialStep(initialStep);
-    setScreen('preview');
-  }, []);
-  const openPoseAssist = useCallback(() => {
+  }, []);  const openPoseAssist = useCallback(() => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
@@ -177,7 +163,7 @@ export function AppNavigator() {
     setScreen('generatedResult');
   }, [openAnalyzing, openHome, setCurrentResult]);
   const openHistory = useCallback(() => setScreen('history'), []);
-  const openRecipeList = useCallback((source: 'home' | 'preview' = 'home') => {
+  const openRecipeList = useCallback((source: 'home' = 'home') => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(false);
     setGeneratedSuggestionIndex(0);
@@ -243,7 +229,7 @@ export function AppNavigator() {
       openAnalyzing();
     } else if (cameraIntent.type === 'tool') {
       useAnalysisStore.getState().setSelectedPhotoAiTool(cameraIntent.toolId);
-      openPreview('instructions');
+      openSelectedPreviewFlow();
     } else if (cameraIntent.type === 'recipe') {
       if (cameraIntent.recipeId === 'all') {
         openRecipeList('home');
@@ -252,7 +238,7 @@ export function AppNavigator() {
         if (recipe) startRecipeGeneration(recipe);
       }
     }
-  }, [cameraIntent, openAnalyzing, openPreview, startRecipeGeneration, openRecipeList]);
+  }, [cameraIntent, openAnalyzing, openSelectedPreviewFlow, startRecipeGeneration, openRecipeList]);
 
   const handleGeneratedResultBack = useCallback(() => {
     if (resultOpenedFromHistory) return openHistory();
@@ -294,7 +280,9 @@ export function AppNavigator() {
     if (resultOpenedFromHistory) {
       backgroundContent = <HistoryScreen onBack={openHome} onOpenResult={openResultFromHistory} />;
     } else {
-      backgroundContent = <PhotoPreviewScreen initialStep={previewInitialStep} onBack={openHome} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={openRecipeList} onOpenPaywall={() => openPaywall('Store')} />;
+      backgroundContent = recipeListSource === 'home' 
+        ? <HomeScreen onOpenCamera={openCamera} onOpenMenu={() => setMenuOpen(true)} onOpenHistory={openHistory} onOpenPaywall={openPaywall} onOpenRecipeList={() => openRecipeList('home')} /> 
+        : <CameraScreen onBack={openHome} onPhotoSelected={handlePhotoSelected} onOpenPaywall={openPaywall} intent={cameraIntent} />;
     }
   } else if (isGenericResultFlow) {
     if (resultOpenedFromHistory) {
@@ -309,23 +297,16 @@ export function AppNavigator() {
         />
       );
     } else {
-      backgroundContent = <PhotoPreviewScreen initialStep={previewInitialStep} onBack={openHome} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={openRecipeList} onOpenPaywall={() => openPaywall('Store')} />;
+      backgroundContent = cameraSource === 'recipeList' 
+        ? <RecipeListScreen onBack={openHome} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} /> 
+        : <CameraScreen onBack={openHome} onPhotoSelected={handlePhotoSelected} onOpenPaywall={openPaywall} intent={cameraIntent} />;
     }
   }
 
-  if (screen === 'preview') {
-    const handlePreviewBack = () => {
-      if (previewInitialStep === 'instructions') {
-        openCamera(cameraIntent, cameraSource);
-      } else {
-        openHome();
-      }
-    };
-    content = <PhotoPreviewScreen initialStep={previewInitialStep} onBack={handlePreviewBack} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={() => openRecipeList('preview')} onOpenPaywall={() => openPaywall('Store')} />;
-  } else if (screen === 'poseAssist') {
-    content = <PoseAssistScreen onBack={openHome} onContinue={openPreview} />;
+  if (screen === 'poseAssist') {
+    content = <PoseAssistScreen onBack={openHome} onContinue={openSelectedPreviewFlow} />;
   } else if (screen === 'analyzing') {
-    content = <AnalyzingScreen onComplete={openAnalysisResult} onBack={openPreview} onCancel={goHome} />;
+    content = <AnalyzingScreen onComplete={openAnalysisResult} onBack={openHome} onCancel={goHome} />;
   } else if (screen === 'analysisResult' && currentResult) {
     content = (
       <AnalysisResultScreen
@@ -399,7 +380,7 @@ export function AppNavigator() {
     );
   }
 
-  const contentShell = screen === 'home' ? content : <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
+  const contentShell = screen === 'home' || screen === 'camera' ? content : <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
 
   return (
     <>
@@ -430,8 +411,8 @@ export function AppNavigator() {
           }
         }}
       >
-        <View style={styles.safeContent}>
-          {screen === 'recipeList' && <RecipeListScreen onBack={recipeListSource === 'home' ? openHome : openPreview} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} />}
+        <SafeAreaView style={styles.safeContent}>
+          {screen === 'recipeList' && <RecipeListScreen onBack={openHome} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} />}
           {(screen === 'recipeDetail') && selectedRecipe && (
             <RecipeDetailScreen
               recipe={selectedRecipe}
@@ -440,7 +421,7 @@ export function AppNavigator() {
               showGenerateAction={false}
             />
           )}
-        </View>
+        </SafeAreaView>
 
         <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
           <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
@@ -453,9 +434,9 @@ export function AppNavigator() {
         statusBarTranslucent
         onRequestClose={handleGeneratedResultBack}
       >
-        <View style={styles.safeContent}>
+        <SafeAreaView style={styles.safeContent}>
           {isGenericResultFlow && content}
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {!(isRecipeFlow || isGenericResultFlow) && (

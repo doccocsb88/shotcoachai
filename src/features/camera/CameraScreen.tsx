@@ -49,6 +49,7 @@ export function CameraScreen({
   const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
   const [zoom, setZoom] = useState(0);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
+  const addRecentResult = useAnalysisStore(state => state.addRecentResult);
   const setCoachMode = useAnalysisStore(state => state.setCoachMode);
   const isAnalyzing = useAnalysisStore(state => state.isAnalyzing);
   const currentResult = useAnalysisStore(state => state.currentResult);
@@ -71,9 +72,8 @@ export function CameraScreen({
   }, [currentResult, intent, realtimeGeneratedImageUri]);
 
   const clearRealtimeState = useCallback(() => {
-    clearCurrent();
     setRealtimeGeneratedImageUri(null);
-  }, [clearCurrent]);
+  }, []);
 
   useEffect(() => {
     if (cameraPermission && !cameraPermission.granted && cameraPermission.canAskAgain) {
@@ -196,6 +196,14 @@ export function CameraScreen({
           setIsGeneratingImage(true);
           const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
           setRealtimeGeneratedImageUri(generatedUri);
+          const historyResult = { ...parsed };
+          if (historyResult.suggestions?.[0]) {
+            historyResult.suggestions[0] = {
+              ...historyResult.suggestions[0],
+              result_image_url: generatedUri
+            };
+          }
+          void addRecentResult(historyResult);
         }
       } catch (e) {
         console.error(e);
@@ -236,6 +244,14 @@ export function CameraScreen({
           setIsGeneratingImage(true);
           const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
           setRealtimeGeneratedImageUri(generatedUri);
+          const historyResult = { ...parsed };
+          if (historyResult.suggestions?.[0]) {
+            historyResult.suggestions[0] = {
+              ...historyResult.suggestions[0],
+              result_image_url: generatedUri
+            };
+          }
+          void addRecentResult(historyResult);
         }
       } catch (e) {
         console.error(e);
