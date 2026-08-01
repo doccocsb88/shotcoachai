@@ -48,7 +48,38 @@ export function CameraScreen({
   const [cameraPermission, requestCameraPermission, getCameraPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
+  const [lens, setLens] = useState<string | undefined>('builtInWideAngleCamera');
   const [zoom, setZoom] = useState(0);
+  const [activeZoomLevel, setActiveZoomLevel] = useState<'0.5' | '1' | '2'>('1');
+  const [availableLenses, setAvailableLenses] = useState<string[]>([]);
+  
+  const handleZoomSelect = (level: '0.5' | '1' | '2') => {
+    setActiveZoomLevel(level);
+    const lensesStr = availableLenses.join('').toLowerCase();
+    
+    if (level === '0.5') {
+      if (lensesStr.includes('ultrawide') || lensesStr.includes('triple') || lensesStr.includes('dual')) {
+        setLens('builtInUltraWideCamera');
+        setZoom(0);
+      } else {
+        // Fallback: Can't zoom out digitally, so just use 1x unzoomed
+        setLens('builtInWideAngleCamera');
+        setZoom(0);
+      }
+    } else if (level === '1') {
+      setLens('builtInWideAngleCamera');
+      setZoom(0);
+    } else if (level === '2') {
+      if (lensesStr.includes('telephoto') || lensesStr.includes('triple')) {
+        setLens('builtInTelephotoCamera');
+        setZoom(0);
+      } else {
+        // Fallback to digital zoom on wide angle
+        setLens('builtInWideAngleCamera');
+        setZoom(0.05); // Approximate 2x digital zoom
+      }
+    }
+  };
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
   const setCoachMode = useAnalysisStore(state => state.setCoachMode);
@@ -297,7 +328,22 @@ export function CameraScreen({
       );
     }
 
-    return <CameraView ref={cameraRef} facing={cameraFacing} style={styles.cameraView} zoom={zoom} />;
+    return (
+      <CameraView 
+        ref={cameraRef} 
+        facing={cameraFacing} 
+        style={styles.cameraView} 
+        selectedLens={lens}
+        zoom={zoom}
+        onAvailableLensesChanged={(event: any) => {
+          if (event?.lenses && event.lenses.length > 0) {
+            setAvailableLenses(event.lenses);
+          } else if (event?.nativeEvent?.lenses && event.nativeEvent.lenses.length > 0) {
+            setAvailableLenses(event.nativeEvent.lenses);
+          }
+        }}
+      />
+    );
   };
 
   return (
@@ -386,18 +432,18 @@ export function CameraScreen({
         </View>
 
         <View style={styles.zoomContainer}>
-          <Pressable onPress={() => setZoom(0)} style={[styles.zoomButton, zoom === 0 && styles.zoomButtonActive]}>
-            <Text style={[styles.zoomText, zoom === 0 && styles.zoomTextActive]}>0.5</Text>
+          <Pressable onPress={() => handleZoomSelect('0.5')} style={[styles.zoomButton, activeZoomLevel === '0.5' && styles.zoomButtonActive]}>
+            <Text style={[styles.zoomText, activeZoomLevel === '0.5' && styles.zoomTextActive]}>0.5</Text>
           </Pressable>
-          <Pressable onPress={() => setZoom(0.05)} style={[styles.zoomButton, zoom === 0.05 && styles.zoomButtonActive]}>
-            <Text style={[styles.zoomText, zoom === 0.05 && styles.zoomTextActive]}>1x</Text>
+          <Pressable onPress={() => handleZoomSelect('1')} style={[styles.zoomButton, activeZoomLevel === '1' && styles.zoomButtonActive]}>
+            <Text style={[styles.zoomText, activeZoomLevel === '1' && styles.zoomTextActive]}>1x</Text>
           </Pressable>
-          <Pressable onPress={() => setZoom(0.1)} style={[styles.zoomButton, zoom === 0.1 && styles.zoomButtonActive]}>
-            <Text style={[styles.zoomText, zoom === 0.1 && styles.zoomTextActive]}>2</Text>
+          <Pressable onPress={() => handleZoomSelect('2')} style={[styles.zoomButton, activeZoomLevel === '2' && styles.zoomButtonActive]}>
+            <Text style={[styles.zoomText, activeZoomLevel === '2' && styles.zoomTextActive]}>2</Text>
           </Pressable>
         </View>
 
-        <View style={styles.secondaryControlsRow}>
+        <View style={styles.secondaryControlsRow} pointerEvents="box-none">
           <Pressable
             accessibilityLabel="Open photo library"
             accessibilityRole="button"
