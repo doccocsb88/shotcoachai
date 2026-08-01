@@ -60,9 +60,6 @@
             ReferencedContainer = "container:AIPhotoCoach.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <StoreKitConfigurationFileReference
-         identifier = "../AIPhotoCoach/ShotCoachProducts.storekit">
-      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

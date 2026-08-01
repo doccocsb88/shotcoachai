@@ -4,10 +4,10 @@ require File.join(File.dirname(`node --print "require.resolve('react-native/pack
 require 'json'
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
-ENV['RCT_NEW_ARCH_ENABLED'] = podfile_properties['newArchEnabled'] == 'true' ? '1' : '0'
+ENV['RCT_NEW_ARCH_ENABLED'] = '0' if podfile_properties['newArchEnabled'] == 'false'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 
-platform :ios, podfile_properties['ios.deploymentTarget'] || '15.0'
+platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 install! 'cocoapods',
   :deterministic_uuids => false
 
@@ -24,10 +24,8 @@ target 'AIPhotoCoach' do
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else
     config_command = [
-      'node',
-      '--no-warnings',
-      '--eval',
-      'require(require.resolve(\'expo-modules-autolinking\', { paths: [require.resolve(\'expo/package.json\')] }))(process.argv.slice(1))',
+      'npx',
+      'expo-modules-autolinking',
       'react-native-config',
       '--json',
       '--platform',
@@ -64,31 +62,6 @@ target 'AIPhotoCoach' do
         resource_bundle_target.build_configurations.each do |config|
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
-      end
-    end
-
-    installer.pods_project.targets.each do |target|
-      target.shell_script_build_phases
-        .select { |phase| phase.name.include?('[RN]Check rncore') || phase.name.include?('Generate Specs') }
-        .each { |phase| target.build_phases.delete(phase) }
-
-      target.shell_script_build_phases.each do |phase|
-        phase.shell_path = '/bin/bash'
-
-        next unless phase.shell_script.include?('Swift Compatibility Header')
-
-        phase.shell_script = phase.shell_script
-          .sub(
-            "MODULE_MAP_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_MODULE_NAME}.modulemap\"\n",
-            "MODULE_MAP_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_MODULE_NAME}.modulemap\"\nmkdir -p \"${BUILT_PRODUCTS_DIR}/Swift Compatibility Header\"\n"
-          )
-          .gsub('ditto ', '/bin/cp -f ')
-      end
-
-      target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-        config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
-        config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
       end
     end
   end

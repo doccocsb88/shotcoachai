@@ -40,6 +40,7 @@ export function CameraScreen({
   intent
 }: Props) {
   const cameraRef = useRef<CameraView>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
   const setCurrentPhoto = useAnalysisStore(state => state.setCurrentPhoto);
   const cameraMode = useAnalysisStore(state => state.cameraMode);
@@ -417,35 +418,75 @@ export function CameraScreen({
         </View>
 
         <View style={[styles.bottomDock, { paddingBottom: dockBottomPadding }]}>
-          {intent?.type === 'coach' ? (
-            <View style={styles.leftDockContent}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modeListScroll}>
+          {intent?.type === 'coach' && (
+            <View style={[styles.coachModeSelector, { paddingTop: spacing.sm, paddingBottom: dockBottomPadding, zIndex: 1 }]}>
+              <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={96} // 80 width + 16 gap
+                decelerationRate="fast"
+                scrollEventThrottle={16}
+                onScroll={(e) => {
+                  const x = e.nativeEvent.contentOffset.x;
+                  const index = Math.max(0, Math.min(3, Math.round(x / 96)));
+                  const modes = ['frame', 'composition', 'pose', 'comprehensive'];
+                  const newMode = modes[index];
+                  if (intent.mode !== newMode) {
+                    setCoachMode(newMode as any);
+                    intent.mode = newMode as any;
+                  }
+                }}
+                contentContainerStyle={[styles.coachModeScroll, { paddingHorizontal: (width - 80) / 2 }]}
+              >
                 {[
-                  { id: 'composition', label: 'Composition' },
-                  { id: 'frame', label: 'Frame' },
-                  { id: 'pose', label: 'Pose' },
-                  { id: 'comprehensive', label: 'Analyze' }
-                ].map(mode => (
-                  <Pressable key={mode.id} onPress={() => { setCoachMode(mode.id as any); if (intent.type === 'coach') intent.mode = mode.id as any; }}>
-                    <Text style={[styles.modeText, intent.mode === mode.id && styles.modeTextActive]}>{mode.label}</Text>
+                  { id: 'frame', image: require('../../../assets/coaches/frame.png') },
+                  { id: 'composition', image: require('../../../assets/coaches/composition.png') },
+                  { id: 'pose', image: require('../../../assets/coaches/pose.png') },
+                  { id: 'comprehensive', image: require('../../../assets/coaches/comprehensive.png') }
+                ].map((mode, index) => (
+                  <Pressable
+                    key={mode.id}
+                    onPress={() => {
+                      scrollViewRef.current?.scrollTo({ x: index * 96, animated: true });
+                    }}
+                    style={styles.coachAvatarWrap}
+                  >
+                    <Image 
+                      source={mode.image} 
+                      style={[
+                        styles.coachAvatar, 
+                        intent.mode === mode.id && { opacity: 0 }
+                      ]} 
+                    />
                   </Pressable>
                 ))}
               </ScrollView>
             </View>
-          ) : (
-            <View style={styles.leftDockContent} />
           )}
 
+          <View style={styles.leftDockContent} />
           <Pressable
             accessibilityLabel="Capture photo"
             accessibilityRole="button"
             onPress={takePhoto}
             disabled={isCapturing}
-            style={({ pressed }) => [styles.captureButton, (pressed || isCapturing) && styles.pressed]}
+            style={({ pressed }) => [styles.captureButton, { zIndex: 10 }, (pressed || isCapturing) && styles.pressed]}
           >
-            <View style={styles.captureInner} />
+            {intent?.type === 'coach' ? (
+              <Image 
+                source={
+                  intent.mode === 'frame' ? require('../../../assets/coaches/frame.png') :
+                  intent.mode === 'composition' ? require('../../../assets/coaches/composition.png') :
+                  intent.mode === 'pose' ? require('../../../assets/coaches/pose.png') :
+                  require('../../../assets/coaches/comprehensive.png')
+                }
+                style={styles.captureInnerImage} 
+              />
+            ) : (
+              <View style={styles.captureInner} />
+            )}
           </Pressable>
-          
           <View style={styles.rightDockContent} />
         </View>
       </View>
@@ -817,6 +858,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 3
   },
+  coachModeSelector: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    zIndex: 4,
+  },
+  coachModeScroll: {
+    alignItems: 'center',
+    gap: 16
+  },
+  coachAvatarWrap: {
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  coachAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    opacity: 0.6,
+  },
   modeListScroll: {
     gap: 16,
     alignItems: 'center',
@@ -867,6 +929,12 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     height: 54,
     width: 54
+  },
+  captureInnerImage: {
+    borderRadius: 35,
+    height: 70,
+    width: 70,
+    overflow: 'hidden'
   },
   pressed: {
     opacity: 0.75
