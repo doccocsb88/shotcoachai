@@ -4,6 +4,9 @@ import { useAnalysisStore } from '../../core/store/analysisStore';
 import { toUserMessage } from '../../services/errors/appError';
 import { analyzePhoto as runAnalyzePhoto } from '../../services/openai/analyzePhoto';
 
+import { DirectCoachService } from '../../services/coach/DirectCoachService';
+import { AnalysisResult } from '../../models/analysis';
+
 export function useAnalyzePhoto() {
   const setAnalyzing = useAnalysisStore(state => state.setAnalyzing);
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
@@ -15,7 +18,35 @@ export function useAnalyzePhoto() {
     try {
       setError(undefined);
       setAnalyzing(true);
-      const parsed = await runAnalyzePhoto(imageUri, mimeType, selectedPhotoAiTool, coachMode);
+      
+      let parsed: AnalysisResult;
+      
+      if (selectedPhotoAiTool === 'ai_coach' && coachMode !== 'comprehensive') {
+        const generatedUri = await DirectCoachService.generateCoachImage(imageUri, mimeType, coachMode as any);
+        parsed = {
+          analysisId: Date.now().toString(),
+          flowType: 'aiCoach',
+          overallAssessment: `Visual guidance generated for ${coachMode} mode.`,
+          suggestions: [{
+            title: `Direct Image Coach (${coachMode})`,
+            concept: "AI generated visual guidance overlay",
+            composition: "",
+            camera_angle: "",
+            changes: ["Visual overlay applied"],
+            image_prompt: ""
+          }],
+          createdAt: new Date().toISOString(),
+          originalImageUri: imageUri,
+          originalImageMimeType: mimeType,
+          suggestionGenerations: [{
+            suggestionIndex: 0,
+            generatedImageUri: generatedUri
+          }]
+        };
+      } else {
+        parsed = await runAnalyzePhoto(imageUri, mimeType, selectedPhotoAiTool, coachMode);
+      }
+      
       setCurrentResult(parsed);
       return parsed;
     } catch (error) {

@@ -116,16 +116,27 @@ export function GeneratedResultScreen({
     try {
       setGeneratedImageUri(null);
       setIsGenerating(true);
-      const uri = await withTimeout(
-        generateEditedImage(
-          selected.image_prompt,
-          result.originalImageUri,
-          result.originalImageMimeType,
-          directToolId
-        ),
-        IMAGE_GENERATION_TIMEOUT_MS,
-        'The AI edit is taking too long. Please check your connection and try again.'
-      );
+      let uri: string;
+      if (flowType === 'aiCoach' && result.analysisId.startsWith('direct_coach:')) {
+        const coachMode = result.analysisId.split(':')[1] as any;
+        const { DirectCoachService } = require('../../services/coach/DirectCoachService');
+        uri = await withTimeout(
+          DirectCoachService.generateCoachImage(result.originalImageUri, result.originalImageMimeType, coachMode),
+          IMAGE_GENERATION_TIMEOUT_MS,
+          'The AI edit is taking too long. Please check your connection and try again.'
+        );
+      } else {
+        uri = await withTimeout(
+          generateEditedImage(
+            selected.image_prompt,
+            result.originalImageUri,
+            result.originalImageMimeType,
+            directToolId
+          ),
+          IMAGE_GENERATION_TIMEOUT_MS,
+          'The AI edit is taking too long. Please check your connection and try again.'
+        );
+      }
 
       setGeneratedImageUri(uri);
 

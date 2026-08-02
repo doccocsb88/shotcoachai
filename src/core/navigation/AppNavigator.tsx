@@ -229,7 +229,31 @@ export function AppNavigator() {
   const handlePhotoSelected = useCallback(() => {
     if (cameraIntent.type === 'coach') {
       useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
-      openAnalyzing();
+      if (cameraIntent.mode !== 'comprehensive') {
+        const photo = useAnalysisStore.getState().currentPhoto;
+        if (photo) {
+          const dummyResult: AnalysisResult = {
+            analysisId: `direct_coach:${cameraIntent.mode}`,
+            flowType: 'aiCoach',
+            overallAssessment: `Visual guidance generated for ${cameraIntent.mode} mode.`,
+            suggestions: [{
+              title: `Direct Image Coach (${cameraIntent.mode})`,
+              concept: "AI generated visual guidance overlay",
+              changes: ["Visual overlay applied"],
+              image_prompt: ""
+            }],
+            createdAt: new Date().toISOString(),
+            originalImageUri: photo.uri,
+            originalImageMimeType: photo.mimeType
+          };
+          setCurrentResult(dummyResult);
+          setScreen('generatedResult');
+        } else {
+          openHome();
+        }
+      } else {
+        openAnalyzing();
+      }
     } else if (cameraIntent.type === 'tool') {
       useAnalysisStore.getState().setSelectedPhotoAiTool(cameraIntent.toolId);
       openPreview();

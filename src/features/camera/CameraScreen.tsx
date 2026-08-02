@@ -222,50 +222,7 @@ export function CameraScreen({
     }
     clearRealtimeState();
     
-    if (intent?.type === 'coach' && intent.mode !== 'comprehensive') {
-      useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
-      try {
-        if (USE_DIRECT_COACH_FLOW) {
-          setIsGeneratingImage(true);
-          const generatedUri = await DirectCoachService.generateCoachImage(picked.uri, picked.mimeType, intent.mode as any);
-          setRealtimeGeneratedImageUri(generatedUri);
-          const historyResult = {
-            id: Date.now().toString(),
-            original_image_url: picked.uri,
-            created_at: new Date().toISOString(),
-            tool_id: 'ai_coach',
-            suggestions: [{
-              title: "Direct Image Coach",
-              description: "Visual guidance generated directly.",
-              result_image_url: generatedUri
-            }]
-          };
-          void addRecentResult(historyResult as any);
-        } else {
-          const parsed = await analyze(picked.uri, picked.mimeType);
-          const imagePrompt = parsed.suggestions[0]?.image_prompt;
-          if (imagePrompt) {
-            setIsGeneratingImage(true);
-            const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
-            setRealtimeGeneratedImageUri(generatedUri);
-            const historyResult = { ...parsed };
-            if (historyResult.suggestions?.[0]) {
-              historyResult.suggestions[0] = {
-                ...historyResult.suggestions[0],
-                result_image_url: generatedUri
-              };
-            }
-            void addRecentResult(historyResult);
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsGeneratingImage(false);
-      }
-    } else {
-      onPhotoSelected();
-    }
+    onPhotoSelected();
   };
 
   const handleCapturedPhoto = async (asset: { uri: string; width: number; height: number }) => {
@@ -454,9 +411,9 @@ export function CameraScreen({
                    intent?.type === 'recipe' ? (getPhotoRecipe(intent.recipeId)?.title ?? 'Recipe') : 'Quick Edit'}
                 </Text>
                 <Text style={styles.featurePillSubtitle}>
-                  {intent?.type === 'coach' ? 'real-time guidance ∨' : 
-                   intent?.type === 'tool' ? 'AI Edit Tool ∨' : 
-                   intent?.type === 'recipe' ? 'Photo Recipe ∨' : 'AI guidance on ∨'}
+                  {intent?.type === 'coach' ? 'Real-time guidance' : 
+                   intent?.type === 'tool' ? 'AI Edit Tool' : 
+                   intent?.type === 'recipe' ? 'Photo Recipe' : 'AI guidance'}
                 </Text>
               </View>
             </Pressable>
