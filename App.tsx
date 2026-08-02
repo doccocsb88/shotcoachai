@@ -8,6 +8,7 @@ import { LoadingScreen } from './src/features/onboarding/LoadingScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 import { getOnboardingComplete, setOnboardingComplete } from './src/services/storage/onboardingStorage';
 import { trackEvent } from './src/services/tracking/firebaseTracking';
+import { initializeGoogleMobileAds } from './src/services/ads/mobileAds';
 
 type AppGate = 'loading' | 'onboarding' | 'main';
 
@@ -27,6 +28,9 @@ export default function App() {
         const done = await getOnboardingComplete();
         if (!cancelled) {
           setGate(done ? 'main' : 'onboarding');
+          if (done) {
+            void initializeGoogleMobileAds();
+          }
         }
       } catch {
         if (!cancelled) {

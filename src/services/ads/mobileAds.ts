@@ -7,6 +7,7 @@ import {
 import mobileAds from 'react-native-google-mobile-ads';
 
 import { trackEvent } from '../tracking/firebaseTracking';
+import { AdsManager } from './AdsManager';
 
 let mobileAdsInitPromise: Promise<void> | null = null;
 let trackingRequestPromise: Promise<PermissionStatus> | null = null;
@@ -37,7 +38,9 @@ export async function initializeGoogleMobileAds(): Promise<void> {
   if (!mobileAdsInitPromise) {
     mobileAdsInitPromise = mobileAds()
       .initialize()
-      .then(() => undefined)
+      .then(() => {
+        AdsManager.initialize();
+      })
       .catch(error => {
         mobileAdsInitPromise = null;
         if (__DEV__) {

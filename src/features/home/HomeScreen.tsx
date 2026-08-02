@@ -13,6 +13,7 @@ import { CrownLockIcon } from '../../components/icons/CrownLockIcon';
 import { PHOTO_AI_TOOLS, PhotoAiToolId } from '../../models/photoAiTool';
 import { ToolImageIcon } from '../../components/icons/ToolImageIcon';
 import { RecipeCard } from '../photo-recipes/components/RecipeCard';
+import { AdsManager } from '../../services/ads/AdsManager';
 
 const historyIcon = require('../../../assets/icons/history.png');
 const galleryIcon = require('../../../assets/icons/image-gallery.png');
@@ -59,14 +60,17 @@ export function HomeScreen({
     return unsubscribe;
   }, []);
 
-
+  const handleNavigation = async (action: () => void) => {
+    await AdsManager.showInterstitialIfAppropriate();
+    action();
+  };
 
   const handleSelectRecipe = (recipeId: string) => {
     if (!UserManager.canUseRecipe(recipeId)) {
       onOpenPaywall();
       return;
     }
-    onOpenCamera({ type: 'recipe', recipeId });
+    void handleNavigation(() => onOpenCamera({ type: 'recipe', recipeId }));
   };
 
   const featuredRecipes = PHOTO_RECIPES.slice(0, 5);
@@ -82,14 +86,14 @@ export function HomeScreen({
             <Text style={styles.greetingText}>Good Morning,</Text>
             <Text style={styles.titleText}>ShotCoach AI</Text>
           </View>
-          <Pressable onPress={onOpenHistory} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <Pressable onPress={() => handleNavigation(onOpenHistory)} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
             <Image source={historyIcon} style={styles.headerIcon} />
           </Pressable>
         </View>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroContainer}>
-            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => onOpenCamera({ type: 'coach', mode: 'composition' })}>
+            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => handleNavigation(() => onOpenCamera({ type: 'coach', mode: 'composition' }))}>
               <LinearGradient colors={['#1E3A8A', '#2563EB']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <View style={styles.heroContent}>
                   <View style={styles.heroLeftCol}>
@@ -117,7 +121,7 @@ export function HomeScreen({
             {PHOTO_AI_TOOLS.filter(t => t.id !== 'ai_coach').map(tool => (
               <Pressable
                 key={tool.id}
-                onPress={() => onOpenCamera({ type: 'tool', toolId: tool.id })}
+                onPress={() => handleNavigation(() => onOpenCamera({ type: 'tool', toolId: tool.id }))}
                 style={({ pressed }) => [styles.toolCard, pressed && styles.pressed]}
               >
                 <View style={styles.toolIconWrap}>
@@ -130,7 +134,7 @@ export function HomeScreen({
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Featured recipes</Text>
-            <Pressable onPress={onOpenRecipeList}>
+            <Pressable onPress={() => handleNavigation(onOpenRecipeList)}>
               <Text style={styles.sectionLink}>See All</Text>
             </Pressable>
           </View>
