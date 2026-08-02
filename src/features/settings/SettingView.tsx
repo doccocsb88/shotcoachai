@@ -1,10 +1,12 @@
 import { ReactNode } from 'react';
-import { Alert, Linking, Modal, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Storefront, Crown, Star, Envelope, ShareNetwork, ShieldCheck, FileText, CaretRight, X } from 'phosphor-react-native';
 
 import { LEGAL_URLS, SUPPORT_EMAIL } from '../../constants/legal';
-import { colors, radius } from '../../constants/theme';
+import { navBarBottomPadding, navBarTopPadding } from '../../constants/layout';
+import { colors, radius, spacing } from '../../constants/theme';
 import { PurchaseService } from '../../services/purchase/PurchaseService';
+import { TrackingManager } from '../../services/tracking/TrackingManager';
 
 const APP_STORE_ID = '6773058480';
 const APP_STORE_URL = `https://apps.apple.com/app/id${APP_STORE_ID}`;
@@ -83,12 +85,12 @@ export function SettingView({
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.settingsRoot}>
-        <SafeAreaView style={styles.settingsSafeArea}>
-          <ScrollView
-            contentContainerStyle={styles.settingsContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.settingsHeader}>
+        <ScrollView
+          contentContainerStyle={styles.settingsContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.settingsHeader, { paddingTop: navBarTopPadding }]}>
+              <View style={styles.headerSideSlot} />
               <Text style={styles.settingsTitle}>Settings</Text>
               <Pressable
                 accessibilityLabel="Close settings"
@@ -101,43 +103,44 @@ export function SettingView({
             </View>
 
             <SettingsSection>
-              <SettingsRow icon="store" title="Store" onPress={onOpenPaywall} />
+              <SettingsRow icon="store" title="Store" onPress={() => { void TrackingManager.settings.action('store'); onOpenPaywall(); }} />
               <SettingsRow
                 icon="crown"
                 title="Manage Subscription"
-                onPress={openSubscriptionManager}
+                onPress={() => { void TrackingManager.settings.action('manage_subscription'); void openSubscriptionManager(); }}
                 isLast
               />
             </SettingsSection>
 
             <SettingsSection>
-              <SettingsRow icon="star" title="Review App" onPress={openReview} />
-              <SettingsRow icon="mail" title="Contact us" onPress={() => openUrl(`mailto:${SUPPORT_EMAIL}`)} />
-              <SettingsRow icon="share" title="Share our app with friend" onPress={shareApp} />
+              <SettingsRow icon="star" title="Review App" onPress={() => { void TrackingManager.settings.action('review'); void openReview(); }} />
+              <SettingsRow icon="mail" title="Contact us" onPress={() => { void TrackingManager.settings.action('contact'); void openUrl(`mailto:${SUPPORT_EMAIL}`); }} />
+              <SettingsRow icon="share" title="Share our app with friend" onPress={() => { void TrackingManager.settings.action('share'); void shareApp(); }} />
               <SettingsRow
                 icon="shield"
                 title="Privacy Policy"
-                onPress={() =>
+                onPress={() => {
+                  void TrackingManager.settings.action('privacy_policy');
                   onOpenLegal({
                     title: 'Privacy Policy',
                     url: LEGAL_URLS.privacyPolicy
-                  })
-                }
+                  });
+                }}
               />
               <SettingsRow
                 icon="document"
                 title="Terms of Use"
-                onPress={() =>
+                onPress={() => {
+                  void TrackingManager.settings.action('terms_of_use');
                   onOpenLegal({
                     title: 'Terms of Use',
                     url: LEGAL_URLS.termsOfUse
-                  })
-                }
+                  });
+                }}
                 isLast
               />
             </SettingsSection>
-          </ScrollView>
-        </SafeAreaView>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -202,24 +205,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     flex: 1
   },
-  settingsSafeArea: {
-    flex: 1
-  },
   settingsContent: {
     paddingBottom: 34,
-    paddingHorizontal: 20
+    paddingHorizontal: spacing.lg
   },
   settingsHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 28,
-    paddingTop: 18
+    paddingBottom: navBarBottomPadding
+  },
+  headerSideSlot: {
+    height: 44,
+    width: 44
   },
   settingsTitle: {
     color: colors.text,
-    fontSize: 40,
-    fontWeight: '900'
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.5
   },
   settingsCloseButton: {
     alignItems: 'center',

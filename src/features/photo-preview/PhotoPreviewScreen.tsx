@@ -25,6 +25,7 @@ import { colors, radius, shadows, spacing, typography } from '../../constants/th
 import { PHOTO_AI_TOOLS, PhotoAiTool, PhotoAiToolId, getPhotoAiTool } from '../../models/photoAiTool';
 import { getAiProcessingConsent, setAiProcessingConsent } from '../../services/storage/aiProcessingConsentStorage';
 import { UserAccessState, UserManager } from '../../services/user/UserManager';
+import { TrackingManager } from '../../services/tracking/TrackingManager';
 import { CrownLockIcon } from '../../components/icons/CrownLockIcon';
 import { ToolImageIcon, PhotoToolIcon } from '../../components/icons/ToolImageIcon';
 
@@ -98,6 +99,10 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
     void UserManager.refresh();
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    void TrackingManager.flow.previewOpened(selectedToolId);
+  }, [selectedToolId]);
 
   useEffect(() => {
     setStep(initialStep);

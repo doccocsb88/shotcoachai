@@ -81,6 +81,20 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+def explicitVersionCode = findProperty('VERSION_CODE')?.toInteger()
+def computedVersionCode = explicitVersionCode ?: 10
+
+def signingStoreFilePath = System.getenv('SIGNING_KEY_STORE_FILE') ?: findProperty('SIGNING_KEY_STORE_FILE')
+def signingStorePassword = System.getenv('SIGNING_STORE_PASSWORD') ?: findProperty('SIGNING_STORE_PASSWORD')
+def signingKeyAlias = System.getenv('SIGNING_KEY_ALIAS') ?: findProperty('SIGNING_KEY_ALIAS')
+def signingKeyPassword = System.getenv('SIGNING_KEY_PASSWORD') ?: findProperty('SIGNING_KEY_PASSWORD')
+def hasReleaseSigning = [
+    signingStoreFilePath,
+    signingStorePassword,
+    signingKeyAlias,
+    signingKeyPassword,
+].every { it }
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -92,7 +106,7 @@ android {
         applicationId 'co.q7labs.shotcoachai'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode computedVersionCode
         versionName "0.1.2"
     }
     signingConfigs {
@@ -102,15 +116,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(signingStoreFilePath)
+                storePassword signingStorePassword
+                keyAlias signingKeyAlias
+                keyPassword signingKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -175,3 +199,5 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply plugin: 'com.google.gms.google-services'

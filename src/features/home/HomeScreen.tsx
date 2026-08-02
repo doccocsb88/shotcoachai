@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { CoachMode, useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
+import { navBarBottomPadding, navBarTopPadding } from '../../constants/layout';
 import { colors, radius, shadows, spacing } from '../../constants/theme';
 import { PickedPhoto } from '../../models/analysis';
 import { UserAccessState, UserManager } from '../../services/user/UserManager';
@@ -14,6 +15,7 @@ import { PHOTO_AI_TOOLS, PhotoAiToolId } from '../../models/photoAiTool';
 import { ToolImageIcon } from '../../components/icons/ToolImageIcon';
 import { RecipeCard } from '../photo-recipes/components/RecipeCard';
 import { AdsManager } from '../../services/ads/AdsManager';
+import { TrackingManager } from '../../services/tracking/TrackingManager';
 
 const historyIcon = require('../../../assets/icons/history.png');
 const galleryIcon = require('../../../assets/icons/image-gallery.png');
@@ -42,8 +44,6 @@ interface Props {
   onOpenRecipeList: () => void;
 }
 
-const navBarTopPadding = Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight || 24) + spacing.md;
-
 export function HomeScreen({
   onOpenCamera,
   onOpenMenu,
@@ -66,6 +66,7 @@ export function HomeScreen({
   };
 
   const handleSelectRecipe = (recipeId: string) => {
+    void TrackingManager.home.action('recipe_card', { recipe_id: recipeId });
     if (!UserManager.canUseRecipe(recipeId)) {
       onOpenPaywall();
       return;
@@ -79,21 +80,20 @@ export function HomeScreen({
     <Screen scroll={false}>
       <View style={styles.root}>
         <View style={[styles.header, { paddingTop: navBarTopPadding }]}>
-          <Pressable onPress={onOpenMenu} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <Pressable onPress={() => { void TrackingManager.home.action('menu'); onOpenMenu(); }} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
             <Text style={styles.iconText}>☰</Text>
           </Pressable>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.greetingText}>Good Morning,</Text>
             <Text style={styles.titleText}>ShotCoach AI</Text>
           </View>
-          <Pressable onPress={() => handleNavigation(onOpenHistory)} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <Pressable onPress={() => { void TrackingManager.home.action('history'); void handleNavigation(onOpenHistory); }} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
             <Image source={historyIcon} style={styles.headerIcon} />
           </Pressable>
         </View>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroContainer}>
-            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => handleNavigation(() => onOpenCamera({ type: 'coach', mode: 'composition' }))}>
+            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => { void TrackingManager.home.action('coach_hero'); void handleNavigation(() => onOpenCamera({ type: 'coach', mode: 'composition' })); }}>
               <LinearGradient colors={['#1E3A8A', '#2563EB']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <View style={styles.heroContent}>
                   <View style={styles.heroLeftCol}>
@@ -121,7 +121,10 @@ export function HomeScreen({
             {PHOTO_AI_TOOLS.filter(t => t.id !== 'ai_coach').map(tool => (
               <Pressable
                 key={tool.id}
-                onPress={() => handleNavigation(() => onOpenCamera({ type: 'tool', toolId: tool.id }))}
+                onPress={() => {
+                  void TrackingManager.home.action('quick_edit', { tool_id: tool.id });
+                  void handleNavigation(() => onOpenCamera({ type: 'tool', toolId: tool.id }));
+                }}
                 style={({ pressed }) => [styles.toolCard, pressed && styles.pressed]}
               >
                 <View style={styles.toolIconWrap}>
@@ -134,7 +137,7 @@ export function HomeScreen({
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Featured recipes</Text>
-            <Pressable onPress={() => handleNavigation(onOpenRecipeList)}>
+            <Pressable onPress={() => { void TrackingManager.home.action('recipe_see_all'); void handleNavigation(onOpenRecipeList); }}>
               <Text style={styles.sectionLink}>See All</Text>
             </Pressable>
           </View>
@@ -172,7 +175,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingBottom: 24
+    paddingBottom: navBarBottomPadding
   },
   iconButton: {
     alignItems: 'center',
@@ -197,11 +200,6 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: {
     alignItems: 'center'
-  },
-  greetingText: {
-    color: colors.textLight,
-    fontSize: 14,
-    fontWeight: '600'
   },
   titleText: {
     color: colors.text,

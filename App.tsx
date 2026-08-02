@@ -7,7 +7,7 @@ import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { LoadingScreen } from './src/features/onboarding/LoadingScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 import { getOnboardingComplete, setOnboardingComplete } from './src/services/storage/onboardingStorage';
-import { trackEvent } from './src/services/tracking/firebaseTracking';
+import { TrackingManager } from './src/services/tracking/TrackingManager';
 import { initializeGoogleMobileAds } from './src/services/ads/mobileAds';
 
 type AppGate = 'loading' | 'onboarding' | 'main';
@@ -19,7 +19,7 @@ export default function App() {
     let cancelled = false;
 
     const run = async () => {
-      void trackEvent('app_open');
+      void TrackingManager.app.open();
       await new Promise<void>(resolve => {
         setTimeout(resolve, 900);
       });
@@ -46,6 +46,7 @@ export default function App() {
   }, []);
 
   const handleOnboardingDone = useCallback(async () => {
+    void TrackingManager.onboarding.completed();
     await setOnboardingComplete();
     setGate('main');
   }, []);

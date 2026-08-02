@@ -15,6 +15,7 @@ import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary'
 import { useAnalyzePhoto } from '../analysis/useAnalyzePhoto';
 import { generateEditedImage } from '../../services/openai/generateImage';
 import { DirectCoachService } from '../../services/coach/DirectCoachService';
+import { TrackingManager } from '../../services/tracking/TrackingManager';
 
 const USE_DIRECT_COACH_FLOW = true;
 
@@ -137,6 +138,7 @@ export function CameraScreen({
   const choosePhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
+      void TrackingManager.flow.photoRejected('permission_denied');
       Alert.alert('Permission needed', 'Please allow photo access to choose an image.');
       return;
     }
@@ -162,6 +164,7 @@ export function CameraScreen({
       ? cameraPermission
       : await requestCameraPermission();
     if (!permission.granted) {
+      void TrackingManager.flow.photoRejected('permission_denied');
       Alert.alert('Permission needed', 'Please allow camera access in Settings to take a photo.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Open Settings', onPress: openCameraSettings }
@@ -175,6 +178,7 @@ export function CameraScreen({
       if (!photo) return;
       await handleCapturedPhoto(photo);
     } catch {
+      void TrackingManager.flow.photoRejected('capture_failed');
       Alert.alert('Capture failed', 'Please try taking the photo again.');
     } finally {
       setIsCapturing(false);
@@ -202,6 +206,7 @@ export function CameraScreen({
     const asset = result.assets[0];
 
     if (asset.width < 512 || asset.height < 512) {
+      void TrackingManager.flow.photoRejected('too_small');
       Alert.alert('Image too small', 'Please choose a photo at least 512px wide and tall.');
       return;
     }
@@ -216,6 +221,7 @@ export function CameraScreen({
     };
 
     await UserManager.trackCaptureStarted();
+    void TrackingManager.flow.photoSelected('gallery');
     setCurrentPhoto(picked);
     if (cameraMode === 'pose_ai') {
       setPoseAiSelectedTemplateId(undefined);
@@ -227,6 +233,7 @@ export function CameraScreen({
 
   const handleCapturedPhoto = async (asset: { uri: string; width: number; height: number }) => {
     if (asset.width < 512 || asset.height < 512) {
+      void TrackingManager.flow.photoRejected('too_small');
       Alert.alert('Image too small', 'Please choose a photo at least 512px wide and tall.');
       return;
     }
@@ -239,6 +246,7 @@ export function CameraScreen({
     };
 
     await UserManager.trackCaptureStarted();
+    void TrackingManager.flow.photoSelected('camera');
     setCurrentPhoto(picked);
     if (cameraMode === 'pose_ai') {
       setPoseAiSelectedTemplateId(undefined);

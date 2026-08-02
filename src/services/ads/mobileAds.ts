@@ -6,7 +6,7 @@ import {
 } from 'expo-tracking-transparency';
 import mobileAds from 'react-native-google-mobile-ads';
 
-import { trackEvent } from '../tracking/firebaseTracking';
+import { TrackingManager } from '../tracking/TrackingManager';
 import { AdsManager } from './AdsManager';
 
 let mobileAdsInitPromise: Promise<void> | null = null;
@@ -21,12 +21,12 @@ export async function requestIdfaTrackingPermission(): Promise<PermissionStatus>
     trackingRequestPromise = (async () => {
       const current = await getTrackingPermissionsAsync();
       if (current.status !== PermissionStatus.UNDETERMINED) {
-        void trackEvent('idfa_permission_status', { status: current.status });
+        void TrackingManager.ads.idfaStatus(current.status);
         return current.status;
       }
 
       const requested = await requestTrackingPermissionsAsync();
-      void trackEvent('idfa_permission_requested', { status: requested.status });
+      void TrackingManager.ads.idfaRequested(requested.status);
       return requested.status;
     })();
   }

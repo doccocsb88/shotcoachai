@@ -28,7 +28,8 @@ import { buildPhotoRecipePromptV2 } from '../../services/photo-recipes/photoReci
 import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary';
 import { getAiProcessingConsent, setAiProcessingConsent } from '../../services/storage/aiProcessingConsentStorage';
 import { UserManager } from '../../services/user/UserManager';
-import { trackScreenView } from '../../services/tracking/firebaseTracking';
+import { TrackingManager } from '../../services/tracking/TrackingManager';
+import { startTrackedCameraFlow, toTrackingFlowType } from '../../services/tracking/trackingFlow';
 
 type ScreenName =
   | 'home'
@@ -70,10 +71,11 @@ export function AppNavigator() {
   }, [hydrateHistory]);
 
   useEffect(() => {
-    void trackScreenView(screen);
+    void TrackingManager.screen.view(screen);
   }, [screen]);
 
   const goHome = useCallback(() => {
+    void TrackingManager.flow.end('abandoned');
     clearCurrent();
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(true);
@@ -93,6 +95,9 @@ export function AppNavigator() {
 
   const openAnalysisResult = useCallback((result?: AnalysisResult, openedFromHistory = false) => {
     if (result) {
+      void TrackingManager.flow.analysisResultViewed(result.suggestions.length);
+    }
+    if (result) {
       setCurrentResult(result);
     }
     setResultOpenedFromHistory(openedFromHistory);
@@ -102,6 +107,10 @@ export function AppNavigator() {
   }, [setCurrentResult]);
 
   const openGeneratedResult = useCallback((suggestionIndex: number, result?: AnalysisResult, openedFromHistory = false) => {
+    const activeResult = result ?? currentResult;
+    if (activeResult) {
+      void TrackingManager.flow.suggestionSelected(suggestionIndex, activeResult.suggestions.length);
+    }
     if (result) {
       setCurrentResult(result);
     }
@@ -109,11 +118,14 @@ export function AppNavigator() {
     setResultOpenedFromHistory(openedFromHistory);
     setCanReturnToAnalysis(!openedFromHistory);
     setScreen('generatedResult');
-  }, [setCurrentResult]);
+  }, [setCurrentResult, currentResult]);
 
   const openResultFromHistory = useCallback((result: AnalysisResult) => {
+    void TrackingManager.history.itemOpened(toTrackingFlowType(getFlowType(result)));
     setImageViewerResult(result);
-  }, []);  const openPoseAssist = useCallback(() => {
+  }, []);
+
+  const openPoseAssist = useCallback(() => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
@@ -139,6 +151,7 @@ export function AppNavigator() {
     setGeneratedSuggestionIndex(0);
     setCameraIntent(intent);
     setCameraSource(source);
+    startTrackedCameraFlow(intent, source);
     setScreen('camera');
   }, []);
   const openSelectedPreviewFlow = useCallback(() => {
@@ -164,9 +177,13 @@ export function AppNavigator() {
     setCanReturnToAnalysis(false);
     setScreen('generatedResult');
   }, [openAnalyzing, openHome, setCurrentResult]);
-  const openHistory = useCallback(() => setScreen('history'), []);
+  const openHistory = useCallback(() => {
+    void TrackingManager.history.opened();
+    setScreen('history');
+  }, []);
   const openPreview = useCallback(() => setScreen('preview'), []);
   const openRecipeList = useCallback((source: 'home' = 'home') => {
+    void TrackingManager.flow.recipeListOpened(source);
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(false);
     setGeneratedSuggestionIndex(0);
@@ -183,6 +200,8 @@ export function AppNavigator() {
     openRecipeDetail(recipe);
   }, [openRecipeDetail]);
   const startRecipeGeneration = useCallback((recipe: PhotoRecipe) => {
+    void TrackingManager.flow.start('photo_recipe', { recipe_id: recipe.id, source: 'recipe_flow' });
+    void TrackingManager.flow.generationStarted({ recipe_id: recipe.id });
     const latestPhoto = useAnalysisStore.getState().currentPhoto;
     if (!latestPhoto) {
       openHome();
@@ -206,18 +225,27 @@ export function AppNavigator() {
       'AI Processing Notice',
       'To apply Photo Recipes, the selected photo and recipe prompt will be securely sent to OpenAI for processing.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            void TrackingManager.consent.aiProcessingDeclined('photo_recipe');
+          }
+        },
         {
           text: 'Continue',
           onPress: () => {
+            void TrackingManager.consent.aiProcessingAccepted('photo_recipe');
             void setAiProcessingConsent().then(() => startRecipeGeneration(recipe));
           }
         }
       ]
     );
+    void TrackingManager.consent.aiProcessingShown('photo_recipe');
   }, [startRecipeGeneration]);
 
   const handleSelectRecipeFromList = useCallback((recipe: PhotoRecipe) => {
+    void TrackingManager.flow.recipeSelected(recipe.id, 'recipe_list');
     const latestPhoto = useAnalysisStore.getState().currentPhoto;
     if (!latestPhoto) {
       openCamera({ type: 'recipe', recipeId: recipe.id }, 'recipeList');
@@ -283,10 +311,12 @@ export function AppNavigator() {
     setGeneratedSuggestionIndex(0);
     setScreen('poseCollection');
   }, []);
-  const openPaywall = useCallback((type: PaywallType = 'DirectStore') => {
+  const openPaywall = useCallback((type: PaywallType = 'DirectStore', source?: string) => {
+    void TrackingManager.paywall.opened(source ?? screen, type);
     setPaywallType(type);
     setPaywallOpen(true);
-  }, []);
+  }, [screen]);
+
   const closePaywall = useCallback(() => {
     setPaywallOpen(false);
     void UserManager.refresh();
@@ -309,7 +339,7 @@ export function AppNavigator() {
       backgroundContent = <HistoryScreen onBack={openHome} onOpenResult={openResultFromHistory} />;
     } else {
       backgroundContent = recipeListSource === 'home' 
-        ? <HomeScreen onOpenCamera={openCamera} onOpenMenu={() => setMenuOpen(true)} onOpenHistory={openHistory} onOpenPaywall={openPaywall} onOpenRecipeList={() => openRecipeList('home')} /> 
+        ? <HomeScreen onOpenCamera={openCamera} onOpenMenu={() => { void TrackingManager.settings.opened(); setMenuOpen(true); }} onOpenHistory={openHistory} onOpenPaywall={openPaywall} onOpenRecipeList={() => openRecipeList('home')} /> 
         : <CameraScreen onBack={openHome} onPhotoSelected={handlePhotoSelected} onOpenPaywall={openPaywall} intent={cameraIntent} />;
     }
   } else if (isGenericResultFlow) {
@@ -402,7 +432,10 @@ export function AppNavigator() {
     content = (
       <HomeScreen
         onOpenCamera={openCamera}
-        onOpenMenu={() => setMenuOpen(true)}
+        onOpenMenu={() => {
+          void TrackingManager.settings.opened();
+          setMenuOpen(true);
+        }}
         onOpenHistory={openHistory}
         onOpenPaywall={openPaywall}
         onOpenRecipeList={() => openRecipeList('home')}

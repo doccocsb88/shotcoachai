@@ -15,6 +15,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, shadows } from '../../constants/theme';
 import { prepareAdsTrackingForOnboarding } from '../../services/ads/mobileAds';
+import { TrackingManager } from '../../services/tracking/TrackingManager';
 
 const HERO_PAGE_1 = require('../../../assets/onboarding/page1.jpg');
 const HERO_PAGE_2 = require('../../../assets/onboarding/page2.jpg');
@@ -57,7 +58,13 @@ export function OnboardingScreen({ onDone }: Props) {
 
   useEffect(() => {
     void prepareAdsTrackingForOnboarding();
+    void TrackingManager.onboarding.started();
+    void TrackingManager.onboarding.pageViewed(0, ONBOARDING_PAGES.length);
   }, []);
+
+  useEffect(() => {
+    void TrackingManager.onboarding.pageViewed(pageIndex, ONBOARDING_PAGES.length);
+  }, [pageIndex]);
 
   const goToPage = useCallback(
     (index: number) => {

@@ -28,6 +28,7 @@
         "monochromeImage": "./assets/app-icon-monochrome.png",
         "backgroundColor": "#2F6BFF"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "co.q7labs.shotcoachai",
       "permissions": [
         "android.permission.CAMERA",
@@ -38,6 +39,7 @@
       ]
     },
     "plugins": [
+      "@react-native-firebase/app",
       [
         "expo-image-picker",
         {

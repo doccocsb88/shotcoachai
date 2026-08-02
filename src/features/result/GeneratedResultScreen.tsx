@@ -25,6 +25,7 @@ import { generateEditedImage } from '../../services/openai/generateImage';
 import { saveImageToLibrary, shareImage } from '../../services/share/shareGuide';
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { UserManager } from '../../services/user/UserManager';
+import { TrackingManager, TrackingFlowType } from '../../services/tracking/TrackingManager';
 import { PHOTO_RECIPES } from '../../services/photo-recipes/photoRecipeLibrary';
 import { RecipeDetailScreen } from '../photo-recipes/RecipeDetailScreen';
 
@@ -82,6 +83,8 @@ export function GeneratedResultScreen({
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
   const flowType = getFlowType(result);
+  const trackingFlowType: TrackingFlowType =
+    flowType === 'aiCoach' ? 'ai_coach' : flowType === 'editingTool' ? 'editing_tool' : 'photo_recipe';
   const isDirectToolResult = flowType === 'editingTool';
   const isPhotoRecipeResult = flowType === 'photoRecipe';
   const directToolId = getDirectToolId(result.analysisId);
@@ -116,6 +119,11 @@ export function GeneratedResultScreen({
     try {
       setGeneratedImageUri(null);
       setIsGenerating(true);
+      void TrackingManager.flow.generationStarted({
+        flow_type: trackingFlowType,
+        suggestion_index: suggestionIndex,
+        analysis_id: result.analysisId
+      });
       let uri: string;
       if (flowType === 'aiCoach' && result.analysisId.startsWith('direct_coach:')) {
         const coachMode = result.analysisId.split(':')[1] as any;
@@ -152,10 +160,23 @@ export function GeneratedResultScreen({
       const historyResult = createGeneratedHistoryResult(updatedResult, suggestionIndex, uri);
       setCurrentResult(updatedResult);
       await addRecentResult(historyResult);
+      void TrackingManager.flow.generationCompleted({
+        flow_type: trackingFlowType,
+        suggestion_index: suggestionIndex,
+        analysis_id: result.analysisId
+      });
     } catch (error) {
       setGeneratedImageUri(null);
       setGenerationError(GENERATE_EDIT_ERROR_MESSAGE);
       setRetrySuggestionIndex(suggestionIndex);
+      void TrackingManager.flow.generationFailed(
+        error instanceof Error ? error.message : GENERATE_EDIT_ERROR_MESSAGE,
+        {
+          flow_type: trackingFlowType,
+          suggestion_index: suggestionIndex,
+          analysis_id: result.analysisId
+        }
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -166,6 +187,7 @@ export function GeneratedResultScreen({
     try {
       setBusy(true);
       await saveImageToLibrary(generatedImageUri);
+      void TrackingManager.flow.resultSaved(trackingFlowType);
       Alert.alert('Saved', 'AI edited image saved to your library.');
     } catch (error) {
       Alert.alert('Save failed', error instanceof Error ? error.message : 'Could not save this image.');
@@ -179,6 +201,7 @@ export function GeneratedResultScreen({
     try {
       setBusy(true);
       await shareImage(generatedImageUri);
+      void TrackingManager.flow.resultShared(trackingFlowType);
     } catch (error) {
       Alert.alert('Share failed', error instanceof Error ? error.message : 'Could not share this image.');
     } finally {
@@ -187,6 +210,7 @@ export function GeneratedResultScreen({
   };
 
   const handleRetake = () => {
+    void TrackingManager.flow.resultRetake(trackingFlowType);
     if (generatedImageUri) {
       onRetake(generatedImageUri);
       return;

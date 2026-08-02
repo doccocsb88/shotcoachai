@@ -8,6 +8,7 @@ import { Screen } from '../../components/common/Screen';
 import { colors, radius, typography } from '../../constants/theme';
 import { getPhotoAiTool } from '../../models/photoAiTool';
 import { useAnalyzePhoto } from './useAnalyzePhoto';
+import { TrackingManager } from '../../services/tracking/TrackingManager';
 
 interface Props {
   onComplete: () => void;
@@ -55,13 +56,19 @@ export function AnalyzingScreen({ onComplete, onBack, onCancel }: Props) {
 
   useEffect(() => {
     if (!photo) return;
+    void TrackingManager.flow.analysisStarted();
     let mounted = true;
 
     analyze(photo.uri, photo.mimeType)
-      .then(() => {
+      .then(result => {
+        void TrackingManager.flow.analysisCompleted(result.suggestions.length);
         if (mounted) onComplete();
       })
-      .catch(() => undefined);
+      .catch(analysisError => {
+        void TrackingManager.flow.analysisFailed(
+          analysisError instanceof Error ? analysisError.message : 'analysis_failed'
+        );
+      });
 
     return () => {
       mounted = false;
