@@ -460,8 +460,7 @@ const styles = StyleSheet.create({
   resultChromeRoot: {
     backgroundColor: colors.background,
     flex: 1,
-    overflow: 'hidden',
-    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
+    overflow: 'hidden'
   },
   heroAtmosphere: {
     ...StyleSheet.absoluteFillObject
@@ -492,7 +491,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 6,
     paddingHorizontal: 16,
-    paddingTop: 4
+    paddingTop: Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight ?? 0) + 4
   },
   headerIconCircle: {
     alignItems: 'center',
@@ -671,7 +670,7 @@ const styles = StyleSheet.create({
     marginTop: -1
   },
   actionDock: {
-    paddingBottom: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
     paddingHorizontal: 16,
     paddingTop: 4
   },
@@ -873,6 +872,14 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     overflow: 'hidden'
+  },
+  resultBottom: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingBottom: Platform.OS === 'ios' ? 38 : 20,
+    paddingHorizontal: 20,
+    paddingTop: 16
   },
   sheetHeader: {
     alignItems: 'center',

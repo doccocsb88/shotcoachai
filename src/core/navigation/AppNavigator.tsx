@@ -385,7 +385,7 @@ export function AppNavigator() {
     );
   }
 
-  const contentShell = screen === 'home' || screen === 'camera' ? content : <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
+  const contentShell = screen === 'home' || screen === 'camera' || screen === 'generatedResult' ? content : <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
 
   return (
     <>
@@ -439,9 +439,9 @@ export function AppNavigator() {
         statusBarTranslucent
         onRequestClose={handleGeneratedResultBack}
       >
-        <SafeAreaView style={styles.safeContent}>
+        <View style={styles.fullscreenModalContent}>
           {isGenericResultFlow && content}
-        </SafeAreaView>
+        </View>
       </Modal>
 
       {!(isRecipeFlow || isGenericResultFlow) && (
@@ -466,6 +466,10 @@ const styles = StyleSheet.create({
   safeContent: {
     backgroundColor: colors.background,
     flex: 1
+  },
+  fullscreenModalContent: {
+    flex: 1,
+    backgroundColor: colors.background
   }
 });
 

@@ -16,6 +16,7 @@ import {
   useWindowDimensions
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { CaretLeft } from 'phosphor-react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
@@ -324,7 +325,7 @@ function PreviewOverlayHeader({ title, onBack }: { title: string; onBack: () => 
         onPress={onBack}
         style={({ pressed }) => [styles.previewHeaderBack, pressed && styles.pressed]}
       >
-        <Text style={styles.previewHeaderBackText}>Back</Text>
+        <CaretLeft size={20} color={colors.text} weight="bold" />
       </Pressable>
       <Text numberOfLines={1} style={styles.previewHeaderTitle}>
         {title}
@@ -704,19 +705,20 @@ const styles = StyleSheet.create({
     paddingTop: previewHeaderInset
   },
   previewHeaderBack: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
     justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 56
-  },
-  previewHeaderBackText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '800'
+    width: 36,
+    ...shadows.soft
   },
   previewHeaderTitle: {
     color: colors.text,
     flex: 1,
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '900',
     paddingHorizontal: 10,
     textAlign: 'center'
@@ -1048,12 +1050,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.pill,
     borderWidth: 1,
-    paddingHorizontal: 13,
-    paddingVertical: 9
+    paddingHorizontal: 18,
+    paddingVertical: 12
   },
   quickSuggestionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary
+    backgroundColor: '#E8F4FF',
+    borderColor: '#E8F4FF'
   },
   quickSuggestionText: {
     color: colors.text,
@@ -1061,15 +1063,15 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   },
   quickSuggestionTextSelected: {
-    color: colors.white
+    color: colors.primary
   },
   inputWrap: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
+    backgroundColor: '#F7F8FA',
+    borderColor: 'rgba(0,0,0,0.05)',
+    borderRadius: radius.xl,
     borderWidth: 1,
     minHeight: 150,
-    padding: 14,
+    padding: 16,
     ...shadows.soft
   },
   instructionInput: {

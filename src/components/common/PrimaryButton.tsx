@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: typography.button,
-    fontWeight: '700'
+    fontWeight: '800'
   },
   textOnPrimary: {
     color: colors.white
