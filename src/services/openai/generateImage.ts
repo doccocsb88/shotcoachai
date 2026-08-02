@@ -34,6 +34,7 @@ function resolveImageEditQuality(editingToolId?: PhotoAiToolId): string {
   if (configuredQuality) {
     return configuredQuality;
   }
+  if (editingToolId === 'ai_coach') return 'low';
   return editingToolId === 'enhance_photo' || editingToolId === 'upscale' ? 'high' : 'medium';
 }
 

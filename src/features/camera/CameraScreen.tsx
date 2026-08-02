@@ -14,6 +14,9 @@ import { getPhotoAiTool } from '../../models/photoAiTool';
 import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary';
 import { useAnalyzePhoto } from '../analysis/useAnalyzePhoto';
 import { generateEditedImage } from '../../services/openai/generateImage';
+import { DirectCoachService } from '../../services/coach/DirectCoachService';
+
+const USE_DIRECT_COACH_FLOW = true;
 
 const galleryIcon = require('../../../assets/icons/image-gallery.png');
 const historyIcon = require('../../../assets/icons/history.png');
@@ -90,6 +93,7 @@ export function CameraScreen({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [realtimeGeneratedImageUri, setRealtimeGeneratedImageUri] = useState<string | null>(null);
   const referenceWidth = Math.round((width * 2) / 5);
+  const initialScrollOffset = useRef(intent?.type === 'coach' ? Math.max(0, ['frame', 'composition', 'pose', 'comprehensive'].indexOf(intent.mode)) * 96 : 0).current;
 
   useEffect(() => {
     const unsubscribe = UserManager.subscribe(setAccessState);
@@ -222,20 +226,38 @@ export function CameraScreen({
     if (intent?.type === 'coach' && intent.mode !== 'comprehensive') {
       useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
       try {
-        const parsed = await analyze(picked.uri, picked.mimeType);
-        const imagePrompt = parsed.suggestions[0]?.image_prompt;
-        if (imagePrompt) {
+        if (USE_DIRECT_COACH_FLOW) {
           setIsGeneratingImage(true);
-          const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
+          const generatedUri = await DirectCoachService.generateCoachImage(picked.uri, picked.mimeType, intent.mode as any);
           setRealtimeGeneratedImageUri(generatedUri);
-          const historyResult = { ...parsed };
-          if (historyResult.suggestions?.[0]) {
-            historyResult.suggestions[0] = {
-              ...historyResult.suggestions[0],
+          const historyResult = {
+            id: Date.now().toString(),
+            original_image_url: picked.uri,
+            created_at: new Date().toISOString(),
+            tool_id: 'ai_coach',
+            suggestions: [{
+              title: "Direct Image Coach",
+              description: "Visual guidance generated directly.",
               result_image_url: generatedUri
-            };
+            }]
+          };
+          void addRecentResult(historyResult as any);
+        } else {
+          const parsed = await analyze(picked.uri, picked.mimeType);
+          const imagePrompt = parsed.suggestions[0]?.image_prompt;
+          if (imagePrompt) {
+            setIsGeneratingImage(true);
+            const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
+            setRealtimeGeneratedImageUri(generatedUri);
+            const historyResult = { ...parsed };
+            if (historyResult.suggestions?.[0]) {
+              historyResult.suggestions[0] = {
+                ...historyResult.suggestions[0],
+                result_image_url: generatedUri
+              };
+            }
+            void addRecentResult(historyResult);
           }
-          void addRecentResult(historyResult);
         }
       } catch (e) {
         console.error(e);
@@ -270,20 +292,38 @@ export function CameraScreen({
     if (intent?.type === 'coach' && intent.mode !== 'comprehensive') {
       useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
       try {
-        const parsed = await analyze(picked.uri, picked.mimeType);
-        const imagePrompt = parsed.suggestions[0]?.image_prompt;
-        if (imagePrompt) {
+        if (USE_DIRECT_COACH_FLOW) {
           setIsGeneratingImage(true);
-          const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
+          const generatedUri = await DirectCoachService.generateCoachImage(picked.uri, picked.mimeType, intent.mode as any);
           setRealtimeGeneratedImageUri(generatedUri);
-          const historyResult = { ...parsed };
-          if (historyResult.suggestions?.[0]) {
-            historyResult.suggestions[0] = {
-              ...historyResult.suggestions[0],
+          const historyResult = {
+            id: Date.now().toString(),
+            original_image_url: picked.uri,
+            created_at: new Date().toISOString(),
+            tool_id: 'ai_coach',
+            suggestions: [{
+              title: "Direct Image Coach",
+              description: "Visual guidance generated directly.",
               result_image_url: generatedUri
-            };
+            }]
+          };
+          void addRecentResult(historyResult as any);
+        } else {
+          const parsed = await analyze(picked.uri, picked.mimeType);
+          const imagePrompt = parsed.suggestions[0]?.image_prompt;
+          if (imagePrompt) {
+            setIsGeneratingImage(true);
+            const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
+            setRealtimeGeneratedImageUri(generatedUri);
+            const historyResult = { ...parsed };
+            if (historyResult.suggestions?.[0]) {
+              historyResult.suggestions[0] = {
+                ...historyResult.suggestions[0],
+                result_image_url: generatedUri
+              };
+            }
+            void addRecentResult(historyResult);
           }
-          void addRecentResult(historyResult);
         }
       } catch (e) {
         console.error(e);
@@ -473,6 +513,7 @@ export function CameraScreen({
                 snapToInterval={96} // 80 width + 16 gap
                 decelerationRate="fast"
                 scrollEventThrottle={16}
+                contentOffset={{ x: initialScrollOffset, y: 0 }}
                 onScroll={(e) => {
                   const x = e.nativeEvent.contentOffset.x;
                   const index = Math.max(0, Math.min(3, Math.round(x / 96)));
