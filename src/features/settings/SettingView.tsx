@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Alert, Linking, Modal, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { Storefront, Crown, Star, Envelope, ShareNetwork, ShieldCheck, FileText, CaretRight, X } from 'phosphor-react-native';
 
 import { LEGAL_URLS, SUPPORT_EMAIL } from '../../constants/legal';
 import { colors, radius } from '../../constants/theme';
@@ -96,7 +96,7 @@ export function SettingView({
                 onPress={onClose}
                 style={({ pressed }) => [styles.settingsCloseButton, pressed && styles.pressed]}
               >
-                <Text style={styles.settingsCloseText}>×</Text>
+                <X size={32} color={colors.text} weight="bold" />
               </Pressable>
             </View>
 
@@ -168,57 +168,31 @@ function SettingsRow({
       <Text style={styles.settingsRowTitle} numberOfLines={1}>
         {title}
       </Text>
-      <Text style={styles.settingsChevron}>›</Text>
+      <CaretRight size={24} color={colors.textTertiary} weight="bold" />
     </Pressable>
   );
 }
 
 function SettingsIcon({ name }: { name: string }) {
   const stroke = colors.primary;
-  const common = { fill: 'none', stroke, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, strokeWidth: 2.4 };
 
   return (
     <View style={styles.settingsIconWrap}>
-      <Svg height={24} viewBox="0 0 24 24" width={24}>
-        {name === 'store' ? (
-          <>
-            <Path {...common} d="M4 10h16" />
-            <Path {...common} d="M5 10l1-5h12l1 5" />
-            <Path {...common} d="M6 10v9h12v-9" />
-            <Path {...common} d="M9 19v-5h6v5" />
-          </>
-        ) : name === 'crown' ? (
-          <>
-            <Path {...common} d="M4 18h16" />
-            <Path {...common} d="M5 8l4 4 3-6 3 6 4-4-1.5 10h-11L5 8z" />
-          </>
-        ) : name === 'star' ? (
-          <Path {...common} d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3z" />
-        ) : name === 'mail' ? (
-          <>
-            <Rect {...common} height={14} rx={3} width={18} x={3} y={5} />
-            <Path {...common} d="M4 7l8 6 8-6" />
-          </>
-        ) : name === 'share' ? (
-          <>
-            <Path {...common} d="M8 12h8" />
-            <Path {...common} d="M13 7l5 5-5 5" />
-            <Path {...common} d="M5 5v14h14" />
-          </>
-        ) : name === 'document' ? (
-          <>
-            <Path {...common} d="M7 3h7l4 4v14H7z" />
-            <Path {...common} d="M14 3v5h5" />
-            <Path {...common} d="M10 12h6" />
-            <Path {...common} d="M10 16h6" />
-          </>
-        ) : (
-          <>
-            <Path {...common} d="M12 3l7 3v5c0 4.7-2.8 8.1-7 10-4.2-1.9-7-5.3-7-10V6l7-3z" />
-            <Circle fill={stroke} cx={12} cy={12} r={2.2} />
-          </>
-        )}
-      </Svg>
+      {name === 'store' ? (
+        <Storefront size={26} color={stroke} weight="regular" />
+      ) : name === 'crown' ? (
+        <Crown size={26} color={stroke} weight="regular" />
+      ) : name === 'star' ? (
+        <Star size={26} color={stroke} weight="regular" />
+      ) : name === 'mail' ? (
+        <Envelope size={26} color={stroke} weight="regular" />
+      ) : name === 'share' ? (
+        <ShareNetwork size={26} color={stroke} weight="regular" />
+      ) : name === 'document' ? (
+        <FileText size={26} color={stroke} weight="regular" />
+      ) : (
+        <ShieldCheck size={26} color={stroke} weight="regular" />
+      )}
     </View>
   );
 }

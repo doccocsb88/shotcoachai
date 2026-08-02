@@ -2,7 +2,7 @@ import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ActivityIndicator, AppState, Image, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { CaretLeft, Lightning, DotsThreeVertical, MagicWand, X, Images, CameraRotate, CameraSlash, LightningSlash } from 'phosphor-react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
@@ -18,8 +18,6 @@ import { DirectCoachService } from '../../services/coach/DirectCoachService';
 
 const USE_DIRECT_COACH_FLOW = true;
 
-const galleryIcon = require('../../../assets/icons/image-gallery.png');
-const historyIcon = require('../../../assets/icons/history.png');
 
 interface Props {
   onBack: () => void;
@@ -54,6 +52,7 @@ export function CameraScreen({
   const [lens, setLens] = useState<string | undefined>('builtInWideAngleCamera');
   const [zoom, setZoom] = useState(0);
   const [activeZoomLevel, setActiveZoomLevel] = useState<'0.5' | '1' | '2'>('1');
+  const [flashMode, setFlashMode] = useState<'off' | 'on'>('off');
   const [availableLenses, setAvailableLenses] = useState<string[]>([]);
   
   const handleZoomSelect = (level: '0.5' | '1' | '2') => {
@@ -349,7 +348,7 @@ export function CameraScreen({
         <View style={styles.cameraFallback}>
           <View style={styles.permissionCard}>
             <View style={styles.permissionIconWrap}>
-              <CameraPermissionIcon />
+              <CameraSlash size={34} color={colors.primary} weight="regular" />
             </View>
             <Text style={styles.permissionTitle}>Camera Permission Required</Text>
             <Text style={styles.permissionSubtitle}>
@@ -372,6 +371,7 @@ export function CameraScreen({
       <CameraView 
         ref={cameraRef} 
         facing={cameraFacing} 
+        flash={flashMode}
         style={styles.cameraView} 
         selectedLens={lens}
         zoom={zoom}
@@ -422,7 +422,7 @@ export function CameraScreen({
               </View>
               {realtimeGeneratedImageUri && (
                 <Pressable onPress={clearRealtimeState} style={styles.referencePreviewClose}>
-                  <Text style={styles.realtimeGuidanceCloseText}>✕</Text>
+                  <X size={20} color="rgba(255,255,255,0.6)" weight="bold" />
                 </Pressable>
               )}
             </View>
@@ -436,12 +436,12 @@ export function CameraScreen({
             onPress={onBack}
             style={({ pressed }) => [styles.navIconButton, pressed && styles.pressed]}
           >
-            <Text style={styles.menuIcon}>←</Text>
+            <CaretLeft size={28} color="#FFF" weight="bold" />
           </Pressable>
           <View style={styles.navCenter}>
             <Pressable style={styles.featurePill}>
               <View style={styles.featurePillIcon}>
-                <Text style={{color: 'white', fontSize: 12}}>🔲</Text>
+                <MagicWand size={16} color="#FFF" weight="bold" />
               </View>
               <View>
                 <Text style={styles.featurePillTitle}>
@@ -462,11 +462,12 @@ export function CameraScreen({
             </Pressable>
           </View>
           <View style={{flexDirection: 'row', gap: 8}}>
-            <Pressable style={styles.navIconButton}>
-              <Text style={{color: '#FFF', fontSize: 18}}>⚡</Text>
-            </Pressable>
-            <Pressable style={styles.navIconButton}>
-              <Text style={{color: '#FFF', fontSize: 20, fontWeight: 'bold'}}>⋮</Text>
+            <Pressable style={styles.navIconButton} onPress={() => setFlashMode(f => f === 'off' ? 'on' : 'off')}>
+              {flashMode === 'on' ? (
+                <Lightning size={24} color="#FBBF24" weight="fill" />
+              ) : (
+                <LightningSlash size={24} color="#FFF" weight="bold" />
+              )}
             </Pressable>
           </View>
         </View>
@@ -490,7 +491,7 @@ export function CameraScreen({
             onPress={choosePhoto}
             style={({ pressed }) => [styles.galleryThumbWrap, pressed && styles.pressed]}
           >
-            <Image source={galleryIcon} style={styles.galleryIcon} />
+            <Images size={28} color="#FFF" weight="fill" />
           </Pressable>
           <Pressable
             accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
@@ -499,7 +500,7 @@ export function CameraScreen({
             onPress={swapCamera}
             style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
           >
-            <CameraSwapIcon />
+            <CameraRotate size={28} color="#FFF" weight="bold" />
           </Pressable>
         </View>
 
@@ -581,83 +582,6 @@ export function CameraScreen({
   );
 }
 
-function CameraPermissionIcon() {
-  const stroke = colors.primary;
-
-  return (
-    <Svg height={34} viewBox="0 0 24 24" width={34}>
-      <Path
-        d="M4 8.5h3.2L8.8 6h6.4l1.6 2.5H20a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7.5a2 2 0 0 1 2-2Z"
-        fill="none"
-        stroke={stroke}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-      />
-      <Path
-        d="M12 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"
-        fill="none"
-        stroke={stroke}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-      />
-      <Path
-        d="M18 5v4"
-        fill="none"
-        stroke={colors.danger}
-        strokeLinecap="round"
-        strokeWidth={2}
-      />
-      <Path
-        d="M18 12h.01"
-        fill="none"
-        stroke={colors.danger}
-        strokeLinecap="round"
-        strokeWidth={3}
-      />
-    </Svg>
-  );
-}
-
-function CameraSwapIcon() {
-  return (
-    <Svg height={28} viewBox="0 0 24 24" width={28}>
-      <Path
-        d="M7.2 7.8A7 7 0 0 1 18.4 9"
-        fill="none"
-        stroke={colors.white}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-      <Path
-        d="M18.4 5.4V9h-3.6"
-        fill="none"
-        stroke={colors.white}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-      <Path
-        d="M16.8 16.2A7 7 0 0 1 5.6 15"
-        fill="none"
-        stroke={colors.white}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-      <Path
-        d="M5.6 18.6V15h3.6"
-        fill="none"
-        stroke={colors.white}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.2}
-      />
-    </Svg>
-  );
-}
 
 const styles = StyleSheet.create({
   root: {

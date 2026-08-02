@@ -89,10 +89,10 @@ const styles = StyleSheet.create({
   },
   recipeTitle: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '900',
-    lineHeight: 20,
-    marginBottom: 3
+    lineHeight: 18,
+    marginBottom: 2
   },
   recipeSubtitle: {
     color: 'rgba(255, 255, 255, 0.92)',

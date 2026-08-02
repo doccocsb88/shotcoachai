@@ -26,6 +26,7 @@
     "expo-sharing": "~13.1.5",
     "expo-status-bar": "~2.2.3",
     "expo-tracking-transparency": "~5.2.4",
+    "phosphor-react-native": "^3.0.6",
     "react": "19.0.0",
     "react-native": "0.79.6",
     "react-native-encrypted-storage": "^4.0.3",

@@ -90,10 +90,10 @@ export function HomeScreen({
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroContainer}>
             <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => onOpenCamera({ type: 'coach', mode: 'composition' })}>
-              <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <LinearGradient colors={['#1E3A8A', '#2563EB']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <View style={styles.heroContent}>
                   <View style={styles.heroLeftCol}>
-                    <Text style={styles.heroTitle}>Your AI Camera{'\n'}Coach</Text>
+                    <Text style={styles.heroTitle} numberOfLines={1} adjustsFontSizeToFit>Your AI Camera Coach</Text>
                     <Text style={styles.heroSubtitle}>Get real-time guidance{'\n'}for a better shot.</Text>
                     <View style={styles.heroButton}>
                       <Text style={styles.heroButtonText}>Start coaching</Text>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md
+    paddingBottom: 24
   },
   iconButton: {
     alignItems: 'center',
@@ -196,13 +196,14 @@ const styles = StyleSheet.create({
   },
   greetingText: {
     color: colors.textLight,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600'
   },
   titleText: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: '900'
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.5
   },
   scroll: {
     flex: 1
@@ -213,10 +214,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md
   },
   heroContainer: {
-    marginBottom: spacing.xl
+    marginBottom: 32
   },
   heroCard: {
-    borderRadius: 24,
+    borderRadius: 28,
     overflow: 'hidden',
     ...shadows.card
   },
@@ -240,17 +241,17 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: '#FFFFFF',
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '900',
-    marginBottom: 6,
-    lineHeight: 28
+    marginBottom: 8,
+    letterSpacing: -0.5
   },
   heroSubtitle: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
-    marginBottom: 20,
-    lineHeight: 20
+    marginBottom: 24,
+    lineHeight: 22
   },
   heroButton: {
     alignItems: 'center',
@@ -280,26 +281,27 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '900'
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.5
   },
   sectionLink: {
     color: colors.primary,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     marginBottom: 2
   },
   sectionSubtitle: {
     color: colors.textLight,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: spacing.md
+    marginBottom: 20
   },
   toolGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    rowGap: spacing.md,
-    marginBottom: spacing.xl,
+    rowGap: 20,
+    marginBottom: 32,
   },
   toolCard: {
     alignItems: 'center',
@@ -308,23 +310,23 @@ const styles = StyleSheet.create({
   toolIconWrap: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: 16,
-    height: 56,
+    borderRadius: 18,
+    height: 58,
     justifyContent: 'center',
-    marginBottom: 6,
-    width: 56,
+    marginBottom: 8,
+    width: 58,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.03)',
+    borderColor: 'rgba(0,0,0,0.04)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2
   },
   toolTitle: {
     color: colors.text,
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
   },
   recipesList: {

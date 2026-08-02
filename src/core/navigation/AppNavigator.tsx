@@ -14,6 +14,7 @@ import { RecipeDetailScreen } from '../../features/photo-recipes/RecipeDetailScr
 import { RecipeListScreen } from '../../features/photo-recipes/RecipeListScreen';
 import { PoseCollectionScreen } from '../../features/pose-collection/PoseCollectionScreen';
 import { PoseDetailScreen } from '../../features/pose-collection/PoseDetailScreen';
+import { PhotoPreviewScreen } from '../../features/photo-preview/PhotoPreviewScreen';
 import { PaywallScreen, PaywallType } from '../../features/paywall/PaywallScreen';
 import { LegalDocument, SettingView } from '../../features/settings/SettingView';
 import { AppWebView } from '../../components/common/AppWebView';
@@ -40,7 +41,8 @@ type ScreenName =
   | 'recipeList'
   | 'recipeDetail'
   | 'poseCollection'
-  | 'poseDetail';
+  | 'poseDetail'
+  | 'preview';
 
 export function AppNavigator() {
   const [screen, setScreen] = useState<ScreenName>('home');
@@ -163,6 +165,7 @@ export function AppNavigator() {
     setScreen('generatedResult');
   }, [openAnalyzing, openHome, setCurrentResult]);
   const openHistory = useCallback(() => setScreen('history'), []);
+  const openPreview = useCallback(() => setScreen('preview'), []);
   const openRecipeList = useCallback((source: 'home' = 'home') => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(false);
@@ -229,7 +232,7 @@ export function AppNavigator() {
       openAnalyzing();
     } else if (cameraIntent.type === 'tool') {
       useAnalysisStore.getState().setSelectedPhotoAiTool(cameraIntent.toolId);
-      openSelectedPreviewFlow();
+      openPreview();
     } else if (cameraIntent.type === 'recipe') {
       if (cameraIntent.recipeId === 'all') {
         openRecipeList('home');
@@ -238,7 +241,7 @@ export function AppNavigator() {
         if (recipe) startRecipeGeneration(recipe);
       }
     }
-  }, [cameraIntent, openAnalyzing, openSelectedPreviewFlow, startRecipeGeneration, openRecipeList]);
+  }, [cameraIntent, openAnalyzing, openPreview, openSelectedPreviewFlow, startRecipeGeneration, openRecipeList]);
 
   const handleGeneratedResultBack = useCallback(() => {
     if (resultOpenedFromHistory) return openHistory();
@@ -305,6 +308,8 @@ export function AppNavigator() {
 
   if (screen === 'poseAssist') {
     content = <PoseAssistScreen onBack={openHome} onContinue={openSelectedPreviewFlow} />;
+  } else if (screen === 'preview') {
+    content = <PhotoPreviewScreen onBack={() => openCamera(cameraIntent)} onAnalyze={openSelectedPreviewFlow} onOpenRecipes={() => openRecipeList('home')} onOpenPaywall={() => openPaywall('Store')} initialStep="instructions" />;
   } else if (screen === 'analyzing') {
     content = <AnalyzingScreen onComplete={openAnalysisResult} onBack={openHome} onCancel={goHome} />;
   } else if (screen === 'analysisResult' && currentResult) {
@@ -332,7 +337,7 @@ export function AppNavigator() {
   } else if (screen === 'history') {
     content = <HistoryScreen onBack={openHome} onOpenResult={openResultFromHistory} />;
   } else if (screen === 'recipeList') {
-    content = <RecipeListScreen onBack={cameraIntent.type === 'recipe' ? openHome : openPreview} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} />;
+    content = <RecipeListScreen onBack={openHome} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} />;
   } else if (screen === 'recipeDetail' && selectedRecipe) {
     content = (
       <RecipeDetailScreen
