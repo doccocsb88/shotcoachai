@@ -247,6 +247,7 @@ export function AppNavigator() {
             originalImageMimeType: photo.mimeType
           };
           setCurrentResult(dummyResult);
+          setCanReturnToAnalysis(false);
           setScreen('generatedResult');
         } else {
           openHome();
