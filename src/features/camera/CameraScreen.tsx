@@ -136,7 +136,29 @@ export function CameraScreen({
     }
   };
 
+  const showCaptureLimitPaywall = () => {
+    Alert.alert(
+      'Unlock unlimited captures',
+      'Free users can capture up to 3 photos. Upgrade to ShotCoach Pro for unlimited shooting.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Upgrade', onPress: onOpenPaywall }
+      ]
+    );
+  };
+
+  const ensureCaptureAllowed = async (): Promise<boolean> => {
+    await UserManager.ensureReady();
+    if (!UserManager.canStartCapture()) {
+      showCaptureLimitPaywall();
+      return false;
+    }
+    return true;
+  };
+
   const choosePhoto = async () => {
+    if (!(await ensureCaptureAllowed())) return;
+
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       void TrackingManager.flow.photoRejected('permission_denied');
@@ -155,11 +177,7 @@ export function CameraScreen({
 
   const takePhoto = async () => {
     if (isCapturing) return;
-    await UserManager.ensureReady();
-    if (!UserManager.canStartCapture()) {
-      showCaptureLimitPaywall();
-      return;
-    }
+    if (!(await ensureCaptureAllowed())) return;
 
     const permission = cameraPermission?.granted
       ? cameraPermission
@@ -189,17 +207,6 @@ export function CameraScreen({
   const swapCamera = () => {
     if (isCapturing) return;
     setCameraFacing(current => (current === 'back' ? 'front' : 'back'));
-  };
-
-  const showCaptureLimitPaywall = () => {
-    Alert.alert(
-      'Unlock unlimited captures',
-      'Free users can capture up to 3 photos. Upgrade to ShotCoach Pro for unlimited shooting.',
-      [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Upgrade', onPress: onOpenPaywall }
-      ]
-    );
   };
 
   const handlePickerResult = async (result: ImagePicker.ImagePickerResult) => {
