@@ -7,8 +7,9 @@ import {
   Text,
   View
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 
-import { colors } from '../../constants/theme';
+import { colors, radius, shadows } from '../../constants/theme';
 
 const SPLIT_MIN = 0.06;
 const SPLIT_MAX = 0.94;
@@ -80,17 +81,7 @@ export function BeforeAfterSlider({ beforeUri, afterUri, isLoadingAfter }: Befor
                 resizeMode="cover"
               />
             ) : (
-              <View style={[styles.afterLoadingFill, { width: layout.width, height: layout.height }]}>
-                <View style={styles.loadingCrosshair}>
-                  <View style={styles.loadingCrosshairHorizontal} />
-                  <View style={styles.loadingCrosshairVertical} />
-                </View>
-                <ActivityIndicator size="large" color={glassBlue} />
-                {isLoadingAfter ? (
-                  <Text style={styles.afterLoadingCaption}>Making your photo look better…</Text>
-                ) : null}
-                <Text style={styles.afterLoadingCode}>This usually takes a moment</Text>
-              </View>
+              <View style={[styles.afterLoadingFill, { width: layout.width, height: layout.height }]} />
             )}
           </View>
 
@@ -117,6 +108,21 @@ export function BeforeAfterSlider({ beforeUri, afterUri, isLoadingAfter }: Befor
           <View style={[styles.badgePill, styles.badgeAfterPill]} pointerEvents="none">
             <Text style={styles.badgeAfterText}>After</Text>
           </View>
+
+          {isLoadingAfter ? (
+            <View
+              pointerEvents="none"
+              style={[styles.loadingOverlay, { width: layout.width, height: layout.height }]}
+            >
+              <BlurView intensity={72} tint="light" style={styles.loadingCard}>
+                <View style={styles.loadingCardContent}>
+                  <ActivityIndicator size="large" color={glassBlue} />
+                  <Text style={styles.afterLoadingCaption}>Making your photo look better…</Text>
+                  <Text style={styles.afterLoadingCode}>This usually takes a moment</Text>
+                </View>
+              </BlurView>
+            </View>
+          ) : null}
 
           {layout.width > 0 ? (
             <>
@@ -170,31 +176,32 @@ const styles = StyleSheet.create({
     top: 0
   },
   afterLoadingFill: {
-    alignItems: 'center',
     backgroundColor: '#EEF5FF',
     borderLeftColor: 'rgba(255,255,255,0.7)',
-    borderLeftWidth: 1,
-    justifyContent: 'center'
+    borderLeftWidth: 1
   },
-  loadingCrosshair: {
+  loadingOverlay: {
     alignItems: 'center',
-    height: 52,
     justifyContent: 'center',
-    marginBottom: 18,
-    position: 'relative',
-    width: 52
-  },
-  loadingCrosshairHorizontal: {
-    backgroundColor: glassBlue,
-    height: 1,
     position: 'absolute',
-    width: 52
+    top: 0,
+    left: 0,
+    zIndex: 5,
+    transform: [{ translateY: -52 }]
   },
-  loadingCrosshairVertical: {
-    backgroundColor: glassBlue,
-    height: 52,
-    position: 'absolute',
-    width: 1
+  loadingCard: {
+    backgroundColor: 'rgba(255,255,255,0.68)',
+    borderColor: glassBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    maxWidth: 300,
+    overflow: 'hidden',
+    ...shadows.soft
+  },
+  loadingCardContent: {
+    alignItems: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 24
   },
   afterLoadingCaption: {
     color: colors.text,

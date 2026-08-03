@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { FlatList, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AppScreenHeader } from '../../components/common/AppScreenHeader';
 import { Screen } from '../../components/common/Screen';
-import { ScreenNavBar } from '../../components/common/ScreenNavBar';
 import { colors, radius } from '../../constants/theme';
 import { PhotoRecipe } from '../../models/photoRecipe';
 import { PHOTO_RECIPES } from '../../services/photo-recipes/photoRecipeLibrary';
@@ -36,7 +36,7 @@ export function RecipeListScreen({ onBack, onSelectRecipe, onOpenPaywall }: Prop
   return (
     <Screen scroll={false}>
       <View style={styles.root}>
-        <ScreenNavBar title="Photo Recipes" leadingLabel="Back" onLeadingPress={onBack} />
+        <AppScreenHeader title="Photo Recipes" onBack={onBack} />
         <FlatList
           data={PHOTO_RECIPES}
           keyExtractor={item => item.id}

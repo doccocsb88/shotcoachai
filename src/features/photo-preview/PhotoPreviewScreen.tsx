@@ -7,7 +7,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -16,9 +15,9 @@ import {
   useWindowDimensions
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
-import { CaretLeft } from 'phosphor-react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
+import { AppScreenHeader } from '../../components/common/AppScreenHeader';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius, shadows, spacing, typography } from '../../constants/theme';
@@ -73,8 +72,6 @@ const toolPromptTags: Record<PhotoAiToolId, string[]> = {
   expand_frame: ['Outpaint', 'More space', 'Composition'],
   smooth_skin: ['Portrait', 'Skin texture', 'Natural retouch']
 };
-
-const previewHeaderInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
 
 export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPaywall, initialStep = 'flows' }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
@@ -202,7 +199,7 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
     return (
       <Screen scroll={false}>
         <View style={styles.previewRoot}>
-          <PreviewOverlayHeader title="Improve Your Photo" onBack={onBack} />
+          <AppScreenHeader title="Improve Your Photo" onBack={onBack} />
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>No photo selected</Text>
             <PrimaryButton title="Back" onPress={onBack} variant="secondary" />
@@ -215,7 +212,7 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
   return (
     <Screen scroll={false}>
       <View style={styles.previewRoot}>
-        <PreviewOverlayHeader
+        <AppScreenHeader
           title={step === 'instructions' ? selectedTool.title : 'Improve Your Photo'}
           onBack={handleBackPress}
         />
@@ -318,25 +315,6 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
         />
       </View>
     </Screen>
-  );
-}
-
-function PreviewOverlayHeader({ title, onBack }: { title: string; onBack: () => void }) {
-  return (
-    <View style={styles.previewHeader}>
-      <Pressable
-        accessibilityRole="button"
-        hitSlop={10}
-        onPress={onBack}
-        style={({ pressed }) => [styles.previewHeaderBack, pressed && styles.pressed]}
-      >
-        <CaretLeft size={20} color={colors.text} weight="bold" />
-      </Pressable>
-      <Text numberOfLines={1} style={styles.previewHeaderTitle}>
-        {title}
-      </Text>
-      <View style={styles.previewHeaderSpacer} />
-    </View>
   );
 }
 
@@ -701,35 +679,6 @@ function ConsentBullet({ text }: { text: string }) {
 const styles = StyleSheet.create({
   previewRoot: {
     flex: 1
-  },
-  previewHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    minHeight: previewHeaderInset + 56,
-    paddingHorizontal: 20,
-    paddingTop: previewHeaderInset
-  },
-  previewHeaderBack: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-    ...shadows.soft
-  },
-  previewHeaderTitle: {
-    color: colors.text,
-    flex: 1,
-    fontSize: 26,
-    fontWeight: '900',
-    paddingHorizontal: 10,
-    textAlign: 'center'
-  },
-  previewHeaderSpacer: {
-    minWidth: 56
   },
   previewContent: {
     paddingBottom: 26,
