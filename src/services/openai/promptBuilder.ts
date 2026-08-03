@@ -1,6 +1,8 @@
 import { CoachDirectionV2, CoachPhotoAnalysisV2 } from '../../models/analysis';
 import { getPhotoAiTool, PhotoAiToolId } from '../../models/photoAiTool';
 import { CoachMode } from '../../core/store/analysisStore';
+import { CAMERA_ANGLE_REFERENCE } from '../coach/cameraAngleReference';
+import { COMPOSITION_REFERENCE } from '../coach/compositionReference';
 
 export const buildVisionAnalysisPrompt = () => `
 You are a professional photography director and visual analysis engine.
@@ -62,8 +64,9 @@ Return STRICT JSON only:
 
 const getModeFocusInstructions = (mode: CoachMode) => {
   switch (mode) {
-    case 'composition': return '- rule of thirds\\n- leading lines\\n- balance\\n- subject placement\\n- symmetry\\n- background distractions';
-    case 'frame': return '- framing\\n- camera distance\\n- crop ratio\\n- headroom\\n- camera angle (high/low)\\n- perspective';
+    case 'composition': return '- subject placement (rule of thirds, centered, golden ratio)\\n- leading lines, diagonal lines, and S-curves\\n- symmetry, asymmetry, balance, and visual weight\\n- negative space vs fill the frame\\n- framing with doors, windows, arches, or foreground objects\\n- depth, layering, foreground/middle/background\\n- patterns and repetition\\n- triangular composition and rule of odds\\n- minimalism and focal clarity\\n- background distractions';
+    case 'frame': return '- framing\\n- camera distance\\n- crop ratio\\n- headroom\\n- perspective';
+    case 'angle': return "- vertical camera height (eye level, high angle, low angle, bird's eye, worm's eye, ground level)\\n- horizontal camera position (front, 3/4 profile, side, back, over-the-shoulder)\\n- camera tilt (level, dutch angle, tilt up, tilt down)\\n- perspective and power dynamics\\n- POV and over-the-head angles\\n- angle-to-mood match";
     case 'pose': return '- pose readability\\n- body language\\n- hand and limb placement\\n- posture\\n- expression\\n- naturalness';
     case 'comprehensive': default: return '- composition\\n- framing\\n- camera distance\\n- subject placement\\n- pose readability\\n- lighting quality\\n- subject separation\\n- background distractions\\n- realism\\n- social media usefulness';
   }
@@ -79,6 +82,8 @@ ShotCoach helps users create a realistic photography coaching reference for reta
 
 Focus strictly on the selected coaching mode: \${mode.toUpperCase()}
 \${getModeFocusInstructions(mode)}
+${mode === 'angle' ? `\nCamera angle reference:\n${CAMERA_ANGLE_REFERENCE}\n` : ''}
+${mode === 'composition' ? `\nComposition reference:\n${COMPOSITION_REFERENCE}\n` : ''}
 
 Safety rules:
 - Do not suggest changing identity, face, body shape, outfit, hairstyle, background, location, weather, time of day, or lighting style.
@@ -151,8 +156,9 @@ The advice must focus primarily on the selected coaching mode: ${mode.toUpperCas
 CRITICAL: Your "summary" field must be highly specific, actionable advice spoken directly to the user (e.g. "Take a step back, hold the camera lower, and stand up straight with your hands out of your pockets."). DO NOT use generic phrases like "adjust angle" or "improve composition". Be extremely precise, step-by-step, and physical.
 
 Prioritize improvements in this order based on the mode:
-${mode === 'composition' ? '1. Specific subject placement (e.g., move subject to the left third)\n2. Aligning leading lines\n3. Balancing background elements' : ''}
-${mode === 'frame' ? '1. Specific camera distance (e.g., take two steps closer)\n2. Specific camera angle (e.g., lower the phone to chest level)\n3. Headroom adjustments' : ''}
+${mode === 'composition' ? `1. Specific subject placement (e.g., move to the left third intersection, or center the subject for symmetry)\n2. Specific line or framing use (e.g., align the corridor railing as leading lines toward the subject, or shoot through the window frame)\n3. Specific balance and space (e.g., leave more negative space on the left, or add foreground depth with a plant in front)\n\nComposition reference:\n${COMPOSITION_REFERENCE}` : ''}
+${mode === 'frame' ? '1. Specific camera distance (e.g., take two steps closer)\n2. Specific crop and headroom (e.g., leave less empty space above the head)\n3. Framing adjustments (e.g., switch from full body to medium shot)' : ''}
+${mode === 'angle' ? `1. Specific camera height (e.g., crouch to ground level and shoot upward for a worm's eye view)\n2. Specific horizontal position (e.g., walk 45 degrees to the left for a 3/4 profile angle)\n3. Specific camera tilt (e.g., tilt the phone 15 degrees for a subtle dutch angle)\n\nAngle reference:\n${CAMERA_ANGLE_REFERENCE}` : ''}
 ${mode === 'pose' ? '1. Specific body language (e.g., stand up straight, uncross arms)\n2. Specific limb placement (e.g., put one hand in your pocket, relax shoulders)\n3. Expression (e.g., smile naturally without tilting your head)' : ''}
 ${mode === 'comprehensive' ? '1. Specific framing & camera distance (e.g., take a step back)\n2. Specific subject placement\n3. Specific posture changes (e.g., stand taller, uncross legs)' : ''}
 

@@ -16,6 +16,7 @@ import { useAnalyzePhoto } from '../analysis/useAnalyzePhoto';
 import { generateEditedImage } from '../../services/openai/generateImage';
 import { DirectCoachService } from '../../services/coach/DirectCoachService';
 import { TrackingManager } from '../../services/tracking/TrackingManager';
+import { COACH_MODE_IDS, COACH_MODE_OPTIONS, getCoachModeImage, getCoachModeLabel } from './coachModeConfig';
 
 const USE_DIRECT_COACH_FLOW = true;
 
@@ -93,7 +94,7 @@ export function CameraScreen({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [realtimeGeneratedImageUri, setRealtimeGeneratedImageUri] = useState<string | null>(null);
   const referenceWidth = Math.round((width * 2) / 5);
-  const initialScrollOffset = useRef(intent?.type === 'coach' ? Math.max(0, ['frame', 'composition', 'pose', 'comprehensive'].indexOf(intent.mode)) * 96 : 0).current;
+  const initialScrollOffset = useRef(intent?.type === 'coach' ? Math.max(0, COACH_MODE_IDS.indexOf(intent.mode)) * 96 : 0).current;
 
   useEffect(() => {
     const unsubscribe = UserManager.subscribe(setAccessState);
@@ -410,11 +411,7 @@ export function CameraScreen({
               </View>
               <View>
                 <Text style={styles.featurePillTitle}>
-                  {intent?.type === 'coach' ? (
-                     intent.mode === 'composition' ? 'Composition Coach' :
-                     intent.mode === 'frame' ? 'Frame Coach' :
-                     intent.mode === 'pose' ? 'Pose Coach' : 'Comprehensive Coach'
-                   ) : 
+                  {intent?.type === 'coach' ? getCoachModeLabel(intent.mode) :
                    intent?.type === 'tool' ? (getPhotoAiTool(intent.toolId)?.shortTitle ?? 'Quick Edit') : 
                    intent?.type === 'recipe' ? (getPhotoRecipe(intent.recipeId)?.title ?? 'Recipe') : 'Quick Edit'}
                 </Text>
@@ -482,9 +479,8 @@ export function CameraScreen({
                 contentOffset={{ x: initialScrollOffset, y: 0 }}
                 onScroll={(e) => {
                   const x = e.nativeEvent.contentOffset.x;
-                  const index = Math.max(0, Math.min(3, Math.round(x / 96)));
-                  const modes = ['frame', 'composition', 'pose', 'comprehensive'];
-                  const newMode = modes[index];
+                  const index = Math.max(0, Math.min(COACH_MODE_IDS.length - 1, Math.round(x / 96)));
+                  const newMode = COACH_MODE_IDS[index];
                   if (intent.mode !== newMode) {
                     setCoachMode(newMode as any);
                     intent.mode = newMode as any;
@@ -492,12 +488,7 @@ export function CameraScreen({
                 }}
                 contentContainerStyle={[styles.coachModeScroll, { paddingHorizontal: (width - 80) / 2 }]}
               >
-                {[
-                  { id: 'frame', image: require('../../../assets/coaches/frame.png') },
-                  { id: 'composition', image: require('../../../assets/coaches/composition.png') },
-                  { id: 'pose', image: require('../../../assets/coaches/pose.png') },
-                  { id: 'comprehensive', image: require('../../../assets/coaches/comprehensive.png') }
-                ].map((mode, index) => (
+                {COACH_MODE_OPTIONS.map((mode, index) => (
                   <Pressable
                     key={mode.id}
                     onPress={() => {
@@ -528,12 +519,7 @@ export function CameraScreen({
           >
             {intent?.type === 'coach' ? (
               <Image 
-                source={
-                  intent.mode === 'frame' ? require('../../../assets/coaches/frame.png') :
-                  intent.mode === 'composition' ? require('../../../assets/coaches/composition.png') :
-                  intent.mode === 'pose' ? require('../../../assets/coaches/pose.png') :
-                  require('../../../assets/coaches/comprehensive.png')
-                }
+                source={getCoachModeImage(intent.mode)}
                 style={styles.captureInnerImage} 
               />
             ) : (

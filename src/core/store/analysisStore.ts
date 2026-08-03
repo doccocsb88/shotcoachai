@@ -5,7 +5,7 @@ import { DEFAULT_PHOTO_AI_TOOL_ID, PhotoAiToolId } from '../../models/photoAiToo
 import { loadHistory, persistHistory } from '../../services/storage/historyStorage';
 
 export type CameraMode = 'classic' | 'pose_ai';
-export type CoachMode = 'composition' | 'frame' | 'pose' | 'comprehensive';
+export type CoachMode = 'composition' | 'frame' | 'angle' | 'pose' | 'comprehensive';
 
 interface AnalysisStore {
   currentPhoto?: PickedPhoto;
