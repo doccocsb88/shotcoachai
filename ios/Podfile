@@ -1,5 +1,6 @@
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
+require 'xcodeproj'
 
 require 'json'
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
@@ -62,6 +63,33 @@ target 'AIPhotoCoach' do
         resource_bundle_target.build_configurations.each do |config|
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
+      end
+    end
+
+    project_path = File.join(__dir__, 'AIPhotoCoach.xcodeproj')
+    project = Xcodeproj::Project.open(project_path)
+    app_target = project.targets.find { |target| target.name == 'AIPhotoCoach' }
+
+    if app_target
+      phase_name = '[RN] Generate Hermes dSYM'
+      existing_phase = app_target.shell_script_build_phases.find { |phase| phase.name == phase_name }
+
+      unless existing_phase
+        phase = app_target.new_shell_script_build_phase(phase_name)
+        phase.shell_script = %q("${SRCROOT}/scripts/generate-hermes-dsym.sh") + "\n"
+        phase.show_env_vars_in_log = '0'
+
+        embed_pods_phase = app_target.build_phases.find do |build_phase|
+          build_phase.display_name == '[CP] Embed Pods Frameworks'
+        end
+
+        if embed_pods_phase
+          app_target.build_phases.delete(phase)
+          embed_index = app_target.build_phases.index(embed_pods_phase)
+          app_target.build_phases.insert(embed_index + 1, phase)
+        end
+
+        project.save
       end
     end
   end
