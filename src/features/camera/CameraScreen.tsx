@@ -2,7 +2,7 @@ import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ActivityIndicator, AppState, Image, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { CaretLeft, Lightning, DotsThreeVertical, MagicWand, X, Images, CameraRotate, CameraSlash, LightningSlash } from 'phosphor-react-native';
+import { CaretLeft, Lightning, DotsThreeVertical, MagicWand, X, Images, CameraRotate, CameraSlash, LightningSlash, GearSix } from 'phosphor-react-native';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
@@ -17,6 +17,8 @@ import { generateEditedImage } from '../../services/openai/generateImage';
 import { DirectCoachService } from '../../services/coach/DirectCoachService';
 import { TrackingManager } from '../../services/tracking/TrackingManager';
 import { COACH_MODE_IDS, COACH_MODE_OPTIONS, getCoachModeImage, getCoachModeLabel } from './coachModeConfig';
+import { CoachSettingsSheet } from './CoachSettingsSheet';
+import { hasCoachPreferences } from '../../models/coachPreferences';
 
 const USE_DIRECT_COACH_FLOW = true;
 
@@ -87,11 +89,14 @@ export function CameraScreen({
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
   const setCoachMode = useAnalysisStore(state => state.setCoachMode);
+  const coachPreferences = useAnalysisStore(state => state.coachPreferences);
+  const setCoachPreferences = useAnalysisStore(state => state.setCoachPreferences);
   const isAnalyzing = useAnalysisStore(state => state.isAnalyzing);
   const currentResult = useAnalysisStore(state => state.currentResult);
   const { analyze } = useAnalyzePhoto();
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [coachSettingsVisible, setCoachSettingsVisible] = useState(false);
   const [realtimeGeneratedImageUri, setRealtimeGeneratedImageUri] = useState<string | null>(null);
   const referenceWidth = Math.round((width * 2) / 5);
   const initialScrollOffset = useRef(intent?.type === 'coach' ? Math.max(0, COACH_MODE_IDS.indexOf(intent.mode)) * 96 : 0).current;
@@ -266,7 +271,12 @@ export function CameraScreen({
       try {
         if (USE_DIRECT_COACH_FLOW) {
           setIsGeneratingImage(true);
-          const generatedUri = await DirectCoachService.generateCoachImage(picked.uri, picked.mimeType, intent.mode as any);
+          const generatedUri = await DirectCoachService.generateCoachImage(
+            picked.uri,
+            picked.mimeType,
+            intent.mode as any,
+            coachPreferences
+          );
           setRealtimeGeneratedImageUri(generatedUri);
           const historyResult = {
             id: Date.now().toString(),
@@ -430,16 +440,47 @@ export function CameraScreen({
               </View>
             </Pressable>
           </View>
-          <View style={{flexDirection: 'row', gap: 8}}>
-            <Pressable style={styles.navIconButton} onPress={() => setFlashMode(f => f === 'off' ? 'on' : 'off')}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable
+              accessibilityLabel={flashMode === 'on' ? 'Turn flash off' : 'Turn flash on'}
+              accessibilityRole="button"
+              style={styles.navIconButton}
+              onPress={() => setFlashMode(f => (f === 'off' ? 'on' : 'off'))}
+            >
               {flashMode === 'on' ? (
                 <Lightning size={24} color="#FBBF24" weight="fill" />
               ) : (
                 <LightningSlash size={24} color="#FFF" weight="bold" />
               )}
             </Pressable>
+            {intent?.type === 'coach' ? (
+              <Pressable
+                accessibilityLabel="Coach settings"
+                accessibilityRole="button"
+                onPress={() => setCoachSettingsVisible(true)}
+                style={({ pressed }) => [
+                  styles.navIconButton,
+                  hasCoachPreferences(coachPreferences) && styles.navIconButtonActive,
+                  pressed && styles.pressed
+                ]}
+              >
+                <GearSix
+                  size={24}
+                  color={hasCoachPreferences(coachPreferences) ? colors.primary : '#FFF'}
+                  weight="bold"
+                />
+                {hasCoachPreferences(coachPreferences) ? <View style={styles.settingsActiveDot} /> : null}
+              </Pressable>
+            ) : null}
           </View>
         </View>
+
+        <CoachSettingsSheet
+          visible={coachSettingsVisible}
+          preferences={coachPreferences}
+          onClose={() => setCoachSettingsVisible(false)}
+          onApply={setCoachPreferences}
+        />
 
         <View style={styles.zoomContainer}>
           <Pressable onPress={() => handleZoomSelect('0.5')} style={[styles.zoomButton, activeZoomLevel === '0.5' && styles.zoomButtonActive]}>
@@ -632,6 +673,19 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     width: 44
+  },
+  navIconButtonActive: {
+    borderColor: 'rgba(47, 107, 255, 0.55)',
+    borderWidth: 1
+  },
+  settingsActiveDot: {
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+    height: 8,
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    width: 8
   },
   navIconButtonPlaceholder: {
     width: 44

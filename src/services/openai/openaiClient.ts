@@ -8,6 +8,7 @@ import {
 } from './promptBuilder';
 import { logOpenAIAnalysisRequest, logOpenAIAnalysisResponse } from './debugOpenAIFlow';
 import { PhotoAiToolId } from '../../models/photoAiTool';
+import { CoachPreferences } from '../../models/coachPreferences';
 import { CoachMode } from '../../core/store/analysisStore';
 
 const OPENAI_URL = 'https://api.openai.com/v1/responses';
@@ -37,11 +38,12 @@ export async function analyzeCoachPhotoV2WithOpenAI(
   imageBase64: string,
   mimeType: string,
   coachMode: CoachMode = 'comprehensive',
+  coachPreferences?: CoachPreferences,
   signal?: AbortSignal
 ): Promise<unknown> {
   return runOpenAIJsonStage({
     stage: `coach-v2-analysis-${coachMode}`,
-    systemPrompt: buildCoachVisionAnalysisPromptV2(coachMode),
+    systemPrompt: buildCoachVisionAnalysisPromptV2(coachMode, coachPreferences),
     userText:
       'Analyze this uploaded photo for ShotCoach AI Coach. Create a safe structured analysis for improving the same photo, not redesigning the person or scene. Return the PhotoAnalysis JSON only.',
     imageBase64,
@@ -72,11 +74,12 @@ export async function createCoachDirectionsV2WithOpenAI(
   imageBase64: string,
   mimeType: string,
   coachMode: CoachMode = 'comprehensive',
+  coachPreferences?: CoachPreferences,
   signal?: AbortSignal
 ): Promise<unknown> {
   return runOpenAIJsonStage({
     stage: `coach-v2-directions-${coachMode}`,
-    systemPrompt: buildCoachDirectionPromptV2(coachMode),
+    systemPrompt: buildCoachDirectionPromptV2(coachMode, coachPreferences),
     userText:
       `Create 3 safe ShotCoach AI Coach directions from this PhotoAnalysis JSON:\n${JSON.stringify(photoAnalysisJson)}\n\n` +
       'Directions should be practical, realistic, and suitable for generating reference images. Use conservative changes that preserve identity, lighting, background, outfit, and scene mood.',

@@ -8,6 +8,7 @@ import {
   ProductionPhotoAnalysis,
   Suggestion
 } from '../../models/analysis';
+import { CoachPreferences } from '../../models/coachPreferences';
 import { buildAICoachImageEditPrompt } from './promptBuilder';
 
 export function extractJsonTextFromResponse(raw: unknown): string {
@@ -98,11 +99,12 @@ export function buildAnalysisResultFromCoachV2Flow(input: {
   originalImageUri: string;
   originalImageMimeType?: string;
   userInstruction?: string;
+  coachPreferences?: CoachPreferences;
 }): AnalysisResult {
   const coachAnalysisV2 = normalizeCoachPhotoAnalysisV2(input.photoAnalysis);
   const coachDirectionsV2 = normalizeCoachDirectionsV2(input.directionsPayload).slice(0, 3);
   const suggestions = coachDirectionsV2.map(direction =>
-    coachDirectionV2ToSuggestion(coachAnalysisV2, direction, input.userInstruction)
+    coachDirectionV2ToSuggestion(coachAnalysisV2, direction, input.userInstruction, input.coachPreferences)
   );
 
   return {
@@ -290,7 +292,8 @@ function normalizeCoachDirectionsV2(value: unknown): CoachDirectionV2[] {
 function coachDirectionV2ToSuggestion(
   analysis: CoachPhotoAnalysisV2,
   direction: CoachDirectionV2,
-  userInstruction?: string
+  userInstruction?: string,
+  coachPreferences?: CoachPreferences
 ): Suggestion {
   const changes = [
     direction.composition_change,
@@ -306,7 +309,7 @@ function coachDirectionV2ToSuggestion(
     composition: direction.composition_change,
     camera_angle: [direction.camera_distance_change, direction.subject_placement_change].filter(Boolean).join(' '),
     changes,
-    image_prompt: buildAICoachImageEditPrompt(analysis, direction, userInstruction)
+    image_prompt: buildAICoachImageEditPrompt(analysis, direction, userInstruction, coachPreferences)
   };
 }
 

@@ -1,4 +1,5 @@
 import { AnalysisResult } from '../../models/analysis';
+import { CoachPreferences } from '../../models/coachPreferences';
 import { CoachMode } from '../../core/store/analysisStore';
 import { PhotoAiToolId } from '../../models/photoAiTool';
 import { withTimeout } from '../../utils/async';
@@ -28,7 +29,8 @@ export async function analyzePhoto(
   imageUri: string,
   mimeType: string,
   toolId: PhotoAiToolId = 'ai_coach',
-  coachMode: CoachMode = 'comprehensive'
+  coachMode: CoachMode = 'comprehensive',
+  coachPreferences?: CoachPreferences
 ): Promise<AnalysisResult> {
   if (shouldUseMockupApi() || !hasOpenAIKey()) {
     const persistentOriginalUri = await withTimeout(
@@ -61,7 +63,13 @@ export async function analyzePhoto(
 
     if (shouldUseAiCoachV2(toolId)) {
       const coachAnalysisRaw = await withTimeout(
-        analyzeCoachPhotoV2WithOpenAI(imageBase64, optimizedUri.mimeType, coachMode, analysisController.signal),
+        analyzeCoachPhotoV2WithOpenAI(
+          imageBase64,
+          optimizedUri.mimeType,
+          coachMode,
+          coachPreferences,
+          analysisController.signal
+        ),
         ANALYSIS_TIMEOUT_MS,
         'OpenAI AI Coach v2 analysis timeout'
       );
@@ -73,6 +81,7 @@ export async function analyzePhoto(
           imageBase64,
           optimizedUri.mimeType,
           coachMode,
+          coachPreferences,
           analysisController.signal
         ),
         ANALYSIS_TIMEOUT_MS,
@@ -90,7 +99,8 @@ export async function analyzePhoto(
         photoAnalysis,
         directionsPayload,
         originalImageUri: persistentOriginalUri,
-        originalImageMimeType: mimeType
+        originalImageMimeType: mimeType,
+        coachPreferences
       });
     }
 

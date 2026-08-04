@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 
 import { BeforeAfterSlider } from '../../components/beforeAfter/BeforeAfterSlider';
-import { ForegroundToast } from '../../components/common/ForegroundToast';
 import {
   CameraOutlineIcon,
   ChevronLeftIcon,
@@ -82,6 +82,7 @@ export function GeneratedResultScreen({
 
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
+  const coachPreferences = useAnalysisStore(state => state.coachPreferences);
   const flowType = getFlowType(result);
   const trackingFlowType: TrackingFlowType =
     flowType === 'aiCoach' ? 'ai_coach' : flowType === 'editingTool' ? 'editing_tool' : 'photo_recipe';
@@ -129,7 +130,12 @@ export function GeneratedResultScreen({
         const coachMode = result.analysisId.split(':')[1] as any;
         const { DirectCoachService } = require('../../services/coach/DirectCoachService');
         uri = await withTimeout(
-          DirectCoachService.generateCoachImage(result.originalImageUri, result.originalImageMimeType, coachMode),
+          DirectCoachService.generateCoachImage(
+            result.originalImageUri,
+            result.originalImageMimeType,
+            coachMode,
+            coachPreferences
+          ),
           IMAGE_GENERATION_TIMEOUT_MS,
           'The AI edit is taking too long. Please check your connection and try again.'
         );
@@ -237,6 +243,7 @@ export function GeneratedResultScreen({
   const saveDisabled = busy || isGenerating || !generatedImageUri;
   const shareDisabled = busy || isGenerating || !generatedImageUri;
   const headerActionsDisabled = isGenerating;
+  const showComparisonSlider = Boolean(generatedImageUri);
 
   const returnToSuggestionPicker = () => {
     if (openedFromHistory || !canReturnToAnalysis) {
@@ -331,12 +338,13 @@ export function GeneratedResultScreen({
           <View style={styles.comparisonSection}>
             <View style={styles.comparisonCard}>
               <View style={styles.comparisonSliderHost}>
-                <BeforeAfterSlider
-                  beforeUri={result.originalImageUri}
-                  afterUri={generatedImageUri}
-                  isLoadingAfter={isGenerating && !generatedImageUri}
-                />
-                {generationError ? (
+                {showComparisonSlider ? (
+                  <BeforeAfterSlider
+                    beforeUri={result.originalImageUri}
+                    afterUri={generatedImageUri}
+                    isLoadingAfter={false}
+                  />
+                ) : generationError ? (
                   <View style={styles.generationErrorOverlay}>
                     <View style={styles.generationErrorCard}>
                       <Text style={styles.generationErrorTitle}>AI edit failed</Text>
@@ -375,7 +383,24 @@ export function GeneratedResultScreen({
                       </View>
                     </View>
                   </View>
-                ) : null}
+                ) : (
+                  <View style={styles.comparisonLoadingHost}>
+                    <Image
+                      source={{ uri: result.originalImageUri }}
+                      style={styles.comparisonLoadingImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.comparisonLoadingOverlay}>
+                      <BlurView intensity={72} tint="light" style={styles.comparisonLoadingCard}>
+                        <View style={styles.comparisonLoadingCardContent}>
+                          <ActivityIndicator size="large" color={colors.primary} />
+                          <Text style={styles.comparisonLoadingTitle}>Making your photo look better…</Text>
+                          <Text style={styles.comparisonLoadingSubtitle}>This usually takes a moment</Text>
+                        </View>
+                      </BlurView>
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -433,24 +458,7 @@ export function GeneratedResultScreen({
                 <Text style={styles.sideActionLabel}>Share</Text>
               </Pressable>
             </View>
-
-            {openedFromHistory || isDirectToolResult || isPhotoRecipeResult ? null : (
-              <Pressable
-                accessibilityLabel="Choose another creative direction"
-                accessibilityRole="button"
-                disabled={busy || isGenerating}
-                onPress={returnToSuggestionPicker}
-                style={({ pressed }) => [styles.anotherDirectionRow, pressed && styles.pressed]}
-              >
-                <Text style={styles.anotherDirectionText}>↔ Another direction</Text>
-              </Pressable>
-            )}
           </View>
-          {isGenerating ? (
-            <View pointerEvents="none" style={styles.generatingToastOverlay}>
-              <ForegroundToast />
-            </View>
-          ) : null}
 
           <Modal animationType="slide" transparent visible={recipeSheetVisible} onRequestClose={() => setRecipeSheetVisible(false)}>
             <View style={styles.sheetOverlay}>
@@ -572,6 +580,48 @@ const styles = StyleSheet.create({
   },
   comparisonSliderHost: {
     ...StyleSheet.absoluteFillObject
+  },
+  comparisonLoadingHost: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden'
+  },
+  comparisonLoadingImage: {
+    ...StyleSheet.absoluteFillObject
+  },
+  comparisonLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    backgroundColor: 'rgba(232, 244, 255, 0.42)',
+    justifyContent: 'center',
+    padding: 22
+  },
+  comparisonLoadingCard: {
+    backgroundColor: 'rgba(255,255,255,0.68)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    maxWidth: 300,
+    overflow: 'hidden',
+    ...shadows.soft
+  },
+  comparisonLoadingCardContent: {
+    alignItems: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 24
+  },
+  comparisonLoadingTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 12,
+    textAlign: 'center'
+  },
+  comparisonLoadingSubtitle: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 10,
+    textAlign: 'center'
   },
   generationErrorOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -709,12 +759,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 4
   },
-  generatingToastOverlay: {
-    bottom: 88,
-    left: 16,
-    position: 'absolute',
-    right: 16
-  },
   bottomActionsRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -758,16 +802,6 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: {
     opacity: 0.45
-  },
-  anotherDirectionRow: {
-    alignItems: 'center',
-    marginTop: 4,
-    paddingVertical: 2
-  },
-  anotherDirectionText: {
-    color: colors.primary,
-    fontSize: typography.caption,
-    fontWeight: '700'
   },
   analysisRoot: {
     backgroundColor: colors.background,

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { AnalysisResult, PickedPhoto } from '../../models/analysis';
+import { CoachPreferences, DEFAULT_COACH_PREFERENCES } from '../../models/coachPreferences';
 import { DEFAULT_PHOTO_AI_TOOL_ID, PhotoAiToolId } from '../../models/photoAiTool';
 import { loadHistory, persistHistory } from '../../services/storage/historyStorage';
 
@@ -19,6 +20,7 @@ interface AnalysisStore {
   selectedPhotoAiTool: PhotoAiToolId;
   selectedPhotoAiInstruction?: string;
   coachMode: CoachMode;
+  coachPreferences: CoachPreferences;
 
   setCurrentPhoto: (photo: PickedPhoto) => void;
   setAnalyzing: (value: boolean) => void;
@@ -34,6 +36,7 @@ interface AnalysisStore {
   setSelectedPhotoAiEdit: (toolId: PhotoAiToolId, instruction?: string) => void;
   setSelectedPhotoAiInstruction: (instruction?: string) => void;
   setCoachMode: (mode: CoachMode) => void;
+  setCoachPreferences: (preferences: CoachPreferences) => void;
   clearCurrent: () => void;
 }
 
@@ -44,6 +47,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   cameraMode: 'classic',
   selectedPhotoAiTool: DEFAULT_PHOTO_AI_TOOL_ID,
   coachMode: 'comprehensive',
+  coachPreferences: DEFAULT_COACH_PREFERENCES,
 
   setCurrentPhoto: photo =>
     set({
@@ -79,6 +83,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     set({ selectedPhotoAiTool: toolId, selectedPhotoAiInstruction: instruction }),
   setSelectedPhotoAiInstruction: instruction => set({ selectedPhotoAiInstruction: instruction }),
   setCoachMode: mode => set({ coachMode: mode }),
+  setCoachPreferences: preferences => set({ coachPreferences: preferences }),
   clearCurrent: () =>
     set({
       currentPhoto: undefined,

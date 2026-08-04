@@ -13,6 +13,7 @@ export function useAnalyzePhoto() {
   const setError = useAnalysisStore(state => state.setError);
   const selectedPhotoAiTool = useAnalysisStore(state => state.selectedPhotoAiTool);
   const coachMode = useAnalysisStore(state => state.coachMode);
+  const coachPreferences = useAnalysisStore(state => state.coachPreferences);
 
   const analyze = useCallback(async (imageUri: string, mimeType: string) => {
     try {
@@ -22,7 +23,12 @@ export function useAnalyzePhoto() {
       let parsed: AnalysisResult;
       
       if (selectedPhotoAiTool === 'ai_coach' && coachMode !== 'comprehensive') {
-        const generatedUri = await DirectCoachService.generateCoachImage(imageUri, mimeType, coachMode as any);
+        const generatedUri = await DirectCoachService.generateCoachImage(
+          imageUri,
+          mimeType,
+          coachMode,
+          coachPreferences
+        );
         parsed = {
           analysisId: Date.now().toString(),
           flowType: 'aiCoach',
@@ -44,7 +50,7 @@ export function useAnalyzePhoto() {
           }]
         };
       } else {
-        parsed = await runAnalyzePhoto(imageUri, mimeType, selectedPhotoAiTool, coachMode);
+        parsed = await runAnalyzePhoto(imageUri, mimeType, selectedPhotoAiTool, coachMode, coachPreferences);
       }
       
       setCurrentResult(parsed);
@@ -55,7 +61,7 @@ export function useAnalyzePhoto() {
     } finally {
       setAnalyzing(false);
     }
-  }, [selectedPhotoAiTool, coachMode, setAnalyzing, setCurrentResult, setError]);
+  }, [selectedPhotoAiTool, coachMode, coachPreferences, setAnalyzing, setCurrentResult, setError]);
 
   return { analyze };
 }

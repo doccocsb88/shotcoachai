@@ -1,7 +1,9 @@
 import { CoachDirectionV2, CoachPhotoAnalysisV2 } from '../../models/analysis';
+import { CoachPreferences } from '../../models/coachPreferences';
 import { getPhotoAiTool, PhotoAiToolId } from '../../models/photoAiTool';
 import { CoachMode } from '../../core/store/analysisStore';
 import { CAMERA_ANGLE_REFERENCE } from '../coach/cameraAngleReference';
+import { buildCoachPersonalizationBlock } from '../coach/coachPersonalizationBlock';
 import { COMPOSITION_REFERENCE } from '../coach/compositionReference';
 
 export const buildVisionAnalysisPrompt = () => `
@@ -72,7 +74,10 @@ const getModeFocusInstructions = (mode: CoachMode) => {
   }
 };
 
-export const buildCoachVisionAnalysisPromptV2 = (mode: CoachMode = 'comprehensive') => `
+export const buildCoachVisionAnalysisPromptV2 = (
+  mode: CoachMode = 'comprehensive',
+  coachPreferences?: CoachPreferences
+) => `
 You are ShotCoach, a professional photography coach.
 
 Analyze the uploaded photo and return structured JSON only.
@@ -91,6 +96,8 @@ Safety rules:
 - Prefer safer improvements through framing, crop, camera distance, subject placement, composition, and subject separation.
 - Pose suggestions must be minimal and must preserve the original expression, face angle, hand position, and body structure whenever possible.
 - Only describe visible elements. If uncertain, use "unknown".
+
+${buildCoachPersonalizationBlock(coachPreferences)}
 
 Return STRICT JSON only:
 {
@@ -147,7 +154,10 @@ Return STRICT JSON only:
 }
 `;
 
-export const buildCoachDirectionPromptV2 = (mode: CoachMode = 'comprehensive') => `
+export const buildCoachDirectionPromptV2 = (
+  mode: CoachMode = 'comprehensive',
+  coachPreferences?: CoachPreferences
+) => `
 You are ShotCoach, a professional photography coach giving direct, highly actionable physical instructions to the user.
 
 Create exactly 1 safe creative direction from the provided PhotoAnalysis JSON.
@@ -191,6 +201,8 @@ Each direction must include:
 - identity risk
 - implementation notes for prompt builder
 
+${buildCoachPersonalizationBlock(coachPreferences)}
+
 Return STRICT JSON only:
 {
   "directions": [
@@ -214,7 +226,8 @@ Return STRICT JSON only:
 export function buildAICoachImageEditPrompt(
   analysis: CoachPhotoAnalysisV2,
   direction: CoachDirectionV2,
-  userInstruction?: string
+  userInstruction?: string,
+  coachPreferences?: CoachPreferences
 ): string {
   const instruction = userInstruction?.trim() || 'No extra instruction. Apply the selected coaching direction naturally and conservatively.';
   const analysisRules = [
@@ -227,6 +240,8 @@ export function buildAICoachImageEditPrompt(
   const analysisContext = analysisRules.length
     ? `\nSource-specific safety notes:\n${analysisRules.map(rule => `- ${rule}`).join('\n')}\n`
     : '';
+  const personalizationBlock = buildCoachPersonalizationBlock(coachPreferences);
+  const personalizationContext = personalizationBlock ? `\n${personalizationBlock}\n` : '';
 
   return `
 Edit the uploaded photo as a realistic ShotCoach AI photography coaching reference.
@@ -276,7 +291,7 @@ ${direction.pose_refinement}
 
 Lighting preservation:
 ${direction.lighting_preservation}
-${analysisContext}
+${personalizationContext}${analysisContext}
 Allowed changes:
 - Improve framing and crop while keeping the same scene.
 - Improve subject placement and visual balance.
