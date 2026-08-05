@@ -1,5 +1,6 @@
 import {
   getAgeRangeLabel,
+  getEditIntensityLabel,
   getGenderLabel,
   getSceneContextLabel
 } from '../../features/camera/coachPreferenceConfig';
@@ -13,11 +14,13 @@ export function buildCoachPersonalizationBlock(preferences?: CoachPreferences): 
   const sceneLabel = getSceneContextLabel(preferences.sceneContext) ?? 'unspecified';
   const genderLabel = getGenderLabel(preferences.gender) ?? 'unspecified';
   const ageLabel = getAgeRangeLabel(preferences.ageRange) ?? 'unspecified';
+  const intensityLabel = getEditIntensityLabel(preferences.editIntensity) ?? 'unspecified';
 
   const profileParts = [
     preferences.gender ? `Gender presentation: ${genderLabel}` : null,
     preferences.ageRange ? `Age range: ${ageLabel}` : null,
-    preferences.sceneContext ? `Intended shooting context: ${sceneLabel}` : null
+    preferences.sceneContext ? `Intended shooting context: ${sceneLabel}` : null,
+    preferences.editIntensity ? `Comprehensive intensity: ${intensityLabel}` : null
   ].filter(Boolean);
 
   return `
@@ -43,9 +46,17 @@ export function buildCoachDirectModeContext(preferences?: CoachPreferences): str
   }
 
   const sceneLabel = getSceneContextLabel(preferences.sceneContext);
-  if (!sceneLabel) {
+  const intensityLabel = getEditIntensityLabel(preferences.editIntensity);
+  if (!sceneLabel && !intensityLabel) {
     return '';
   }
 
-  return `User context (shooting context: ${sceneLabel.toLowerCase()}). Tailor framing and composition for this type of shot within the same visible scene. `;
+  const parts = [
+    sceneLabel
+      ? `User context (shooting context: ${sceneLabel.toLowerCase()}). Tailor framing and composition for this type of shot within the same visible scene.`
+      : null,
+    intensityLabel ? `Comprehensive intensity preference: ${intensityLabel}.` : null
+  ].filter(Boolean);
+
+  return `${parts.join(' ')} `;
 }

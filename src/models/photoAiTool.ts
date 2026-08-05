@@ -9,7 +9,8 @@ export type PhotoAiToolId =
   | 'replace_background'
   | 'remove_object'
   | 'expand_frame'
-  | 'smooth_skin';
+  | 'smooth_skin'
+  | 'photo_recipe';
 
 export type PhotoAiToolCategory = 'recommended' | 'portrait' | 'lighting' | 'background' | 'advanced';
 

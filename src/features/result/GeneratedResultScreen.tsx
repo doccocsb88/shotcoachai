@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 
@@ -7,7 +7,6 @@ import {
   CameraOutlineIcon,
   ChevronLeftIcon,
   DownloadOutlineIcon,
-  MoreHorizontalIcon,
   ShareOutlineIcon,
   XIcon
 } from '../../components/icons/ResultActionIcons';
@@ -28,6 +27,7 @@ import { UserManager } from '../../services/user/UserManager';
 import { TrackingManager, TrackingFlowType } from '../../services/tracking/TrackingManager';
 import { PHOTO_RECIPES } from '../../services/photo-recipes/photoRecipeLibrary';
 import { RecipeDetailScreen } from '../photo-recipes/RecipeDetailScreen';
+import { applyRecipeWithBackend, generateToolEditedImageWithBackend } from '../../services/api/shotCoachBackendService';
 
 const IMAGE_GENERATION_TIMEOUT_MS = 90_000;
 const GENERATE_EDIT_ERROR_MESSAGE = 'We could not create your AI edit right now. Please check your connection and try again.';
@@ -49,6 +49,15 @@ function getDirectToolId(analysisId: string): PhotoAiToolId | undefined {
   if (!analysisId.startsWith('direct:')) return undefined;
   const toolId = analysisId.split(':')[1] as PhotoAiToolId | undefined;
   return PHOTO_AI_TOOLS.some(tool => tool.id === toolId) ? toolId : undefined;
+}
+
+function getGenerationToolId(result: AnalysisResult): PhotoAiToolId {
+  const flowType = getFlowType(result);
+  if (flowType === 'photoRecipe') {
+    return 'photo_recipe';
+  }
+
+  return getDirectToolId(result.analysisId) ?? 'ai_coach';
 }
 
 interface Props {
@@ -79,6 +88,7 @@ export function GeneratedResultScreen({
   const [busy, setBusy] = useState(false);
   const [recipeSheetVisible, setRecipeSheetVisible] = useState(false);
   const [tipSheetVisible, setTipSheetVisible] = useState(false);
+  const activeGenerationKeyRef = useRef<string | null>(null);
 
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
@@ -89,6 +99,7 @@ export function GeneratedResultScreen({
   const isDirectToolResult = flowType === 'editingTool';
   const isPhotoRecipeResult = flowType === 'photoRecipe';
   const directToolId = getDirectToolId(result.analysisId);
+  const generationToolId = getGenerationToolId(result);
 
   const targetAnalysisId = result.sourceAnalysisId && (result.sourceAnalysisId.startsWith('recipe:') || result.sourceAnalysisId.startsWith('direct:')) ? result.sourceAnalysisId : result.analysisId;
   const recipeId = isPhotoRecipeResult && targetAnalysisId.startsWith('recipe:') ? targetAnalysisId.split(':')[1] : undefined;
@@ -99,10 +110,17 @@ export function GeneratedResultScreen({
     setRetrySuggestionIndex(null);
     const stored = getStoredGenerationUri(result, suggestionIndex);
     if (stored) {
+      activeGenerationKeyRef.current = null;
       setGeneratedImageUri(stored);
       setIsGenerating(false);
       return;
     }
+
+    const generationKey = `${result.analysisId}:${suggestionIndex}`;
+    if (activeGenerationKeyRef.current === generationKey) {
+      return;
+    }
+    activeGenerationKeyRef.current = generationKey;
     void generateSuggestion(suggestionIndex);
   }, [result.analysisId, suggestionIndex]);
 
@@ -114,6 +132,10 @@ export function GeneratedResultScreen({
     setRetrySuggestionIndex(null);
     if (stored) {
       setGeneratedImageUri(stored);
+      return;
+    }
+
+    if (isGenerating) {
       return;
     }
 
@@ -140,16 +162,40 @@ export function GeneratedResultScreen({
           'The AI edit is taking too long. Please check your connection and try again.'
         );
       } else {
-        uri = await withTimeout(
-          generateEditedImage(
-            selected.image_prompt,
-            result.originalImageUri,
-            result.originalImageMimeType,
-            directToolId
-          ),
-          IMAGE_GENERATION_TIMEOUT_MS,
-          'The AI edit is taking too long. Please check your connection and try again.'
-        );
+        if (flowType === 'photoRecipe' && recipe) {
+          uri = await withTimeout(
+            applyRecipeWithBackend({
+              recipe,
+              originalImageUri: result.originalImageUri,
+              originalImageMimeType: result.originalImageMimeType
+            }).then(item => item.generatedImageUri),
+            IMAGE_GENERATION_TIMEOUT_MS,
+            'The AI edit is taking too long. Please check your connection and try again.'
+          );
+        } else if (isDirectToolResult && directToolId && directToolId !== 'photo_recipe') {
+          const instruction = selected.changes.find(change => change.startsWith('User instruction: '))?.replace('User instruction: ', '');
+          uri = await withTimeout(
+            generateToolEditedImageWithBackend({
+              toolId: directToolId,
+              instruction,
+              originalImageUri: result.originalImageUri,
+              originalImageMimeType: result.originalImageMimeType
+            }).then(item => item.generatedImageUri),
+            IMAGE_GENERATION_TIMEOUT_MS,
+            'The AI edit is taking too long. Please check your connection and try again.'
+          );
+        } else {
+          uri = await withTimeout(
+            generateEditedImage(
+              selected.image_prompt,
+              result.originalImageUri,
+              result.originalImageMimeType,
+              generationToolId
+            ),
+            IMAGE_GENERATION_TIMEOUT_MS,
+            'The AI edit is taking too long. Please check your connection and try again.'
+          );
+        }
       }
 
       setGeneratedImageUri(uri);
@@ -172,6 +218,15 @@ export function GeneratedResultScreen({
         analysis_id: result.analysisId
       });
     } catch (error) {
+      console.error('[ShotCoach][Result][generation-error]', {
+        analysisId: result.analysisId,
+        flowType,
+        suggestionIndex,
+        toolId: directToolId ?? generationToolId,
+        recipeId,
+        message: error instanceof Error ? error.message : String(error),
+        error
+      });
       setGeneratedImageUri(null);
       setGenerationError(GENERATE_EDIT_ERROR_MESSAGE);
       setRetrySuggestionIndex(suggestionIndex);
@@ -184,6 +239,7 @@ export function GeneratedResultScreen({
         }
       );
     } finally {
+      activeGenerationKeyRef.current = null;
       setIsGenerating(false);
     }
   };
@@ -316,23 +372,7 @@ export function GeneratedResultScreen({
             <Text style={styles.resultHeaderTitle} numberOfLines={1}>
               ShotCoach AI
             </Text>
-            {isDirectToolResult ? (
-              <View style={styles.headerIconPlaceholder} />
-            ) : (
-              <Pressable
-                accessibilityLabel={isPhotoRecipeResult ? 'Show recipe detail' : 'Show tip detail'}
-                accessibilityRole="button"
-                disabled={headerActionsDisabled || (isPhotoRecipeResult && !onOpenRecipeDetail)}
-                onPress={openHeaderDetail}
-                style={({ pressed }) => [
-                  styles.headerIconCircle,
-                  (headerActionsDisabled || (isPhotoRecipeResult && !onOpenRecipeDetail)) && styles.headerIconDisabled,
-                  pressed && !headerActionsDisabled && styles.pressed
-                ]}
-              >
-                <MoreHorizontalIcon size={20} color={colors.text} />
-              </Pressable>
-            )}
+            <View style={styles.headerIconPlaceholder} />
           </View>
 
           <View style={styles.comparisonSection}>
@@ -344,7 +384,25 @@ export function GeneratedResultScreen({
                     afterUri={generatedImageUri}
                     isLoadingAfter={false}
                   />
-                ) : generationError ? (
+                ) : (
+                  <View style={styles.comparisonLoadingHost}>
+                    <Image
+                      source={{ uri: result.originalImageUri }}
+                      style={styles.comparisonLoadingImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.comparisonLoadingOverlay}>
+                      <BlurView intensity={72} tint="light" style={styles.comparisonLoadingCard}>
+                        <View style={styles.comparisonLoadingCardContent}>
+                          <ActivityIndicator size="large" color={colors.primary} />
+                          <Text style={styles.comparisonLoadingTitle}>Making your photo look better…</Text>
+                          <Text style={styles.comparisonLoadingSubtitle}>This usually takes a moment</Text>
+                        </View>
+                      </BlurView>
+                    </View>
+                  </View>
+                )}
+                {generationError ? (
                   <View style={styles.generationErrorOverlay}>
                     <View style={styles.generationErrorCard}>
                       <Text style={styles.generationErrorTitle}>AI edit failed</Text>
@@ -383,24 +441,7 @@ export function GeneratedResultScreen({
                       </View>
                     </View>
                   </View>
-                ) : (
-                  <View style={styles.comparisonLoadingHost}>
-                    <Image
-                      source={{ uri: result.originalImageUri }}
-                      style={styles.comparisonLoadingImage}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.comparisonLoadingOverlay}>
-                      <BlurView intensity={72} tint="light" style={styles.comparisonLoadingCard}>
-                        <View style={styles.comparisonLoadingCardContent}>
-                          <ActivityIndicator size="large" color={colors.primary} />
-                          <Text style={styles.comparisonLoadingTitle}>Making your photo look better…</Text>
-                          <Text style={styles.comparisonLoadingSubtitle}>This usually takes a moment</Text>
-                        </View>
-                      </BlurView>
-                    </View>
-                  </View>
-                )}
+                ) : null}
               </View>
             </View>
           </View>

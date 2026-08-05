@@ -15,7 +15,12 @@ import { X } from 'phosphor-react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
 import { CoachPreferences } from '../../models/coachPreferences';
-import { AGE_RANGE_OPTIONS, GENDER_OPTIONS, SCENE_CONTEXT_OPTIONS } from './coachPreferenceConfig';
+import {
+  AGE_RANGE_OPTIONS,
+  EDIT_INTENSITY_OPTIONS,
+  GENDER_OPTIONS,
+  SCENE_CONTEXT_OPTIONS
+} from './coachPreferenceConfig';
 
 type CoachSettingsSheetProps = {
   visible: boolean;
@@ -196,6 +201,14 @@ export function CoachSettingsSheet({ visible, preferences, onClose, onApply }: C
                   options={AGE_RANGE_OPTIONS}
                   selectedId={draft.ageRange}
                   onSelect={ageRange => setDraft(current => ({ ...current, ageRange }))}
+                />
+
+                <OptionPillGroup
+                  label="Edit Intensity"
+                  description="Controls how strongly Coach adjusts each mode."
+                  options={EDIT_INTENSITY_OPTIONS}
+                  selectedId={draft.editIntensity}
+                  onSelect={editIntensity => setDraft(current => ({ ...current, editIntensity }))}
                 />
               </ScrollView>
 

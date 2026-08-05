@@ -9,6 +9,7 @@ import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 import { getOnboardingComplete, setOnboardingComplete } from './src/services/storage/onboardingStorage';
 import { TrackingManager } from './src/services/tracking/TrackingManager';
 import { initializeGoogleMobileAds } from './src/services/ads/mobileAds';
+import { FirebaseSession } from './src/services/firebase/firebaseSession';
 
 type AppGate = 'loading' | 'onboarding' | 'main';
 
@@ -25,7 +26,12 @@ export default function App() {
       });
       if (cancelled) return;
       try {
-        const done = await getOnboardingComplete();
+        const [done] = await Promise.all([
+          getOnboardingComplete(),
+          FirebaseSession.ensureReady().catch(error => {
+            console.warn('[FirebaseSession] bootstrap failed', error);
+          })
+        ]);
         if (!cancelled) {
           setGate(done ? 'main' : 'onboarding');
           if (done) {

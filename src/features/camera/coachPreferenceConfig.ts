@@ -1,4 +1,9 @@
-import { CoachAgeRange, CoachGender, CoachSceneContext } from '../../models/coachPreferences';
+import {
+  CoachAgeRange,
+  CoachEditIntensity,
+  CoachGender,
+  CoachSceneContext
+} from '../../models/coachPreferences';
 
 export type CoachPreferenceOption<T extends string> = {
   id: T;
@@ -31,6 +36,12 @@ export const AGE_RANGE_OPTIONS: CoachPreferenceOption<CoachAgeRange>[] = [
   { id: '45_plus', label: '45+' }
 ];
 
+export const EDIT_INTENSITY_OPTIONS: CoachPreferenceOption<CoachEditIntensity>[] = [
+  { id: 'safe', label: 'Safe' },
+  { id: 'balanced', label: 'Balanced' },
+  { id: 'aggressive', label: 'Aggressive' }
+];
+
 const optionLabel = <T extends string>(
   options: CoachPreferenceOption<T>[],
   value?: T
@@ -46,4 +57,8 @@ export function getGenderLabel(value?: CoachGender): string | undefined {
 
 export function getAgeRangeLabel(value?: CoachAgeRange): string | undefined {
   return optionLabel(AGE_RANGE_OPTIONS, value);
+}
+
+export function getEditIntensityLabel(value?: CoachEditIntensity): string | undefined {
+  return optionLabel(EDIT_INTENSITY_OPTIONS, value);
 }

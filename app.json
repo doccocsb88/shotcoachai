@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "co.q7labs.shotcoachai",
-      "appleTeamId": "7C8RLFRN5X",
+      "appleTeamId": "F59XSVKP6X",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
@@ -40,6 +40,7 @@
     },
     "plugins": [
       "@react-native-firebase/app",
+      "@react-native-firebase/app-check",
       [
         "expo-image-picker",
         {
@@ -71,6 +72,9 @@
       [
         "expo-build-properties",
         {
+          "ios": {
+            "deploymentTarget": "16.4"
+          },
           "android": {
             "compileSdkVersion": 36,
             "targetSdkVersion": 36,

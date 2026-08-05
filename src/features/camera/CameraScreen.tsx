@@ -86,6 +86,7 @@ export function CameraScreen({
       }
     }
   };
+  const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
   const setCoachMode = useAnalysisStore(state => state.setCoachMode);
@@ -108,7 +109,7 @@ export function CameraScreen({
   }, []);
 
   useEffect(() => {
-    if (intent?.type === 'coach' && intent.mode !== 'comprehensive' && currentResult && !realtimeGeneratedImageUri) {
+    if (intent?.type === 'coach' && currentResult && !realtimeGeneratedImageUri) {
       // Keep it active indefinitely until the next capture, no timeout needed.
     }
   }, [currentResult, intent, realtimeGeneratedImageUri]);
@@ -266,10 +267,10 @@ export function CameraScreen({
     }
     clearRealtimeState();
     
-    if (intent?.type === 'coach' && intent.mode !== 'comprehensive') {
+    if (intent?.type === 'coach') {
       useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
       try {
-        if (USE_DIRECT_COACH_FLOW) {
+        if (USE_DIRECT_COACH_FLOW && intent.mode !== 'comprehensive') {
           setIsGeneratingImage(true);
           const generatedUri = await DirectCoachService.generateCoachImage(
             picked.uri,
@@ -278,6 +279,25 @@ export function CameraScreen({
             coachPreferences
           );
           setRealtimeGeneratedImageUri(generatedUri);
+          setCurrentResult({
+            analysisId: `direct_coach:${intent.mode}`,
+            flowType: 'aiCoach',
+            overallAssessment: `Visual guidance generated for ${intent.mode} mode.`,
+            suggestions: [{
+              title: `Direct Image Coach (${intent.mode})`,
+              concept: 'AI generated visual guidance overlay',
+              composition: '',
+              camera_angle: '',
+              changes: ['Visual overlay applied'],
+              image_prompt: ''
+            }],
+            createdAt: new Date().toISOString(),
+            originalImageUri: picked.uri,
+            originalImageMimeType: picked.mimeType,
+            suggestionGenerations: [{ suggestionIndex: 0, generatedImageUri: generatedUri }],
+            generatedImageUri: generatedUri,
+            selectedSuggestionIndex: 0
+          });
           const historyResult = {
             id: Date.now().toString(),
             original_image_url: picked.uri,

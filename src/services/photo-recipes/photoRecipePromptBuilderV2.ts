@@ -6,7 +6,9 @@ export function buildPhotoRecipePromptV2(recipe: PhotoRecipe): string {
   
   const recipeName = recipe.name || recipe.title || 'Unknown Recipe';
   
-  return `Edit the uploaded photo using the selected Photo Recipe: ${recipeName}.
+  return `Selected flow: Photo Recipes.
+
+Edit the uploaded photo using the selected Photo Recipe: ${recipeName}.
 
 The uploaded image is the source of truth.
 

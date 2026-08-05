@@ -19,7 +19,7 @@ import { PaywallScreen, PaywallType } from '../../features/paywall/PaywallScreen
 import { LegalDocument, SettingView } from '../../features/settings/SettingView';
 import { AppWebView } from '../../components/common/AppWebView';
 import { colors } from '../../constants/theme';
-import { AnalysisResult, getFlowType, PickedPhoto } from '../../models/analysis';
+import { AnalysisResult, getFlowType, getStoredGenerationUri, PickedPhoto } from '../../models/analysis';
 import { getPhotoAiTool, PhotoAiTool } from '../../models/photoAiTool';
 import { PhotoRecipe } from '../../models/photoRecipe';
 import { PoseSeedItem } from '../../features/pose-collection/types';
@@ -246,42 +246,53 @@ export function AppNavigator() {
 
   const handleSelectRecipeFromList = useCallback((recipe: PhotoRecipe) => {
     void TrackingManager.flow.recipeSelected(recipe.id, 'recipe_list');
-    const latestPhoto = useAnalysisStore.getState().currentPhoto;
-    if (!latestPhoto) {
-      openCamera({ type: 'recipe', recipeId: recipe.id }, 'recipeList');
-    } else {
-      generateRecipe(recipe);
-    }
-  }, [openCamera, generateRecipe]);
+    clearCurrent();
+    openCamera({ type: 'recipe', recipeId: recipe.id }, 'recipeList');
+  }, [clearCurrent, openCamera]);
   
   const handlePhotoSelected = useCallback(() => {
     if (cameraIntent.type === 'coach') {
       useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
-      if (cameraIntent.mode !== 'comprehensive') {
-        const photo = useAnalysisStore.getState().currentPhoto;
-        if (photo) {
-          const dummyResult: AnalysisResult = {
-            analysisId: `direct_coach:${cameraIntent.mode}`,
-            flowType: 'aiCoach',
-            overallAssessment: `Visual guidance generated for ${cameraIntent.mode} mode.`,
-            suggestions: [{
-              title: `Direct Image Coach (${cameraIntent.mode})`,
-              concept: "AI generated visual guidance overlay",
-              changes: ["Visual overlay applied"],
-              image_prompt: ""
-            }],
-            createdAt: new Date().toISOString(),
-            originalImageUri: photo.uri,
-            originalImageMimeType: photo.mimeType
-          };
-          setCurrentResult(dummyResult);
-          setCanReturnToAnalysis(false);
-          setScreen('generatedResult');
-        } else {
-          openHome();
-        }
-      } else {
+      if (cameraIntent.mode === 'comprehensive') {
         openAnalyzing();
+        return;
+      }
+      const photo = useAnalysisStore.getState().currentPhoto;
+      if (photo) {
+        const existingResult = useAnalysisStore.getState().currentResult;
+        const directCoachAnalysisId = `direct_coach:${cameraIntent.mode}`;
+        const existingGeneratedUri =
+          existingResult?.analysisId === directCoachAnalysisId &&
+          existingResult.originalImageUri === photo.uri
+            ? getStoredGenerationUri(existingResult, 0)
+            : undefined;
+
+        const dummyResult: AnalysisResult = {
+          analysisId: directCoachAnalysisId,
+          flowType: 'aiCoach',
+          overallAssessment: `Visual guidance generated for ${cameraIntent.mode} mode.`,
+          suggestions: [{
+            title: `Direct Image Coach (${cameraIntent.mode})`,
+            concept: 'AI generated visual guidance overlay',
+            changes: ['Visual overlay applied'],
+            image_prompt: ''
+          }],
+          createdAt: new Date().toISOString(),
+          originalImageUri: photo.uri,
+          originalImageMimeType: photo.mimeType,
+          ...(existingGeneratedUri
+            ? {
+                suggestionGenerations: [{ suggestionIndex: 0, generatedImageUri: existingGeneratedUri }],
+                generatedImageUri: existingGeneratedUri,
+                selectedSuggestionIndex: 0
+              }
+            : {})
+        };
+        setCurrentResult(dummyResult);
+        setCanReturnToAnalysis(false);
+        setScreen('generatedResult');
+      } else {
+        openHome();
       }
     } else if (cameraIntent.type === 'tool') {
       useAnalysisStore.getState().setSelectedPhotoAiTool(cameraIntent.toolId);
@@ -294,7 +305,7 @@ export function AppNavigator() {
         if (recipe) startRecipeGeneration(recipe);
       }
     }
-  }, [cameraIntent, openAnalyzing, openPreview, openSelectedPreviewFlow, startRecipeGeneration, openRecipeList]);
+  }, [cameraIntent, openAnalyzing, openHome, openPreview, openSelectedPreviewFlow, startRecipeGeneration, openRecipeList]);
 
   const handleGeneratedResultBack = useCallback(() => {
     if (resultOpenedFromHistory) return openHistory();
@@ -443,7 +454,9 @@ export function AppNavigator() {
     );
   }
 
-  const contentShell = screen === 'home' || screen === 'camera' || screen === 'generatedResult' ? content : <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
+  const contentShell = screen === 'home' || screen === 'camera'
+    ? content
+    : <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
 
   return (
     <>

@@ -9,6 +9,7 @@ import {
   Suggestion
 } from '../../models/analysis';
 import { CoachPreferences } from '../../models/coachPreferences';
+import { logCoachPrompt } from '../coach/coachPromptDebug';
 import { buildAICoachImageEditPrompt } from './promptBuilder';
 
 export function extractJsonTextFromResponse(raw: unknown): string {
@@ -303,13 +304,21 @@ function coachDirectionV2ToSuggestion(
     direction.lighting_preservation
   ].filter(Boolean);
 
+  const imagePrompt = buildAICoachImageEditPrompt(analysis, direction, userInstruction, coachPreferences);
+  logCoachPrompt({
+    stage: 'v2-image-edit',
+    coachPreferences,
+    userText: userInstruction,
+    prompt: imagePrompt
+  });
+
   return {
     title: direction.title,
     concept: direction.summary,
     composition: direction.composition_change,
     camera_angle: [direction.camera_distance_change, direction.subject_placement_change].filter(Boolean).join(' '),
     changes,
-    image_prompt: buildAICoachImageEditPrompt(analysis, direction, userInstruction, coachPreferences)
+    image_prompt: imagePrompt
   };
 }
 

@@ -5,6 +5,8 @@ export function buildPhotoRecipePrompt(recipe: PhotoRecipe): string {
   const visualIntent = translateRecipeParameters(recipe.recipeParameters);
 
   return `
+Selected flow: Photo Recipes.
+
 Edit the uploaded photo using the selected Photo Recipe: ${recipe.title}.
 
 The uploaded image is the source of truth.
