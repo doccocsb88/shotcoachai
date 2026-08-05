@@ -22,7 +22,7 @@ export function useAnalyzePhoto() {
       
       let parsed: AnalysisResult;
       
-      if (selectedPhotoAiTool === 'ai_coach' && coachMode !== 'comprehensive') {
+      if (selectedPhotoAiTool === 'ai_coach') {
         const generatedUri = await DirectCoachService.generateCoachImage(
           imageUri,
           mimeType,

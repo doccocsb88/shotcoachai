@@ -270,7 +270,7 @@ export function CameraScreen({
     if (intent?.type === 'coach') {
       useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
       try {
-        if (USE_DIRECT_COACH_FLOW && intent.mode !== 'comprehensive') {
+        if (USE_DIRECT_COACH_FLOW) {
           setIsGeneratingImage(true);
           const generatedUri = await DirectCoachService.generateCoachImage(
             picked.uri,

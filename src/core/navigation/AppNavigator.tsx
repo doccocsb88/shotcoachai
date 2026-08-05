@@ -253,10 +253,6 @@ export function AppNavigator() {
   const handlePhotoSelected = useCallback(() => {
     if (cameraIntent.type === 'coach') {
       useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
-      if (cameraIntent.mode === 'comprehensive') {
-        openAnalyzing();
-        return;
-      }
       const photo = useAnalysisStore.getState().currentPhoto;
       if (photo) {
         const existingResult = useAnalysisStore.getState().currentResult;
@@ -305,7 +301,7 @@ export function AppNavigator() {
         if (recipe) startRecipeGeneration(recipe);
       }
     }
-  }, [cameraIntent, openAnalyzing, openHome, openPreview, openSelectedPreviewFlow, startRecipeGeneration, openRecipeList]);
+  }, [cameraIntent, openHome, openPreview, openSelectedPreviewFlow, startRecipeGeneration, openRecipeList]);
 
   const handleGeneratedResultBack = useCallback(() => {
     if (resultOpenedFromHistory) return openHistory();
