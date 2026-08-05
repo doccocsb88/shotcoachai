@@ -36,6 +36,14 @@ const dockBottomPadding = Platform.OS === 'ios' ? 32 : spacing.sm;
 const cameraFallbackBackground = '#05070B';
 const focusTopInset = navBarTopPadding + 88;
 const focusBottomInset = dockBottomPadding + 132;
+const supportsNativeLensSelection = Platform.OS === 'android';
+
+function logCameraDebug(event: string, payload?: Record<string, unknown>) {
+  console.log('[ShotCoach][Camera]', {
+    event,
+    ...payload
+  });
+}
 
 export function CameraScreen({
   onBack,
@@ -51,38 +59,68 @@ export function CameraScreen({
   const cameraMode = useAnalysisStore(state => state.cameraMode);
   const setPoseAiSelectedTemplateId = useAnalysisStore(state => state.setPoseAiSelectedTemplateId);
   const [cameraPermission, requestCameraPermission, getCameraPermission] = useCameraPermissions();
+  const [isAppActive, setIsAppActive] = useState(AppState.currentState === 'active');
+  const [cameraSessionKey, setCameraSessionKey] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
-  const [lens, setLens] = useState<string | undefined>('builtInWideAngleCamera');
+  const [lens, setLens] = useState<string | undefined>(undefined);
   const [zoom, setZoom] = useState(0);
   const [activeZoomLevel, setActiveZoomLevel] = useState<'0.5' | '1' | '2'>('1');
   const [flashMode, setFlashMode] = useState<'off' | 'on'>('off');
   const [availableLenses, setAvailableLenses] = useState<string[]>([]);
   
+  const findLensByKeywords = useCallback((keywords: string[]) => {
+    return availableLenses.find(item => {
+      const normalized = item.toLowerCase();
+      return keywords.some(keyword => normalized.includes(keyword));
+    });
+  }, [availableLenses]);
+
+  const applyZoomPreset = useCallback((level: '0.5' | '1' | '2') => {
+    if (level === '0.5') {
+      setZoom(0);
+      return;
+    }
+
+    if (level === '1') {
+      setZoom(0.02);
+      return;
+    }
+
+    setZoom(0.08);
+  }, []);
+
   const handleZoomSelect = (level: '0.5' | '1' | '2') => {
     setActiveZoomLevel(level);
-    const lensesStr = availableLenses.join('').toLowerCase();
-    
+
+    if (!supportsNativeLensSelection) {
+      setLens(undefined);
+      applyZoomPreset(level);
+      return;
+    }
+
     if (level === '0.5') {
-      if (lensesStr.includes('ultrawide') || lensesStr.includes('triple') || lensesStr.includes('dual')) {
-        setLens('builtInUltraWideCamera');
+      const ultraWideLens = findLensByKeywords(['ultra wide', 'ultrawide']);
+      if (ultraWideLens) {
+        setLens(ultraWideLens);
         setZoom(0);
       } else {
-        // Fallback: Can't zoom out digitally, so just use 1x unzoomed
-        setLens('builtInWideAngleCamera');
+        setLens(undefined);
         setZoom(0);
       }
     } else if (level === '1') {
-      setLens('builtInWideAngleCamera');
+      const wideLens = findLensByKeywords(['back camera', 'wide']);
+      setLens(wideLens);
       setZoom(0);
     } else if (level === '2') {
-      if (lensesStr.includes('telephoto') || lensesStr.includes('triple')) {
-        setLens('builtInTelephotoCamera');
+      const telephotoLens = findLensByKeywords(['telephoto']);
+      if (telephotoLens) {
+        setLens(telephotoLens);
         setZoom(0);
       } else {
-        // Fallback to digital zoom on wide angle
-        setLens('builtInWideAngleCamera');
-        setZoom(0.05); // Approximate 2x digital zoom
+        const wideLens = findLensByKeywords(['back camera', 'wide']);
+        setLens(wideLens);
+        setZoom(0.05);
       }
     }
   };
@@ -101,6 +139,19 @@ export function CameraScreen({
   const [realtimeGeneratedImageUri, setRealtimeGeneratedImageUri] = useState<string | null>(null);
   const referenceWidth = Math.round((width * 2) / 5);
   const initialScrollOffset = useRef(intent?.type === 'coach' ? Math.max(0, COACH_MODE_IDS.indexOf(intent.mode)) * 96 : 0).current;
+  const mountErrorRetryCountRef = useRef(0);
+
+  logCameraDebug('render', {
+    intentType: intent?.type,
+    intentMode: intent?.type === 'coach' ? intent.mode : undefined,
+    recipeId: intent?.type === 'recipe' ? intent.recipeId : undefined,
+    granted: cameraPermission?.granted,
+    status: cameraPermission?.status,
+    isAppActive,
+    cameraSessionKey,
+    lens,
+    availableLensesCount: availableLenses.length
+  });
 
   useEffect(() => {
     const unsubscribe = UserManager.subscribe(setAccessState);
@@ -120,19 +171,88 @@ export function CameraScreen({
 
   useEffect(() => {
     if (cameraPermission && !cameraPermission.granted && cameraPermission.canAskAgain) {
+      logCameraDebug('request-permission-auto', {
+        granted: cameraPermission.granted,
+        canAskAgain: cameraPermission.canAskAgain,
+        status: cameraPermission.status
+      });
       void requestCameraPermission();
     }
   }, [cameraPermission, requestCameraPermission]);
 
   useEffect(() => {
+    logCameraDebug('permission-state', {
+      granted: cameraPermission?.granted,
+      canAskAgain: cameraPermission?.canAskAgain,
+      status: cameraPermission?.status,
+      expires: cameraPermission?.expires
+    });
+  }, [cameraPermission]);
+
+  useEffect(() => {
+    logCameraDebug('screen-mounted', {
+      appState: AppState.currentState,
+      intentType: intent?.type,
+      intentMode: intent?.type === 'coach' ? intent.mode : undefined,
+      recipeId: intent?.type === 'recipe' ? intent.recipeId : undefined,
+      toolId: intent?.type === 'tool' ? intent.toolId : undefined
+    });
+    return () => {
+      logCameraDebug('screen-unmounted', {
+        intentType: intent?.type,
+        intentMode: intent?.type === 'coach' ? intent.mode : undefined
+      });
+    };
+  }, [intent]);
+
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', state => {
+      logCameraDebug('app-state-change', {
+        nextState: state
+      });
+      setIsAppActive(state === 'active');
       if (state === 'active') {
         void getCameraPermission();
+        logCameraDebug('session-reset-app-active');
+        setCameraSessionKey(current => current + 1);
       }
     });
 
     return () => subscription.remove();
   }, [getCameraPermission]);
+
+  useEffect(() => {
+    logCameraDebug('session-key-updated', {
+      cameraSessionKey,
+      isAppActive,
+      permissionGranted: cameraPermission?.granted
+    });
+  }, [cameraPermission?.granted, cameraSessionKey, isAppActive]);
+
+  useEffect(() => {
+    if (!supportsNativeLensSelection) {
+      return;
+    }
+
+    if (availableLenses.length === 0) {
+      return;
+    }
+
+    setLens(currentLens => {
+      if (currentLens && availableLenses.includes(currentLens)) {
+        return currentLens;
+      }
+
+      const defaultWideLens = findLensByKeywords(['back camera', 'wide']);
+      const nextLens = defaultWideLens ?? undefined;
+      logCameraDebug('default-lens-selected', {
+        currentLens,
+        nextLens,
+        availableLenses
+      });
+      return nextLens;
+    });
+  }, [availableLenses, findLensByKeywords]);
 
   const openCameraSettings = async () => {
     try {
@@ -347,6 +467,11 @@ export function CameraScreen({
     }
 
     if (!cameraPermission.granted) {
+      logCameraDebug('render-fallback-no-permission', {
+        granted: cameraPermission.granted,
+        canAskAgain: cameraPermission.canAskAgain,
+        status: cameraPermission.status
+      });
       return (
         <View style={styles.cameraFallback}>
           <View style={styles.permissionCard}>
@@ -370,15 +495,74 @@ export function CameraScreen({
       );
     }
 
+    if (!isAppActive) {
+      logCameraDebug('render-fallback-inactive', {
+        appState: AppState.currentState,
+        cameraSessionKey
+      });
+      return (
+        <View style={styles.cameraFallback}>
+          <Text style={styles.cameraFallbackText}>Resuming camera…</Text>
+        </View>
+      );
+    }
+
     return (
-      <CameraView 
-        ref={cameraRef} 
-        facing={cameraFacing} 
+      <CameraView
+        key={cameraSessionKey}
+        ref={cameraRef}
+        active={isAppActive}
+        facing={cameraFacing}
         flash={flashMode}
-        style={styles.cameraView} 
-        selectedLens={lens}
+        style={styles.cameraView}
+        selectedLens={
+          supportsNativeLensSelection && lens && availableLenses.includes(lens)
+            ? lens
+            : undefined
+        }
         zoom={zoom}
+        barcodeScannerSettings={undefined}
+        enableTorch={false}
+        mode="picture"
+        onCameraReady={() => {
+          mountErrorRetryCountRef.current = 0;
+          logCameraDebug('camera-ready', {
+            cameraSessionKey,
+            facing: cameraFacing,
+            lens,
+            selectedLensProp: lens && availableLenses.includes(lens) ? lens : undefined,
+            zoom,
+            flashMode
+          });
+        }}
+        onMountError={event => {
+          console.error('[ShotCoach][Camera][mount-error]', {
+            message: event?.message ?? 'Unknown camera mount error',
+            cameraSessionKey,
+            isAppActive,
+            permissionGranted: cameraPermission?.granted,
+            appState: AppState.currentState,
+            facing: cameraFacing,
+            lens,
+            zoom,
+            flashMode
+          });
+          if (mountErrorRetryCountRef.current >= 1) {
+            return;
+          }
+
+          mountErrorRetryCountRef.current += 1;
+          setCameraSessionKey(current => current + 1);
+        }}
         onAvailableLensesChanged={(event: any) => {
+          if (!supportsNativeLensSelection) {
+            return;
+          }
+
+          logCameraDebug('available-lenses-changed', {
+            eventLenses: event?.lenses,
+            nativeEventLenses: event?.nativeEvent?.lenses
+          });
           if (event?.lenses && event.lenses.length > 0) {
             setAvailableLenses(event.lenses);
           } else if (event?.nativeEvent?.lenses && event.nativeEvent.lenses.length > 0) {

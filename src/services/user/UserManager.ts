@@ -1,6 +1,7 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 
 import { PurchaseService } from '../purchase/PurchaseService';
+import { isPremiumRecipe } from '../photo-recipes/photoRecipeLibrary';
 
 const FREE_CAPTURE_LIMIT = 3;
 const FREE_SUGGESTION_INDEX = 0;
@@ -119,11 +120,19 @@ class ShotCoachUserManager {
   }
 
   canUseRecipe(recipeId: string): boolean {
-    return this.state.isPremium || !this.state.usedRecipes.includes(recipeId);
+    if (this.state.isPremium) {
+      return true;
+    }
+
+    if (isPremiumRecipe(recipeId)) {
+      return false;
+    }
+
+    return !this.state.usedRecipes.includes(recipeId);
   }
 
   async trackRecipeUsed(recipeId: string): Promise<UserAccessState> {
-    if (this.state.isPremium || this.state.usedRecipes.includes(recipeId)) return this.state;
+    if (isPremiumRecipe(recipeId) || this.state.isPremium || this.state.usedRecipes.includes(recipeId)) return this.state;
     const nextRecipes = [...this.state.usedRecipes, recipeId];
     await EncryptedStorage.setItem(USED_RECIPES_KEY, JSON.stringify(nextRecipes));
     this.setState({ usedRecipes: nextRecipes });

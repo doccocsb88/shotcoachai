@@ -74,6 +74,18 @@ export function AppNavigator() {
     void TrackingManager.screen.view(screen);
   }, [screen]);
 
+  useEffect(() => {
+    console.log('[ShotCoach][Navigator][screen-changed]', {
+      screen,
+      cameraSource,
+      recipeListSource,
+      intentType: cameraIntent.type,
+      intentMode: cameraIntent.type === 'coach' ? cameraIntent.mode : undefined,
+      recipeId: cameraIntent.type === 'recipe' ? cameraIntent.recipeId : undefined,
+      toolId: cameraIntent.type === 'tool' ? cameraIntent.toolId : undefined
+    });
+  }, [cameraIntent, cameraSource, recipeListSource, screen]);
+
   const goHome = useCallback(() => {
     void TrackingManager.flow.end('abandoned');
     clearCurrent();
@@ -146,6 +158,13 @@ export function AppNavigator() {
     setScreen('home');
   }, []);
   const openCamera = useCallback((intent: CameraIntent = { type: 'coach', mode: 'comprehensive' }, source: 'home' | 'recipeList' = 'home') => {
+    console.log('[ShotCoach][Navigator][open-camera]', {
+      source,
+      intentType: intent.type,
+      intentMode: intent.type === 'coach' ? intent.mode : undefined,
+      recipeId: intent.type === 'recipe' ? intent.recipeId : undefined,
+      toolId: intent.type === 'tool' ? intent.toolId : undefined
+    });
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
@@ -338,6 +357,8 @@ export function AppNavigator() {
   let content;
 
   const isRecipeFlow = screen === 'recipeList' || screen === 'recipeDetail';
+  const isRecipeCameraFlow = screen === 'camera' && cameraSource === 'recipeList';
+  const isRecipeStackFlow = isRecipeFlow || isRecipeCameraFlow;
   const isGenericResultFlow = screen === 'generatedResult';
 
   let backgroundContent;
@@ -450,9 +471,14 @@ export function AppNavigator() {
     );
   }
 
-  const contentShell = screen === 'home' || screen === 'camera'
-    ? content
-    : <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
+  let contentShell;
+  if (screen === 'home' || (screen === 'camera' && cameraSource !== 'recipeList')) {
+    contentShell = content;
+  } else if (isRecipeCameraFlow) {
+    contentShell = <SafeAreaView style={styles.safeContent}>{backgroundContent}</SafeAreaView>;
+  } else {
+    contentShell = <SafeAreaView style={styles.safeContent}>{isRecipeFlow || isGenericResultFlow ? backgroundContent : content}</SafeAreaView>;
+  }
 
   return (
     <>
@@ -471,12 +497,14 @@ export function AppNavigator() {
         visible={legalDocument !== null}
         onClose={() => setLegalDocument(null)}
       />
-      <Modal 
+      <Modal
         animationType="slide" 
-        visible={isRecipeFlow} 
+        visible={isRecipeStackFlow}
         statusBarTranslucent
         onRequestClose={() => {
-          if (screen === 'recipeDetail') {
+          if (screen === 'camera' && cameraSource === 'recipeList') {
+            openRecipeList(recipeListSource);
+          } else if (screen === 'recipeDetail') {
             openRecipeList(recipeListSource);
           } else {
             recipeListSource === 'home' ? openHome() : openPreview();
@@ -484,8 +512,8 @@ export function AppNavigator() {
         }}
       >
         <SafeAreaView style={styles.safeContent}>
-          {screen === 'recipeList' && <RecipeListScreen onBack={openHome} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} />}
-          {(screen === 'recipeDetail') && selectedRecipe && (
+          {(screen === 'recipeList' || isRecipeCameraFlow) && <RecipeListScreen onBack={openHome} onSelectRecipe={handleSelectRecipeFromList} onOpenPaywall={() => openPaywall('Store')} />}
+          {screen === 'recipeDetail' && selectedRecipe && (
             <RecipeDetailScreen
               recipe={selectedRecipe}
               onBack={() => openRecipeList(recipeListSource)}
@@ -495,14 +523,33 @@ export function AppNavigator() {
           )}
         </SafeAreaView>
 
+        <Modal
+          animationType="slide"
+          visible={isRecipeCameraFlow}
+          statusBarTranslucent
+          onRequestClose={() => openRecipeList(recipeListSource)}
+        >
+          <View style={styles.fullscreenModalContent}>
+            {isRecipeCameraFlow && (
+              <CameraScreen
+                onBack={() => openRecipeList(recipeListSource)}
+                onPhotoSelected={handlePhotoSelected}
+                onOpenPaywall={openPaywall}
+                referenceImageUri={retakeReferenceUri}
+                intent={cameraIntent}
+              />
+            )}
+          </View>
+        </Modal>
+
         <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
           <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
         </Modal>
       </Modal>
 
-      <Modal 
+      <Modal
         animationType="slide" 
-        visible={isGenericResultFlow} 
+        visible={isGenericResultFlow}
         statusBarTranslucent
         onRequestClose={handleGeneratedResultBack}
       >
@@ -511,7 +558,7 @@ export function AppNavigator() {
         </View>
       </Modal>
 
-      {!(isRecipeFlow || isGenericResultFlow) && (
+      {!(isRecipeStackFlow || isGenericResultFlow) && (
         <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
           <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
         </Modal>

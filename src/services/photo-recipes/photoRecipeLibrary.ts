@@ -1,5 +1,7 @@
 import { PhotoRecipe } from '../../models/photoRecipe';
 
+export const FREE_PHOTO_RECIPE_COUNT = 3;
+
 export const PHOTO_RECIPES: PhotoRecipe[] = [
   {
     id: 'coastal-blue-day',
@@ -1198,4 +1200,13 @@ export const PHOTO_RECIPES: PhotoRecipe[] = [
 
 export function getPhotoRecipe(id: string): PhotoRecipe | undefined {
   return PHOTO_RECIPES.find(recipe => recipe.id === id);
+}
+
+export function isPremiumRecipe(recipeId: string): boolean {
+  const recipeIndex = PHOTO_RECIPES.findIndex(recipe => recipe.id === recipeId);
+  if (recipeIndex === -1) {
+    return false;
+  }
+
+  return recipeIndex >= FREE_PHOTO_RECIPE_COUNT;
 }
