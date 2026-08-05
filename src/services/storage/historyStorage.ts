@@ -46,12 +46,45 @@ function resolveHistoryImageUris(result: any): any {
   };
 }
 
+function normalizeHistoryShape(result: any, index: number): AnalysisResult | undefined {
+  if (!result || typeof result !== 'object') {
+    return undefined;
+  }
+
+  const fallbackId =
+    [result.sourceAnalysisId, result.analysisId, result.generatedImageUri, result.originalImageUri]
+      .find((value): value is string => typeof value === 'string' && value.length > 0) ??
+    `legacy-history:${index}`;
+
+  const suggestions = Array.isArray(result.suggestions) ? result.suggestions : [];
+  const createdAt =
+    typeof result.createdAt === 'string' && result.createdAt.length > 0
+      ? result.createdAt
+      : new Date(0).toISOString();
+
+  return {
+    ...result,
+    analysisId: typeof result.analysisId === 'string' && result.analysisId.length > 0 ? result.analysisId : fallbackId,
+    sourceAnalysisId:
+      typeof result.sourceAnalysisId === 'string' && result.sourceAnalysisId.length > 0
+        ? result.sourceAnalysisId
+        : undefined,
+    createdAt,
+    suggestions
+  };
+}
+
 export async function persistHistory(results: AnalysisResult[]): Promise<void> {
   await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(results.slice(0, HISTORY_LIMIT)));
 }
 
 async function normalizeLoadedHistory(results: AnalysisResult[]): Promise<AnalysisResult[]> {
-  const normalized = results.flatMap(result => {
+  const normalized = results.flatMap((rawResult, index) => {
+    const result = normalizeHistoryShape(rawResult, index);
+    if (!result) {
+      return [];
+    }
+
     const generations = result.suggestionGenerations ?? [];
     if (generations.length <= 1) {
       return [result];

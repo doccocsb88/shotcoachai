@@ -309,13 +309,15 @@ export function getFlowType(result: AnalysisResult): FlowType {
   if (result.flowType) {
     return result.flowType;
   }
-  
-  const targetAnalysisId = result.sourceAnalysisId?.startsWith('recipe:') ? result.sourceAnalysisId : result.analysisId;
-  
+
+  const analysisId = typeof result.analysisId === 'string' ? result.analysisId : '';
+  const sourceAnalysisId = typeof result.sourceAnalysisId === 'string' ? result.sourceAnalysisId : '';
+  const targetAnalysisId = sourceAnalysisId.startsWith('recipe:') ? sourceAnalysisId : analysisId;
+
   if (targetAnalysisId.startsWith('recipe:')) {
     return 'photoRecipe';
   }
-  if (result.analysisId.startsWith('direct:')) {
+  if (analysisId.startsWith('direct:')) {
     return 'editingTool';
   }
   return 'aiCoach';
