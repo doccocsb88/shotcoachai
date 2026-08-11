@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, Image, ImageBackground, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Image, ImageBackground, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -51,6 +51,7 @@ export function HomeScreen({
   onOpenPaywall,
   onOpenRecipeList
 }: Props) {
+  const { width } = useWindowDimensions();
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
   const setCurrentPhoto = useAnalysisStore(state => state.setCurrentPhoto);
 
@@ -74,7 +75,8 @@ export function HomeScreen({
     void handleNavigation(() => onOpenCamera({ type: 'recipe', recipeId }));
   };
 
-  const featuredRecipes = PHOTO_RECIPES.slice(0, 5);
+  const isIpad = Platform.OS === 'ios' && width >= 768;
+  const featuredRecipes = PHOTO_RECIPES.slice(0, isIpad ? 6 : 5);
 
   return (
     <Screen scroll={false}>

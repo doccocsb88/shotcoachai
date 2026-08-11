@@ -92,7 +92,10 @@ export function OnboardingScreen({ onDone }: Props) {
     goToPage(pageIndex + 1);
   }, [goToPage, onDone, pageIndex]);
 
-  const horizontalPadding = Math.min(28, Math.max(20, windowWidth * 0.06));
+  const isIpad = Platform.OS === 'ios' && windowWidth >= 768;
+  const horizontalPadding = isIpad ? 180 : Math.min(28, Math.max(20, windowWidth * 0.06));
+  const continueButtonWidth = isIpad ? Math.min(windowWidth * 0.5, 680) : undefined;
+  const heroImageWidth = isIpad ? windowWidth - horizontalPadding * 2 : windowWidth;
   const heroHeight = Math.min(Math.max(windowHeight * 0.6, 440), 620);
   const fadeFooterOverlap = Math.max(116, bottomSafePadding + 98);
   const bottomFadeHeight = Math.max(280, windowHeight - heroHeight + 52);
@@ -125,7 +128,14 @@ export function OnboardingScreen({ onDone }: Props) {
                   <View style={styles.heroImage}>
                     <Image
                       source={page.hero}
-                      style={[styles.heroImageContent, { width: windowWidth, height: windowWidth * (asset.height / asset.width) }]}
+                      style={[
+                        styles.heroImageContent,
+                        {
+                          left: isIpad ? horizontalPadding : 0,
+                          width: heroImageWidth,
+                          height: heroImageWidth * (asset.height / asset.width)
+                        }
+                      ]}
                       resizeMode="stretch"
                     />
                   </View>
@@ -164,7 +174,12 @@ export function OnboardingScreen({ onDone }: Props) {
 
           <Pressable
             onPress={handleContinue}
-            style={({ pressed }) => [styles.continueBtn, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.continueBtn,
+              isIpad && styles.continueBtnIpad,
+              continueButtonWidth ? { width: continueButtonWidth } : null,
+              pressed && styles.pressed
+            ]}
           >
             <Text style={styles.continueBtnText}>
               {pageIndex === ONBOARDING_PAGES.length - 1 ? 'Get Started' : 'Next'}
@@ -272,6 +287,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 58,
     ...shadows.button
+  },
+  continueBtnIpad: {
+    alignSelf: 'center',
+    paddingHorizontal: 36
   },
   continueBtnText: {
     color: colors.white,

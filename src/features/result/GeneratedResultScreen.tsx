@@ -218,7 +218,7 @@ export function GeneratedResultScreen({
         analysis_id: result.analysisId
       });
     } catch (error) {
-      console.error('[ShotCoach][Result][generation-error]', {
+      console.warn('[ShotCoach][Result][generation-error]', {
         analysisId: result.analysisId,
         flowType,
         suggestionIndex,
