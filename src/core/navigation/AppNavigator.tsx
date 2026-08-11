@@ -347,6 +347,10 @@ export function AppNavigator() {
     setPaywallOpen(false);
     void UserManager.refresh();
   }, []);
+  const openPaywallFromSettings = useCallback(() => {
+    openPaywall('Store', 'settings');
+  }, [openPaywall]);
+  const openLegalFromSettings = useCallback((document: LegalDocument) => setLegalDocument(document), []);
   const openPoseDetail = useCallback((pose: PoseSeedItem) => {
     setSelectedPose(pose);
     setScreen('poseDetail');
@@ -486,15 +490,23 @@ export function AppNavigator() {
       <SettingView
         visible={menuOpen}
         onClose={closeMenu}
-        onOpenPaywall={() => {
-          openPaywall('Store');
-        }}
-        onOpenLegal={setLegalDocument}
-      />
+        onOpenPaywall={openPaywallFromSettings}
+        onOpenLegal={openLegalFromSettings}
+      >
+        <AppWebView
+          title={legalDocument?.title ?? ''}
+          url={legalDocument?.url ?? ''}
+          visible={menuOpen && legalDocument !== null}
+          onClose={() => setLegalDocument(null)}
+        />
+        <Modal animationType="slide" visible={menuOpen && paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
+          <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
+        </Modal>
+      </SettingView>
       <AppWebView
         title={legalDocument?.title ?? ''}
         url={legalDocument?.url ?? ''}
-        visible={legalDocument !== null}
+        visible={!menuOpen && legalDocument !== null}
         onClose={() => setLegalDocument(null)}
       />
       <Modal
@@ -558,7 +570,7 @@ export function AppNavigator() {
         </View>
       </Modal>
 
-      {!(isRecipeStackFlow || isGenericResultFlow) && (
+      {!(isRecipeStackFlow || isGenericResultFlow || menuOpen) && (
         <Modal animationType="slide" visible={paywallOpen} onRequestClose={closePaywall} statusBarTranslucent transparent>
           <PaywallScreen onBack={closePaywall} paywallType={paywallType} />
         </Modal>

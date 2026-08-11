@@ -21,13 +21,15 @@ type Props = {
   onClose: () => void;
   onOpenPaywall: () => void;
   onOpenLegal: (document: LegalDocument) => void;
+  children?: ReactNode;
 };
 
 export function SettingView({
   visible,
   onClose,
   onOpenPaywall,
-  onOpenLegal
+  onOpenLegal,
+  children
 }: Props) {
   const openUrl = async (url: string, fallbackUrl?: string) => {
     try {
@@ -142,6 +144,7 @@ export function SettingView({
             </SettingsSection>
         </ScrollView>
       </View>
+      {children}
     </Modal>
   );
 }

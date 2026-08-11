@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextStyle, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AppWebView } from '../../components/common/AppWebView';
@@ -68,6 +68,9 @@ const closeButtonTop = Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight ?? 
 
 export function PaywallScreen({ onBack, paywallType }: Props) {
   const { width } = useWindowDimensions();
+  const isIpad = Platform.OS === 'ios' && width >= 768;
+  const contentHorizontalPadding = isIpad ? 180 : spacing.lg;
+  const benefitTextFontSize = isIpad ? 17 : 15;
   const impressionTrackedRef = useRef(false);
   const heroScrollRef = useRef<ScrollView | null>(null);
   const [products, setProducts] = useState<PurchaseProduct[]>([]);
@@ -235,8 +238,8 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
       >
         <Text style={styles.closeButtonText}>×</Text>
       </Pressable>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { height: heroCardWidth * paywallHeroHeightRatio, width }]}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: contentHorizontalPadding }]} showsVerticalScrollIndicator={false}>
+        <View style={[styles.hero, { height: heroCardWidth * paywallHeroHeightRatio, marginLeft: -contentHorizontalPadding, width }]}>
           <ScrollView
             ref={heroScrollRef}
             contentContainerStyle={styles.heroCarouselContent}
@@ -285,9 +288,9 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
         </View>
 
         <View style={styles.benefits}>
-          <Benefit text="3 AI shooting directions per photo" />
-          <Benefit text="3 preview concepts for each suggestion" />
-          <Benefit text="Ultimate pose coaching for every shot" />
+          <Benefit text="3 AI shooting directions per photo" textStyle={{ fontSize: benefitTextFontSize }} />
+          <Benefit text="3 preview concepts for each suggestion" textStyle={{ fontSize: benefitTextFontSize }} />
+          <Benefit text="Ultimate pose coaching for every shot" textStyle={{ fontSize: benefitTextFontSize }} />
         </View>
 
         <View style={styles.planList}>
@@ -420,11 +423,11 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
   );
 }
 
-function Benefit({ text }: { text: string }) {
+function Benefit({ text, textStyle }: { text: string; textStyle?: TextStyle }) {
   return (
     <View style={styles.benefitRow}>
       <CircleCheck />
-      <Text style={styles.benefitText}>{text}</Text>
+      <Text style={[styles.benefitText, textStyle]}>{text}</Text>
     </View>
   );
 }
@@ -456,7 +459,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.lg,
     paddingTop: 0
   },
   closeButton: {
@@ -479,7 +481,6 @@ const styles = StyleSheet.create({
     marginTop: -2
   },
   hero: {
-    marginLeft: -spacing.lg,
     ...shadows.button
   },
   heroCarousel: {

@@ -1,7 +1,14 @@
 import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { Platform } from 'react-native';
 import { UserManager } from '../user/UserManager';
 
-const INTERSTITIAL_ID = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-9552312736312538/9488938788';
+const ANDROID_INTERSTITIAL_ID = 'ca-app-pub-9552312736312538/9488938788';
+const IOS_INTERSTITIAL_ID = 'ca-app-pub-9552312736312538/4583878265';
+const INTERSTITIAL_ID = __DEV__
+  ? TestIds.INTERSTITIAL
+  : Platform.OS === 'ios'
+    ? IOS_INTERSTITIAL_ID
+    : ANDROID_INTERSTITIAL_ID;
 const COOLDOWN_MS = 45 * 1000; // 45 seconds
 
 class AdsManagerImpl {

@@ -65,7 +65,7 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-9552312736312538~6015617694",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "iosAppId": "ca-app-pub-9552312736312538~6795108639",
           "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads and measure ad performance."
         }
       ],
@@ -89,7 +89,7 @@
   },
   "react-native-google-mobile-ads": {
     "android_app_id": "ca-app-pub-9552312736312538~6015617694",
-    "ios_app_id": "ca-app-pub-3940256099942544~1458002511",
+    "ios_app_id": "ca-app-pub-9552312736312538~6795108639",
     "user_tracking_usage_description": "This identifier will be used to deliver personalized ads and measure ad performance."
   }
 }
