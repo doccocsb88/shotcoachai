@@ -61,6 +61,36 @@ target 'AIPhotoCoach' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
+    # Xcode 26 Apple Clang rejects fmt FMT_STRING consteval in React Native's fmt pod.
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+      target.build_configurations.each do |build_config|
+        definitions = build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
+        definitions = ['$(inherited)'] if definitions.nil?
+        definitions = [definitions] unless definitions.is_a?(Array)
+        unless definitions.any? { |definition| definition.to_s.include?('FMT_USE_CONSTEVAL') }
+          definitions << 'FMT_USE_CONSTEVAL=0'
+        end
+        build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = definitions
+      end
+    end
+
+    fmt_base_header = File.join(__dir__, 'Pods/fmt/include/fmt/base.h')
+    if File.exist?(fmt_base_header)
+      header_contents = File.read(fmt_base_header)
+      unless header_contents.include?('Allow Xcode 26 builds to force this off')
+        header_contents.sub!(
+          "// Detect consteval, C++20 constexpr extensions and std::is_constant_evaluated.\n",
+          "// Detect consteval, C++20 constexpr extensions and std::is_constant_evaluated.\n#ifndef FMT_USE_CONSTEVAL\n"
+        )
+        header_contents.sub!(
+          "#  define FMT_USE_CONSTEVAL 0\n#endif\n#if FMT_USE_CONSTEVAL",
+          "#  define FMT_USE_CONSTEVAL 0\n#endif\n#endif\n#if FMT_USE_CONSTEVAL"
+        )
+        File.write(fmt_base_header, header_contents)
+      end
+    end
+
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
     installer.target_installation_results.pod_target_installation_results

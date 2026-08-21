@@ -91,8 +91,26 @@ export const TrackingManager = {
   },
 
   home: {
-    action(action: 'coach_hero' | 'quick_edit' | 'recipe_card' | 'recipe_see_all' | 'menu' | 'history', params?: TrackingParams) {
+    action(action: 'coach_hero' | 'quick_edit' | 'recipe_card' | 'recipe_see_all' | 'pose_card' | 'pose_see_all' | 'menu' | 'history', params?: TrackingParams) {
       return track('home_action', { action, ...params });
+    }
+  },
+
+  pose: {
+    collectionOpened(source: string) {
+      return track('pose_collection_opened', { source });
+    },
+    detailOpened(poseId: string) {
+      return track('pose_detail_opened', { pose_id: poseId });
+    },
+    cameraOpened(poseId: string) {
+      return startFlow('pose', { pose_id: poseId });
+    },
+    captured(poseId: string) {
+      return track('pose_captured', { pose_id: poseId });
+    },
+    previewUsed(poseId: string) {
+      return track('pose_preview_used', { pose_id: poseId });
     }
   },
 

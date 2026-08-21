@@ -14,8 +14,11 @@ import { CrownLockIcon } from '../../components/icons/CrownLockIcon';
 import { PHOTO_AI_TOOLS, PhotoAiToolId } from '../../models/photoAiTool';
 import { ToolImageIcon } from '../../components/icons/ToolImageIcon';
 import { RecipeCard } from '../photo-recipes/components/RecipeCard';
+import { PoseCard } from '../pose-collection/components/PoseCard';
+import { getFeaturedPoses } from '../pose-collection/poseLibrary';
 import { AdsManager } from '../../services/ads/AdsManager';
 import { TrackingManager } from '../../services/tracking/TrackingManager';
+import { Pose } from '../../models/pose';
 
 const historyIcon = require('../../../assets/icons/history.png');
 const galleryIcon = require('../../../assets/icons/image-gallery.png');
@@ -42,6 +45,8 @@ interface Props {
   onOpenHistory: () => void;
   onOpenPaywall: () => void;
   onOpenRecipeList: () => void;
+  onOpenPoseCollection: () => void;
+  onOpenPose: (pose: Pose) => void;
 }
 
 export function HomeScreen({
@@ -49,7 +54,9 @@ export function HomeScreen({
   onOpenMenu,
   onOpenHistory,
   onOpenPaywall,
-  onOpenRecipeList
+  onOpenRecipeList,
+  onOpenPoseCollection,
+  onOpenPose
 }: Props) {
   const { width } = useWindowDimensions();
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
@@ -77,6 +84,7 @@ export function HomeScreen({
 
   const isIpad = Platform.OS === 'ios' && width >= 768;
   const featuredRecipes = PHOTO_RECIPES.slice(0, isIpad ? 6 : 5);
+  const featuredPoses = getFeaturedPoses(isIpad ? 6 : 4);
 
   return (
     <Screen scroll={false}>
@@ -136,6 +144,33 @@ export function HomeScreen({
               </Pressable>
             ))}
           </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Pose ideas</Text>
+            <Pressable onPress={() => { void TrackingManager.home.action('pose_see_all'); void handleNavigation(onOpenPoseCollection); }}>
+              <Text style={styles.sectionLink}>See All</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.sectionSubtitle}>Pose with a guide</Text>
+
+          <FlatList
+            horizontal
+            data={featuredPoses}
+            keyExtractor={item => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recipesList}
+            style={styles.poseList}
+            renderItem={({ item }) => (
+              <PoseCard
+                pose={item}
+                onPress={() => {
+                  void TrackingManager.home.action('pose_card', { pose_id: item.id });
+                  void handleNavigation(() => onOpenPose(item));
+                }}
+                style={styles.recipeCard}
+              />
+            )}
+          />
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Featured recipes</Text>
@@ -332,6 +367,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  poseList: {
+    marginBottom: 32
   },
   recipesList: {
     paddingRight: spacing.lg

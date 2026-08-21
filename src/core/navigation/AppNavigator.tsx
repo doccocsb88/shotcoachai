@@ -14,6 +14,8 @@ import { RecipeDetailScreen } from '../../features/photo-recipes/RecipeDetailScr
 import { RecipeListScreen } from '../../features/photo-recipes/RecipeListScreen';
 import { PoseCollectionScreen } from '../../features/pose-collection/PoseCollectionScreen';
 import { PoseDetailScreen } from '../../features/pose-collection/PoseDetailScreen';
+import { PoseCameraScreen } from '../../features/pose-collection/PoseCameraScreen';
+import { PoseCapturePreviewScreen } from '../../features/pose-collection/PoseCapturePreviewScreen';
 import { PhotoPreviewScreen } from '../../features/photo-preview/PhotoPreviewScreen';
 import { PaywallScreen, PaywallType } from '../../features/paywall/PaywallScreen';
 import { LegalDocument, SettingView } from '../../features/settings/SettingView';
@@ -22,7 +24,7 @@ import { colors } from '../../constants/theme';
 import { AnalysisResult, getFlowType, getStoredGenerationUri, PickedPhoto } from '../../models/analysis';
 import { getPhotoAiTool, PhotoAiTool } from '../../models/photoAiTool';
 import { PhotoRecipe } from '../../models/photoRecipe';
-import { PoseSeedItem } from '../../features/pose-collection/types';
+import { Pose } from '../../models/pose';
 import { buildPhotoRecipePrompt } from '../../services/photo-recipes/photoRecipePromptBuilder';
 import { buildPhotoRecipePromptV2 } from '../../services/photo-recipes/photoRecipePromptBuilderV2';
 import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary';
@@ -43,11 +45,15 @@ type ScreenName =
   | 'recipeDetail'
   | 'poseCollection'
   | 'poseDetail'
+  | 'poseCamera'
+  | 'poseCapturePreview'
   | 'preview';
 
 export function AppNavigator() {
   const [screen, setScreen] = useState<ScreenName>('home');
-  const [selectedPose, setSelectedPose] = useState<PoseSeedItem | null>(null);
+  const [selectedPose, setSelectedPose] = useState<Pose | null>(null);
+  const [poseCaptureUri, setPoseCaptureUri] = useState<string | null>(null);
+  const [poseBrowseSource, setPoseBrowseSource] = useState<'home' | 'collection'>('home');
   const [selectedRecipe, setSelectedRecipe] = useState<PhotoRecipe | null>(null);
   const [resultOpenedFromHistory, setResultOpenedFromHistory] = useState(false);
   const [canReturnToAnalysis, setCanReturnToAnalysis] = useState(true);
@@ -331,10 +337,12 @@ export function AppNavigator() {
     return openCamera(cameraIntent);
   }, [resultOpenedFromHistory, openHistory, canReturnToAnalysis, setScreen, openCamera, cameraIntent]);
 
-  const openPoseCollection = useCallback(() => {
+  const openPoseCollection = useCallback((source: 'home' | 'collection' = 'home') => {
     setResultOpenedFromHistory(false);
     setCanReturnToAnalysis(true);
     setGeneratedSuggestionIndex(0);
+    setPoseBrowseSource(source);
+    void TrackingManager.pose.collectionOpened(source);
     setScreen('poseCollection');
   }, []);
   const openPaywall = useCallback((type: PaywallType = 'DirectStore', source?: string) => {
@@ -351,10 +359,36 @@ export function AppNavigator() {
     openPaywall('Store', 'settings');
   }, [openPaywall]);
   const openLegalFromSettings = useCallback((document: LegalDocument) => setLegalDocument(document), []);
-  const openPoseDetail = useCallback((pose: PoseSeedItem) => {
+  const openPoseDetail = useCallback((pose: Pose, source: 'home' | 'collection' = 'collection') => {
     setSelectedPose(pose);
+    setPoseBrowseSource(source);
+    void TrackingManager.pose.detailOpened(pose.id);
     setScreen('poseDetail');
   }, []);
+
+  const openPoseCamera = useCallback((pose: Pose) => {
+    setSelectedPose(pose);
+    setPoseCaptureUri(null);
+    void TrackingManager.pose.cameraOpened(pose.id);
+    setScreen('poseCamera');
+  }, []);
+
+  const openPoseCapturePreview = useCallback((photoUri: string) => {
+    setPoseCaptureUri(photoUri);
+    if (selectedPose) {
+      void TrackingManager.pose.captured(selectedPose.id);
+    }
+    setScreen('poseCapturePreview');
+  }, [selectedPose]);
+
+  const finishPoseCapture = useCallback(() => {
+    if (selectedPose) {
+      void TrackingManager.pose.previewUsed(selectedPose.id);
+    }
+    void TrackingManager.flow.end('completed');
+    setPoseCaptureUri(null);
+    setScreen('poseDetail');
+  }, [selectedPose]);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -371,7 +405,7 @@ export function AppNavigator() {
       backgroundContent = <HistoryScreen onBack={openHome} onOpenResult={openResultFromHistory} />;
     } else {
       backgroundContent = recipeListSource === 'home' 
-        ? <HomeScreen onOpenCamera={openCamera} onOpenMenu={() => { void TrackingManager.settings.opened(); setMenuOpen(true); }} onOpenHistory={openHistory} onOpenPaywall={openPaywall} onOpenRecipeList={() => openRecipeList('home')} /> 
+        ? <HomeScreen onOpenCamera={openCamera} onOpenMenu={() => { void TrackingManager.settings.opened(); setMenuOpen(true); }} onOpenHistory={openHistory} onOpenPaywall={openPaywall} onOpenRecipeList={() => openRecipeList('home')} onOpenPoseCollection={() => openPoseCollection('home')} onOpenPose={pose => openPoseDetail(pose, 'home')} /> 
         : <CameraScreen onBack={openHome} onPhotoSelected={handlePhotoSelected} onOpenPaywall={openPaywall} intent={cameraIntent} />;
     }
   } else if (isGenericResultFlow) {
@@ -441,9 +475,46 @@ export function AppNavigator() {
       />
     );
   } else if (screen === 'poseCollection') {
-    content = <PoseCollectionScreen onBack={openHome} onOpenPose={openPoseDetail} />;
+    content = (
+      <PoseCollectionScreen
+        onBack={openHome}
+        onOpenPose={pose => openPoseDetail(pose, 'collection')}
+      />
+    );
   } else if (screen === 'poseDetail' && selectedPose) {
-    content = <PoseDetailScreen pose={selectedPose} onBack={openPoseCollection} />;
+    content = (
+      <PoseDetailScreen
+        pose={selectedPose}
+        onBack={() => {
+          if (poseBrowseSource === 'home') {
+            openHome();
+            return;
+          }
+          openPoseCollection('collection');
+        }}
+        onUsePose={openPoseCamera}
+      />
+    );
+  } else if (screen === 'poseCamera' && selectedPose) {
+    content = (
+      <PoseCameraScreen
+        pose={selectedPose}
+        onBack={() => {
+          void TrackingManager.flow.end('abandoned');
+          setScreen('poseDetail');
+        }}
+        onCaptured={openPoseCapturePreview}
+      />
+    );
+  } else if (screen === 'poseCapturePreview' && selectedPose && poseCaptureUri) {
+    content = (
+      <PoseCapturePreviewScreen
+        pose={selectedPose}
+        photoUri={poseCaptureUri}
+        onRetake={() => setScreen('poseCamera')}
+        onDone={finishPoseCapture}
+      />
+    );
   } else if (screen === 'camera') {
     content = (
       <CameraScreen
@@ -471,12 +542,14 @@ export function AppNavigator() {
         onOpenHistory={openHistory}
         onOpenPaywall={openPaywall}
         onOpenRecipeList={() => openRecipeList('home')}
+        onOpenPoseCollection={() => openPoseCollection('home')}
+        onOpenPose={pose => openPoseDetail(pose, 'home')}
       />
     );
   }
 
   let contentShell;
-  if (screen === 'home' || (screen === 'camera' && cameraSource !== 'recipeList')) {
+  if (screen === 'home' || screen === 'poseCamera' || (screen === 'camera' && cameraSource !== 'recipeList')) {
     contentShell = content;
   } else if (isRecipeCameraFlow) {
     contentShell = <SafeAreaView style={styles.safeContent}>{backgroundContent}</SafeAreaView>;

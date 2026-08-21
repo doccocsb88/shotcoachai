@@ -1,33 +1,69 @@
-import { Image, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
+import { AppScreenHeader } from '../../components/common/AppScreenHeader';
+import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Screen } from '../../components/common/Screen';
-import { ScreenNavBar } from '../../components/common/ScreenNavBar';
-import { colors, radius, shadows } from '../../constants/theme';
-import { resolvePoseImageSource } from './poseImageSource';
-import { PoseSeedItem } from './types';
+import { colors, radius, spacing } from '../../constants/theme';
+import { Pose } from '../../models/pose';
 
 interface Props {
-  pose: PoseSeedItem;
+  pose: Pose;
   onBack: () => void;
+  onUsePose: (pose: Pose) => void;
 }
 
-export function PoseDetailScreen({ pose, onBack }: Props) {
+function chipLabel(value: string): string {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+export function PoseDetailScreen({ pose, onBack, onUsePose }: Props) {
+  const { height: windowHeight } = useWindowDimensions();
+  const heroHeight = Math.min(280, Math.round(windowHeight * 0.34));
+  const chips = [
+    chipLabel(pose.primaryLocation),
+    pose.subjectCount === 1 ? 'Solo' : pose.subjectCount === 2 ? 'Couple' : `${pose.subjectCount}`,
+    ...pose.subjectTypes.filter(type => type !== 'any').map(chipLabel),
+    chipLabel(pose.bodyPosition)
+  ];
+
   return (
     <Screen scroll={false}>
-      <View style={styles.container}>
-        <ScreenNavBar title="Pose Detail" leadingLabel="Back" onLeadingPress={onBack} />
-        <View style={styles.content}>
-          <Image source={resolvePoseImageSource(pose.sample_image_url)} style={styles.heroImage} resizeMode="contain" />
-          <View style={styles.overlay}>
-            <Text style={styles.title}>{pose.title}</Text>
-            <Text style={styles.tags}>{pose.tags.join(' • ')}</Text>
-
-            <Text style={styles.sectionTitle}>How to pose</Text>
-            <Text style={styles.sectionBody}>{pose.how_to_pose}</Text>
-
-            <Text style={styles.sectionTitle}>Camera angle</Text>
-            <Text style={styles.sectionBody}>{pose.camera_angle}</Text>
+      <View style={styles.root}>
+        <AppScreenHeader title="Pose Detail" onBack={onBack} />
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={[styles.heroFrame, { height: heroHeight }]}>
+            <Image source={pose.browsingImage.source} style={styles.hero} resizeMode="cover" />
           </View>
+          <Text style={styles.title}>{pose.title}</Text>
+          <View style={styles.chipRow}>
+            {chips.map(chip => (
+              <View key={chip} style={styles.chip}>
+                <Text style={styles.chipText}>{chip}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.sectionTitle}>How to pose</Text>
+          <Text style={styles.sectionBody}>{pose.howToPose}</Text>
+
+          <Text style={styles.sectionTitle}>Camera</Text>
+          <Text style={styles.sectionBody}>{pose.cameraGuidance}</Text>
+
+          {pose.overlayImage ? (
+            <View style={styles.overlayPreviewWrap}>
+              <Text style={styles.sectionTitle}>Overlay guide</Text>
+              <View style={styles.overlayPreview}>
+                <Image source={pose.overlayImage.source} style={styles.overlayImage} resizeMode="contain" />
+              </View>
+            </View>
+          ) : null}
+        </ScrollView>
+        <View style={styles.footer}>
+          <PrimaryButton
+            title={pose.overlayImage ? 'Use this pose' : 'Guide coming soon'}
+            onPress={() => onUsePose(pose)}
+            disabled={!pose.overlayImage}
+          />
         </View>
       </View>
     </Screen>
@@ -35,58 +71,78 @@ export function PoseDetailScreen({ pose, onBack }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: Platform.select({ android: StatusBar.currentHeight ?? 0, ios: 0 })
+  root: {
+    flex: 1
+  },
+  scroll: {
+    flex: 1
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 0
+    paddingBottom: 24,
+    paddingHorizontal: 20
   },
-  heroImage: {
-    borderColor: colors.border,
+  heroFrame: {
+    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    flex: 1,
+    overflow: 'hidden',
     width: '100%'
   },
-  overlay: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    bottom: 0,
-    left: 20,
-    padding: 16,
-    position: 'absolute',
-    right: 20,
-    ...shadows.soft
+  hero: {
+    height: '100%',
+    width: '100%'
   },
   title: {
     color: colors.text,
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
-    lineHeight: 31
+    marginTop: 16
   },
-  tags: {
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12
+  },
+  chip: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6
+  },
+  chipText: {
     color: colors.primary,
-    fontSize: 14,
-    fontWeight: '800',
-    lineHeight: 20,
-    marginTop: 8
+    fontSize: 13,
+    fontWeight: '800'
   },
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
     fontWeight: '900',
-    marginTop: 16
+    marginTop: 20
   },
   sectionBody: {
     color: colors.textMuted,
     fontSize: 16,
     lineHeight: 24,
     marginTop: 6
+  },
+  overlayPreviewWrap: {
+    marginTop: 4
+  },
+  overlayPreview: {
+    backgroundColor: '#111827',
+    borderRadius: radius.md,
+    height: 160,
+    marginTop: 10,
+    overflow: 'hidden'
+  },
+  overlayImage: {
+    height: '100%',
+    width: '100%'
+  },
+  footer: {
+    paddingBottom: spacing.lg,
+    paddingHorizontal: 20,
+    paddingTop: 8
   }
 });
