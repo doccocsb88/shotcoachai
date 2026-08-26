@@ -1,4 +1,0 @@
-- [x] Install `react-native-encrypted-storage`
-- [x] Refactor `UserManager.ts` to use `EncryptedStorage` instead of `AsyncStorage`
-- [x] Check `AndroidManifest.xml` for `allowBackup="true"`
-- [x] Run `npm run android` to build and verify

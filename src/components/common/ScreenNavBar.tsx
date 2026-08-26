@@ -1,9 +1,9 @@
-import { Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useNavBarTopInset } from '../../constants/layout';
 import { colors, spacing, typography } from '../../constants/theme';
 
 const sideSlotMinWidth = 56;
-const androidTopInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
 
 interface Props {
   title: string;
@@ -16,12 +16,13 @@ interface Props {
 }
 
 /**
- * Top bar: leading action on the left, title visually centered. Intended under `SafeAreaView`
- * — use small vertical padding only (see `HomeScreen` nav).
+ * Top bar: leading action on the left, title visually centered.
  */
 export function ScreenNavBar({ title, leadingLabel, onLeadingPress, trailingLabel, trailingColor, onTrailingPress }: Props) {
+  const navBarTopInset = useNavBarTopInset();
+
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { paddingTop: navBarTopInset, minHeight: navBarTopInset + 52 }]}>
       <View style={styles.sideSlot}>
         <Pressable
           accessibilityRole="button"
@@ -58,9 +59,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
     flexDirection: 'row',
-    minHeight: androidTopInset + 52,
-    paddingHorizontal: spacing.md,
-    paddingTop: androidTopInset
+    paddingHorizontal: spacing.md
   },
   sideSlot: {
     minWidth: sideSlotMinWidth

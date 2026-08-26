@@ -9,13 +9,13 @@ type FirebaseSessionSnapshot = {
   appCheckToken: string | null;
 };
 
-function getAppCheckDebugToken(): string | undefined {
-  const raw = process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN?.trim();
+function getAppCheckDebugToken(envKey: string): string | undefined {
+  const raw = process.env[envKey]?.trim();
   return raw ? raw : undefined;
 }
 
 function getAndroidAppCheckProvider(debugToken?: string) {
-  if (__DEV__ && debugToken) {
+  if (debugToken) {
     return 'debug' as const;
   }
 
@@ -23,7 +23,7 @@ function getAndroidAppCheckProvider(debugToken?: string) {
 }
 
 function getAppleAppCheckProvider(debugToken?: string) {
-  if (__DEV__ && debugToken) {
+  if (debugToken) {
     return 'debug' as const;
   }
 
@@ -104,16 +104,31 @@ class FirebaseSessionManager {
     }
 
     const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
-    const debugToken = getAppCheckDebugToken();
+    const androidDebugToken = getAppCheckDebugToken(
+      'EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN_ANDROID'
+    );
+    const appleDebugToken = getAppCheckDebugToken(
+      'EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN_IOS'
+    );
+    const androidProvider = getAndroidAppCheckProvider(androidDebugToken);
+    const appleProvider = getAppleAppCheckProvider(appleDebugToken);
+
+    console.log('[ShotCoach][AppCheck] initialize', {
+      androidProvider,
+      appleProvider,
+      hasAndroidDebugToken: Boolean(androidDebugToken),
+      hasAppleDebugToken: Boolean(appleDebugToken),
+      isDev: __DEV__
+    });
 
     provider.configure({
       android: {
-        provider: getAndroidAppCheckProvider(debugToken),
-        debugToken
+        provider: androidProvider,
+        debugToken: androidDebugToken
       },
       apple: {
-        provider: getAppleAppCheckProvider(debugToken),
-        debugToken
+        provider: appleProvider,
+        debugToken: appleDebugToken
       }
     });
 

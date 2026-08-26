@@ -1,9 +1,9 @@
-import { Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CaretLeft } from 'phosphor-react-native';
 
+import { useNavBarTopInset } from '../../constants/layout';
 import { colors, shadows } from '../../constants/theme';
 
-const androidTopInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
 const sideSlotMinWidth = 56;
 
 interface Props {
@@ -16,11 +16,13 @@ interface Props {
 
 /**
  * Standard screen header: circular back button, centered bold title.
- * Matches Photo Preview / AI Edit tool screens. Use inside SafeAreaView on iOS.
+ * Matches Photo Preview / AI Edit tool screens.
  */
 export function AppScreenHeader({ title, onBack, trailingLabel, trailingColor, onTrailingPress }: Props) {
+  const navBarTopInset = useNavBarTopInset();
+
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: navBarTopInset, minHeight: navBarTopInset + 56 }]}>
       <Pressable
         accessibilityRole="button"
         hitSlop={10}
@@ -54,9 +56,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    minHeight: androidTopInset + 56,
-    paddingHorizontal: 20,
-    paddingTop: androidTopInset
+    paddingHorizontal: 20
   },
   backButton: {
     alignItems: 'center',

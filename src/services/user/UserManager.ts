@@ -2,8 +2,11 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 
 import { PurchaseService } from '../purchase/PurchaseService';
 import { isPremiumRecipe } from '../photo-recipes/photoRecipeLibrary';
-
-const FREE_CAPTURE_LIMIT = 3;
+import {
+  getFreeCaptureLimit,
+  getFreePhotoRecipeCount,
+  isDebugUsageEnvironment
+} from './usageLimits';
 const FREE_SUGGESTION_INDEX = 0;
 const CAPTURE_COUNT_KEY = '@shotcoach/free_capture_count';
 const USED_AI_TOOLS_KEY = '@shotcoach/used_ai_tools';
@@ -23,7 +26,7 @@ class ShotCoachUserManager {
   private state: UserAccessState = {
     isPremium: false,
     freeCaptureCount: 0,
-    freeCaptureLimit: FREE_CAPTURE_LIMIT,
+    freeCaptureLimit: getFreeCaptureLimit(),
     usedAiTools: [],
     usedRecipes: []
   };
@@ -71,13 +74,21 @@ class ShotCoachUserManager {
       this.loadUsedItems(USED_AI_TOOLS_KEY),
       this.loadUsedItems(USED_RECIPES_KEY)
     ]);
-    this.setState({ freeCaptureCount, isPremium, usedAiTools, usedRecipes });
+    this.setState({ freeCaptureCount, isPremium, usedAiTools, usedRecipes, freeCaptureLimit: getFreeCaptureLimit() });
+    if (isDebugUsageEnvironment()) {
+      console.log('[ShotCoach][Usage] debug limits active', {
+        freeCaptureLimit: getFreeCaptureLimit(),
+        freePhotoRecipeCount: getFreePhotoRecipeCount(),
+        freeCaptureCount
+      });
+    }
     this.hydrated = true;
     return this.state;
   }
 
   canStartCapture(): boolean {
-    return this.state.isPremium || this.state.freeCaptureCount < FREE_CAPTURE_LIMIT;
+    const freeCaptureLimit = getFreeCaptureLimit();
+    return this.state.isPremium || this.state.freeCaptureCount < freeCaptureLimit;
   }
 
   async trackCaptureStarted(): Promise<UserAccessState> {
@@ -85,9 +96,10 @@ class ShotCoachUserManager {
       return this.state;
     }
 
-    const nextCount = Math.min(this.state.freeCaptureCount + 1, FREE_CAPTURE_LIMIT);
+    const freeCaptureLimit = getFreeCaptureLimit();
+    const nextCount = Math.min(this.state.freeCaptureCount + 1, freeCaptureLimit);
     await EncryptedStorage.setItem(CAPTURE_COUNT_KEY, String(nextCount));
-    this.setState({ freeCaptureCount: nextCount });
+    this.setState({ freeCaptureCount: nextCount, freeCaptureLimit });
     return this.state;
   }
 
@@ -99,7 +111,8 @@ class ShotCoachUserManager {
     if (this.state.isPremium) {
       return Number.POSITIVE_INFINITY;
     }
-    return Math.max(0, FREE_CAPTURE_LIMIT - this.state.freeCaptureCount);
+    const freeCaptureLimit = getFreeCaptureLimit();
+    return Math.max(0, freeCaptureLimit - this.state.freeCaptureCount);
   }
 
   async markPremiumActive(): Promise<UserAccessState> {
@@ -142,7 +155,8 @@ class ShotCoachUserManager {
   private async loadFreeCaptureCount(): Promise<number> {
     const raw = await EncryptedStorage.getItem(CAPTURE_COUNT_KEY);
     const value = Number(raw);
-    return Number.isFinite(value) ? Math.max(0, Math.min(value, FREE_CAPTURE_LIMIT)) : 0;
+    const freeCaptureLimit = getFreeCaptureLimit();
+    return Number.isFinite(value) ? Math.max(0, Math.min(value, freeCaptureLimit)) : 0;
   }
 
   private async verifyPremium(): Promise<boolean> {

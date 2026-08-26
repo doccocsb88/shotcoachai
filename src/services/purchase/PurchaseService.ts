@@ -10,6 +10,8 @@ export type PurchaseProduct = {
   displayName: string;
   description: string;
   displayPrice: string;
+  priceAmount?: number;
+  currencyCode?: string;
   type: string;
 };
 

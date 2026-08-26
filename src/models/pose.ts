@@ -37,6 +37,12 @@ export interface Pose {
   isFeatured: boolean;
   sortOrder: number;
   status: 'draft' | 'published';
+  collectionId?: string;
+  poseId?: string;
+  difficulty?: string;
+  sceneCategory?: string;
+  mood?: string[];
+  rawMetadata?: Record<string, unknown>;
 }
 
 export interface PoseQuery {

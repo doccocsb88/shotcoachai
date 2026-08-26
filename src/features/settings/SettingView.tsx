@@ -2,8 +2,8 @@ import { ReactNode } from 'react';
 import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Storefront, Crown, Star, Envelope, ShareNetwork, ShieldCheck, FileText, CaretRight, X } from 'phosphor-react-native';
 
-import { LEGAL_URLS, SUPPORT_EMAIL } from '../../constants/legal';
-import { navBarBottomPadding, navBarTopPadding } from '../../constants/layout';
+import { SUPPORT_EMAIL, type LegalDocumentKey } from '../../constants/legal';
+import { navBarBottomPadding, useNavBarTopInset } from '../../constants/layout';
 import { colors, radius, spacing } from '../../constants/theme';
 import { PurchaseService } from '../../services/purchase/PurchaseService';
 import { TrackingManager } from '../../services/tracking/TrackingManager';
@@ -13,7 +13,7 @@ const APP_STORE_URL = `https://apps.apple.com/app/id${APP_STORE_ID}`;
 
 export type LegalDocument = {
   title: string;
-  url: string;
+  documentKey: LegalDocumentKey;
 };
 
 type Props = {
@@ -31,6 +31,8 @@ export function SettingView({
   onOpenLegal,
   children
 }: Props) {
+  const navBarTopInset = useNavBarTopInset();
+
   const openUrl = async (url: string, fallbackUrl?: string) => {
     try {
       await Linking.openURL(url);
@@ -91,7 +93,7 @@ export function SettingView({
           contentContainerStyle={styles.settingsContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.settingsHeader, { paddingTop: navBarTopPadding }]}>
+          <View style={[styles.settingsHeader, { paddingTop: navBarTopInset }]}>
               <View style={styles.headerSideSlot} />
               <Text style={styles.settingsTitle}>Settings</Text>
               <Pressable
@@ -125,7 +127,7 @@ export function SettingView({
                   void TrackingManager.settings.action('privacy_policy');
                   onOpenLegal({
                     title: 'Privacy Policy',
-                    url: LEGAL_URLS.privacyPolicy
+                    documentKey: 'privacyPolicy'
                   });
                 }}
               />
@@ -136,7 +138,7 @@ export function SettingView({
                   void TrackingManager.settings.action('terms_of_use');
                   onOpenLegal({
                     title: 'Terms of Use',
-                    url: LEGAL_URLS.termsOfUse
+                    documentKey: 'termsOfUse'
                   });
                 }}
                 isLast

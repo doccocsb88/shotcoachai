@@ -1,6 +1,8 @@
 import { PhotoRecipe } from '../../models/photoRecipe';
 
-export const FREE_PHOTO_RECIPE_COUNT = 3;
+import { PRODUCTION_FREE_PHOTO_RECIPE_COUNT, getFreePhotoRecipeCount } from '../user/usageLimits';
+
+export { PRODUCTION_FREE_PHOTO_RECIPE_COUNT as FREE_PHOTO_RECIPE_COUNT };
 
 export const PHOTO_RECIPES: PhotoRecipe[] = [
   {
@@ -1208,5 +1210,5 @@ export function isPremiumRecipe(recipeId: string): boolean {
     return false;
   }
 
-  return recipeIndex >= FREE_PHOTO_RECIPE_COUNT;
+  return recipeIndex >= getFreePhotoRecipeCount();
 }

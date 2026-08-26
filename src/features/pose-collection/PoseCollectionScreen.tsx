@@ -5,84 +5,66 @@ import { MagnifyingGlass } from 'phosphor-react-native';
 import { AppScreenHeader } from '../../components/common/AppScreenHeader';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius } from '../../constants/theme';
-import { Pose, PoseBodyPosition, PoseFraming, PoseLocationTab, PoseSubjectCount } from '../../models/pose';
-import { PoseCard } from './components/PoseCard';
-import { getPoseCountLabel, getVisibleLocationTabs, queryPoses } from './poseLibrary';
+import { Pose } from '../../models/pose';
+import { CollectionCard } from './components/CollectionCard';
+import { PoseSearchResultCard } from './components/PoseSearchResultCard';
+import { getAllCollections, getCollectionTitle, getPoseCountLabel, searchGlobalPoses } from './poseLibrary';
 
 interface Props {
   onBack: () => void;
+  onOpenCollection: (collectionId: string) => void;
   onOpenPose: (pose: Pose) => void;
 }
 
-const LOCATION_LABELS: Record<PoseLocationTab, string> = {
-  all: 'All',
-  cafe: 'Cafe',
-  beach: 'Beach',
-  street: 'Street',
-  nature: 'Nature',
-  stores: 'Stores'
-};
+type CollectionKindFilter = 'all' | 'girl' | 'couple';
 
-type QuickFilterId = 'solo' | 'couple' | 'full_body' | 'sitting' | 'candid';
-
-const QUICK_FILTERS: Array<{ id: QuickFilterId; label: string }> = [
-  { id: 'solo', label: 'Solo' },
-  { id: 'couple', label: 'Couple' },
-  { id: 'full_body', label: 'Full body' },
-  { id: 'sitting', label: 'Sitting' },
-  { id: 'candid', label: 'Candid' }
+const KIND_FILTERS: Array<{ id: CollectionKindFilter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'girl', label: 'Solo' },
+  { id: 'couple', label: 'Couple' }
 ];
 
-export function PoseCollectionScreen({ onBack, onOpenPose }: Props) {
+function kindLabel(kind: string): string {
+  if (kind === 'couple') return 'Couple';
+  if (kind === 'girl') return 'Solo';
+  return 'Mixed';
+}
+
+export function PoseCollectionScreen({ onBack, onOpenCollection, onOpenPose }: Props) {
   const [searchText, setSearchText] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState<PoseLocationTab>('all');
-  const [activeQuickFilters, setActiveQuickFilters] = useState<QuickFilterId[]>([]);
-  const locationTabs = getVisibleLocationTabs();
+  const [selectedKind, setSelectedKind] = useState<CollectionKindFilter>('all');
+  const collections = getAllCollections();
+  const isGlobalSearch = searchText.trim().length > 0;
 
-  const subjectCount = useMemo<PoseSubjectCount[] | undefined>(() => {
-    const counts: PoseSubjectCount[] = [];
-    if (activeQuickFilters.includes('solo')) counts.push(1);
-    if (activeQuickFilters.includes('couple')) counts.push(2);
-    return counts.length ? counts : undefined;
-  }, [activeQuickFilters]);
-
-  const framing = useMemo<PoseFraming[] | undefined>(() => {
-    return activeQuickFilters.includes('full_body') ? ['full_body'] : undefined;
-  }, [activeQuickFilters]);
-
-  const bodyPositions = useMemo<PoseBodyPosition[] | undefined>(() => {
-    return activeQuickFilters.includes('sitting') ? ['sitting'] : undefined;
-  }, [activeQuickFilters]);
-
-  const poses = useMemo(
-    () =>
-      queryPoses({
-        location: selectedLocation,
-        searchText,
-        subjectCount,
-        framing,
-        bodyPositions,
-        styles: activeQuickFilters.includes('candid') ? ['candid'] : undefined
-      }),
-    [activeQuickFilters, bodyPositions, framing, searchText, selectedLocation, subjectCount]
+  const globalPoseResults = useMemo(
+    () => searchGlobalPoses(searchText, selectedKind),
+    [searchText, selectedKind]
   );
 
-  const toggleQuickFilter = (filterId: QuickFilterId) => {
-    setActiveQuickFilters(current =>
-      current.includes(filterId) ? current.filter(id => id !== filterId) : [...current, filterId]
-    );
-  };
+  const filteredCollections = useMemo(() => {
+    const normalizedSearch = searchText.trim().toLowerCase();
+    return collections.filter(collection => {
+      if (selectedKind !== 'all' && collection.kind !== selectedKind) return false;
+      if (!normalizedSearch) return true;
+      const haystack = [collection.title, collection.subtitle, collection.kind, collection.id]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(normalizedSearch);
+    });
+  }, [collections, searchText, selectedKind]);
+
+  const totalPoses = filteredCollections.reduce((sum, collection) => sum + collection.poseCount, 0);
 
   return (
     <Screen scroll={false}>
       <View style={styles.root}>
-        <AppScreenHeader title="Pose Collection" onBack={onBack} />
+        <AppScreenHeader title="Pose Collections" onBack={onBack} />
         <View style={styles.searchWrap}>
           <MagnifyingGlass size={18} color={colors.textMuted} weight="bold" />
           <TextInput
             value={searchText}
             onChangeText={setSearchText}
-            placeholder="Search poses"
+            placeholder="Search poses or collections"
             placeholderTextColor={colors.textTertiary}
             style={styles.searchInput}
             autoCorrect={false}
@@ -97,53 +79,69 @@ export function PoseCollectionScreen({ onBack, onOpenPose }: Props) {
           contentContainerStyle={styles.tabRow}
           showsHorizontalScrollIndicator={false}
         >
-          {locationTabs.map(locationTab => {
-            const selected = locationTab === selectedLocation;
+          {KIND_FILTERS.map(filter => {
+            const selected = filter.id === selectedKind;
             return (
               <Pressable
-                key={locationTab}
+                key={filter.id}
                 accessibilityRole="tab"
                 accessibilityState={{ selected }}
-                onPress={() => setSelectedLocation(locationTab)}
+                onPress={() => setSelectedKind(filter.id)}
                 style={[styles.tab, selected && styles.tabSelected]}
               >
-                <Text style={[styles.tabLabel, selected && styles.tabLabelSelected]}>
-                  {LOCATION_LABELS[locationTab]}
-                </Text>
+                <Text style={[styles.tabLabel, selected && styles.tabLabelSelected]}>{filter.label}</Text>
               </Pressable>
             );
           })}
         </ScrollView>
 
-        <View style={styles.chipRow}>
-          {QUICK_FILTERS.map(filter => {
-            const selected = activeQuickFilters.includes(filter.id);
-            return (
-              <Pressable
-                key={filter.id}
-                onPress={() => toggleQuickFilter(filter.id)}
-                style={[styles.chip, selected && styles.chipSelected]}
-              >
-                <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{filter.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Text style={styles.countLabel}>
+          {isGlobalSearch
+            ? `${globalPoseResults.length} poses across collections`
+            : `${filteredCollections.length} collections · ${getPoseCountLabel(totalPoses)}`}
+        </Text>
 
-        <Text style={styles.countLabel}>{getPoseCountLabel(poses.length)}</Text>
-
-        <FlatList
-          data={poses}
-          keyExtractor={item => item.id}
-          numColumns={2}
-          columnWrapperStyle={styles.gridRow}
-          contentContainerStyle={styles.grid}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={<Text style={styles.empty}>No poses match these filters.</Text>}
-          renderItem={({ item }) => (
-            <PoseCard pose={item} onPress={() => onOpenPose(item)} style={styles.gridItem} />
-          )}
-        />
+        {isGlobalSearch ? (
+          <FlatList
+            data={globalPoseResults}
+            keyExtractor={item => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.gridRow}
+            contentContainerStyle={styles.grid}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={<Text style={styles.empty}>No poses match your search.</Text>}
+            renderItem={({ item }) => (
+              <PoseSearchResultCard
+                pose={item}
+                collectionTitle={getCollectionTitle(item.collectionId ?? '')}
+                onPress={() => onOpenPose(item)}
+                style={styles.gridItem}
+              />
+            )}
+          />
+        ) : (
+          <FlatList
+            data={filteredCollections}
+            keyExtractor={item => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.gridRow}
+            contentContainerStyle={styles.grid}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={<Text style={styles.empty}>No collections match these filters.</Text>}
+            renderItem={({ item }) => (
+              <CollectionCard
+                title={item.title}
+                subtitle={item.subtitle}
+                poseCount={item.poseCount}
+                coverImage={item.coverImage}
+                kindLabel={kindLabel(item.kind)}
+                onPress={() => onOpenCollection(item.id)}
+                style={styles.gridItem}
+              />
+            )}
+          />
+        )}
       </View>
     </Screen>
   );
@@ -204,34 +202,6 @@ const styles = StyleSheet.create({
   },
   tabLabelSelected: {
     color: colors.white
-  },
-  chipRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingTop: 12
-  },
-  chip: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 7
-  },
-  chipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight
-  },
-  chipLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '700'
-  },
-  chipLabelSelected: {
-    color: colors.primary
   },
   countLabel: {
     color: colors.textMuted,

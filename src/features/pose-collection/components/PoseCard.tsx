@@ -7,19 +7,38 @@ interface Props {
   pose: Pose;
   onPress: () => void;
   style?: StyleProp<ViewStyle>;
+  isHighlighted?: boolean;
+  collectionLabel?: string;
 }
 
-export function PoseCard({ pose, onPress, style }: Props) {
+export function PoseCard({ pose, onPress, style, isHighlighted = false, collectionLabel }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.card, style, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, isHighlighted && styles.cardHighlighted, style, pressed && styles.pressed]}
     >
-      <ImageBackground source={pose.browsingImage.source} style={styles.image} imageStyle={styles.imageInner}>
+      <ImageBackground
+        source={pose.browsingImage.source}
+        style={[styles.image, collectionLabel ? styles.imageWithChip : undefined]}
+        imageStyle={styles.imageInner}
+      >
+        {collectionLabel ? (
+          <View style={styles.chipRow}>
+            <View style={styles.collectionChip}>
+              <Text style={styles.collectionChipText} numberOfLines={1}>
+                {collectionLabel}
+              </Text>
+            </View>
+          </View>
+        ) : null}
         <View style={styles.overlay}>
-          <Text style={styles.title} numberOfLines={1}>{pose.title}</Text>
-          <Text style={styles.subtitle} numberOfLines={2}>{pose.subtitle}</Text>
+          <Text style={styles.title} numberOfLines={2}>
+            {pose.title}
+          </Text>
+          <Text style={styles.subtitle} numberOfLines={2}>
+            {pose.subtitle}
+          </Text>
         </View>
       </ImageBackground>
     </Pressable>
@@ -33,9 +52,32 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     overflow: 'hidden'
   },
+  cardHighlighted: {
+    borderColor: colors.primary,
+    borderWidth: 2
+  },
   image: {
     flex: 1,
     justifyContent: 'flex-end'
+  },
+  imageWithChip: {
+    justifyContent: 'space-between'
+  },
+  chipRow: {
+    padding: 10
+  },
+  collectionChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: radius.pill,
+    maxWidth: '100%',
+    paddingHorizontal: 10,
+    paddingVertical: 4
+  },
+  collectionChipText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '800'
   },
   imageInner: {
     borderRadius: radius.md

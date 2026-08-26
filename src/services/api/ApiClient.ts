@@ -7,6 +7,7 @@ import { FirebaseSession } from '../firebase/firebaseSession';
 
 const DEFAULT_BASE_URL = 'https://shotcoachai-backend.vercel.app';
 const DEFAULT_TIMEOUT_MS = 90_000;
+const IMAGE_GENERATION_TIMEOUT_MS = 300_000;
 
 export interface ShotCoachApiErrorPayload {
   error?: {
@@ -78,10 +79,13 @@ export interface PromptImageEditRequest {
 }
 
 export interface GeneratedImageResponse {
-  generatedImageBase64: string;
+  generatedImageBase64?: string | null;
   promptUsed?: string;
   model?: string;
   size?: string;
+  imageEditError?: string | null;
+  coachUsed?: boolean;
+  renderPromptType?: string;
 }
 
 export interface PromptImageEditResponse extends GeneratedImageResponse {
@@ -142,57 +146,82 @@ export class ApiClient {
   }
 
   directEdit(request: DirectEditRequest, signal?: AbortSignal): Promise<GeneratedImageResponse> {
-    return this.post('/api/v1/coach/direct-edit', {
-      imageBase64: request.imageBase64,
-      mimeType: request.mimeType ?? 'image/jpeg',
-      coachMode: request.coachMode ?? 'comprehensive',
-      coachPreferences: request.coachPreferences
-    }, signal);
+    return this.post(
+      '/api/v1/coach/direct-edit',
+      {
+        imageBase64: request.imageBase64,
+        mimeType: request.mimeType ?? 'image/jpeg',
+        coachMode: request.coachMode ?? 'comprehensive',
+        coachPreferences: request.coachPreferences
+      },
+      signal,
+      false,
+      IMAGE_GENERATION_TIMEOUT_MS
+    );
   }
 
   editImage(request: PromptImageEditRequest, signal?: AbortSignal): Promise<PromptImageEditResponse> {
-    return this.post('/api/v1/images/edit', {
-      imageBase64: request.imageBase64,
-      mimeType: request.mimeType ?? 'image/jpeg',
-      prompt: request.prompt,
-      toolId: request.toolId ?? 'ai_coach',
-      evaluateQuality: request.evaluateQuality,
-      selectedDirection: request.selectedDirection,
-      originalImageBase64: request.originalImageBase64
-    }, signal);
+    return this.post(
+      '/api/v1/images/edit',
+      {
+        imageBase64: request.imageBase64,
+        mimeType: request.mimeType ?? 'image/jpeg',
+        prompt: request.prompt,
+        toolId: request.toolId ?? 'ai_coach',
+        evaluateQuality: request.evaluateQuality,
+        selectedDirection: request.selectedDirection,
+        originalImageBase64: request.originalImageBase64
+      },
+      signal,
+      false,
+      IMAGE_GENERATION_TIMEOUT_MS
+    );
   }
 
   toolEdit(request: ToolEditRequest, signal?: AbortSignal): Promise<PromptImageEditResponse> {
-    return this.post('/api/v1/tools/edit', {
-      imageBase64: request.imageBase64,
-      mimeType: request.mimeType ?? 'image/jpeg',
-      toolId: request.toolId,
-      instruction: request.instruction,
-      evaluateQuality: request.evaluateQuality,
-      selectedDirection: request.selectedDirection,
-      originalImageBase64: request.originalImageBase64
-    }, signal);
+    return this.post(
+      '/api/v1/tools/edit',
+      {
+        imageBase64: request.imageBase64,
+        mimeType: request.mimeType ?? 'image/jpeg',
+        toolId: request.toolId,
+        instruction: request.instruction,
+        evaluateQuality: request.evaluateQuality,
+        selectedDirection: request.selectedDirection,
+        originalImageBase64: request.originalImageBase64
+      },
+      signal,
+      false,
+      IMAGE_GENERATION_TIMEOUT_MS
+    );
   }
 
   recipeApply(request: RecipeApplyRequest, signal?: AbortSignal): Promise<PromptImageEditResponse> {
-    return this.post('/api/v1/recipes/apply', {
-      imageBase64: request.imageBase64,
-      mimeType: request.mimeType ?? 'image/jpeg',
-      recipe: request.recipe,
-      evaluateQuality: request.evaluateQuality,
-      selectedDirection: request.selectedDirection,
-      originalImageBase64: request.originalImageBase64
-    }, signal);
+    return this.post(
+      '/api/v1/recipes/apply',
+      {
+        imageBase64: request.imageBase64,
+        mimeType: request.mimeType ?? 'image/jpeg',
+        recipe: request.recipe,
+        evaluateQuality: request.evaluateQuality,
+        selectedDirection: request.selectedDirection,
+        originalImageBase64: request.originalImageBase64
+      },
+      signal,
+      false,
+      IMAGE_GENERATION_TIMEOUT_MS
+    );
   }
 
   private async post<TResponse>(
     path: string,
     body: Record<string, unknown>,
     externalSignal?: AbortSignal,
-    didRetry = false
+    didRetry = false,
+    timeoutMs = this.timeoutMs
   ): Promise<TResponse> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     const signal = this.mergeSignals(controller.signal, externalSignal);
 
     try {
@@ -209,7 +238,7 @@ export class ApiClient {
 
       if ((response.status === 401 || response.status === 403) && this.authHeadersProvider && !didRetry) {
         await this.authHeadersProvider(true);
-        return this.post(path, body, externalSignal, true);
+        return this.post(path, body, externalSignal, true, timeoutMs);
       }
 
       const rawText = await response.text();
@@ -227,7 +256,10 @@ export class ApiClient {
       return parsed as TResponse;
     } catch (error) {
       if (this.isAbortError(error)) {
-        throw new ShotCoachApiError(`Request timed out after ${this.timeoutMs}ms`, 0);
+        if (externalSignal?.aborted) {
+          throw new ShotCoachApiError('Request aborted.', 0);
+        }
+        throw new ShotCoachApiError(`Request timed out after ${timeoutMs}ms`, 0);
       }
       throw error;
     } finally {

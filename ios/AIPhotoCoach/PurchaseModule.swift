@@ -154,6 +154,8 @@ final class PurchaseModule: NSObject {
       "displayName": product.displayName,
       "description": product.description,
       "displayPrice": product.displayPrice,
+      "priceAmount": NSDecimalNumber(decimal: product.price).doubleValue,
+      "currencyCode": product.priceFormatStyle.currencyCode,
       "type": String(describing: product.type)
     ]
   }

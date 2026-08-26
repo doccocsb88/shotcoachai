@@ -1,0 +1,92 @@
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.bin b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.bin
+new file mode 100644
+index 0000000..c669577
+Binary files /dev/null and b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.bin differ
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.lock b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.lock
+new file mode 100644
+index 0000000..2e19d1b
+Binary files /dev/null and b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.lock differ
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+new file mode 100644
+index 0000000..9d1e51a
+Binary files /dev/null and b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/cache.properties b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/cache.properties
+new file mode 100644
+index 0000000..4e0344c
+--- /dev/null
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/cache.properties
+@@ -0,0 +1,2 @@
++#Tue Aug 25 22:59:10 GMT+07:00 2026
++gradle.version=9.1.0
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/outputFiles.bin b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/outputFiles.bin
+new file mode 100644
+index 0000000..9d46131
+Binary files /dev/null and b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/buildOutputCleanup/outputFiles.bin differ
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/file-system.probe b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/file-system.probe
+new file mode 100644
+index 0000000..1486fe8
+Binary files /dev/null and b/node_modules/expo-modules-core/expo-module-gradle-plugin/.gradle/file-system.probe differ
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts b/node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts
+index 9697cea..a5b20b6 100644
+--- a/node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/build.gradle.kts
+@@ -1,8 +1,9 @@
+ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
++import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+ 
+ plugins {
+-  kotlin("jvm") version "2.1.20"
++  kotlin("jvm") version "2.3.0"
+   id("java-gradle-plugin")
+ }
+ 
+@@ -54,9 +55,9 @@ java {
+   }
+ }
+ 
+-tasks.withType<KotlinCompile> {
+-  kotlinOptions {
+-    jvmTarget = JavaVersion.VERSION_11.toString()
++tasks.withType<KotlinCompile>().configureEach {
++  compilerOptions {
++    jvmTarget.set(JvmTarget.JVM_11)
+   }
+ }
+ 
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/build/kotlin/compileKotlin/cacheable/dirty-sources.txt b/node_modules/expo-modules-core/expo-module-gradle-plugin/build/kotlin/compileKotlin/cacheable/dirty-sources.txt
+new file mode 100644
+index 0000000..16ea1ca
+--- /dev/null
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/build/kotlin/compileKotlin/cacheable/dirty-sources.txt
+@@ -0,0 +1,11 @@
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/Version.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/gradle/ExpoModuleExtension.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ProjectConfiguration.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/Warnings.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ExtraPropertiesExtension.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/ExpoModulesGradlePlugin.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/AutolinkingIntegration.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/MavenPublicationExtension.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/withAutolinkingPlugin/kotlin/expo/modules/plugin/AutolinkingIntegrationImpl.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/gradle/ExpoGradleHelperExtension.kt
+\ No newline at end of file
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/build/kotlin/compileKotlin/local-state/build-history.bin b/node_modules/expo-modules-core/expo-module-gradle-plugin/build/kotlin/compileKotlin/local-state/build-history.bin
+new file mode 100644
+index 0000000..fb7b8ac
+Binary files /dev/null and b/node_modules/expo-modules-core/expo-module-gradle-plugin/build/kotlin/compileKotlin/local-state/build-history.bin differ
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/build/pluginDescriptors/expo-module-gradle-plugin.properties b/node_modules/expo-modules-core/expo-module-gradle-plugin/build/pluginDescriptors/expo-module-gradle-plugin.properties
+new file mode 100644
+index 0000000..08df140
+--- /dev/null
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/build/pluginDescriptors/expo-module-gradle-plugin.properties
+@@ -0,0 +1 @@
++implementation-class=expo.modules.plugin.ExpoModulesGradlePlugin
+diff --git a/node_modules/expo-modules-core/expo-module-gradle-plugin/build/resources/main/META-INF/gradle-plugins/expo-module-gradle-plugin.properties b/node_modules/expo-modules-core/expo-module-gradle-plugin/build/resources/main/META-INF/gradle-plugins/expo-module-gradle-plugin.properties
+new file mode 100644
+index 0000000..08df140
+--- /dev/null
++++ b/node_modules/expo-modules-core/expo-module-gradle-plugin/build/resources/main/META-INF/gradle-plugins/expo-module-gradle-plugin.properties
+@@ -0,0 +1 @@
++implementation-class=expo.modules.plugin.ExpoModulesGradlePlugin

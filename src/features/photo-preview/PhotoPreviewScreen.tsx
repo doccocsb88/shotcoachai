@@ -9,12 +9,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
-  type ImageSourcePropType,
   useWindowDimensions
 } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { useAnalysisStore } from '../../core/store/analysisStore';
 import { AppScreenHeader } from '../../components/common/AppScreenHeader';
@@ -23,10 +21,12 @@ import { Screen } from '../../components/common/Screen';
 import { colors, radius, shadows, spacing, typography } from '../../constants/theme';
 import { PHOTO_AI_TOOLS, PhotoAiTool, PhotoAiToolId, getPhotoAiTool } from '../../models/photoAiTool';
 import { getAiProcessingConsent, setAiProcessingConsent } from '../../services/storage/aiProcessingConsentStorage';
-import { UserAccessState, UserManager } from '../../services/user/UserManager';
+import { UserManager } from '../../services/user/UserManager';
 import { TrackingManager } from '../../services/tracking/TrackingManager';
-import { CrownLockIcon } from '../../components/icons/CrownLockIcon';
 import { ToolImageIcon, PhotoToolIcon } from '../../components/icons/ToolImageIcon';
+import { buildDirectEditInstruction } from './buildDirectEditInstruction';
+import { AiProcessingConsentModal } from './components/AiProcessingConsentModal';
+import { InstructionEditorStep } from './components/InstructionEditorStep';
 
 interface Props {
   onBack: () => void;
@@ -41,37 +41,6 @@ type PreviewStep = 'flows' | 'instructions';
 export type { PreviewStep };
 
 const directTools = PHOTO_AI_TOOLS.filter(tool => tool.id !== 'ai_coach');
-
-const compositionSuggestionIconSources: Record<string, ImageSourcePropType> = {
-  'Rule of Thirds': require('../../../assets/icons/composition-suggestions/rule-of-thirds.png'),
-  Symmetrical: require('../../../assets/icons/composition-suggestions/symmetrical.png'),
-  'Subject Focus': require('../../../assets/icons/composition-suggestions/subject-focus.png'),
-  'Centered Portrait': require('../../../assets/icons/composition-suggestions/centered-portrait.png'),
-  'Cinematic Framing': require('../../../assets/icons/composition-suggestions/cinematic-framing.png'),
-  'Social Media Ready': require('../../../assets/icons/composition-suggestions/social-media-ready.png'),
-  'Travel Photography': require('../../../assets/icons/composition-suggestions/travel-photography.png'),
-  'Professional Portrait': require('../../../assets/icons/composition-suggestions/professional-portrait.png')
-};
-
-const enhanceSuggestionIconSources: Record<string, ImageSourcePropType> = {
-  'Professional look': require('../../../assets/icons/enhance-suggestions/professional-look.png'),
-  'Natural detail': require('../../../assets/icons/enhance-suggestions/natural-detail.png'),
-  'Sharper photo': require('../../../assets/icons/enhance-suggestions/sharper-photo.png')
-};
-
-const toolPromptTags: Record<PhotoAiToolId, string[]> = {
-  ai_coach: ['Pose', 'Framing', 'Lighting'],
-  enhance_photo: ['Professional', 'Natural', 'Detail'],
-  better_composition: ['Framing', 'Balance', 'Subject placement'],
-  light_color: ['Lighting', 'Exposure', 'Tone'],
-  restore_color: ['Color', 'Saturation', 'Skin tone'],
-  upscale: ['Clarity', 'Sharpness', '2K/4K'],
-  background_boost: ['Background', 'Depth', 'Scenery'],
-  replace_background: ['New scene', 'Subject safe', 'Realistic'],
-  remove_object: ['Cleanup', 'Object removal', 'Natural fill'],
-  expand_frame: ['Outpaint', 'More space', 'Composition'],
-  smooth_skin: ['Portrait', 'Skin texture', 'Natural retouch']
-};
 
 export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPaywall, initialStep = 'flows' }: Props) {
   const photo = useAnalysisStore(state => state.currentPhoto);
@@ -89,13 +58,6 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
   const [hasAiProcessingConsent, setHasAiProcessingConsent] = useState<boolean | null>(null);
   const [isConsentVisible, setConsentVisible] = useState(false);
   const [isToolsSheetVisible, setToolsSheetVisible] = useState(false);
-  const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
-
-  useEffect(() => {
-    const unsubscribe = UserManager.subscribe(setAccessState);
-    void UserManager.refresh();
-    return unsubscribe;
-  }, []);
 
   useEffect(() => {
     void TrackingManager.flow.previewOpened(selectedToolId);
@@ -171,6 +133,13 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
     setStep('instructions');
   };
 
+  const handleInstructionChange = (value: string) => {
+    setInstruction(value);
+    if (value.trim() !== selectedQuickSuggestion) {
+      setSelectedQuickSuggestion(null);
+    }
+  };
+
   const chooseQuickSuggestion = (suggestion: string) => {
     setSelectedQuickSuggestion(suggestion);
     setInstruction(suggestion);
@@ -181,16 +150,12 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
       onOpenPaywall();
       return;
     }
-    const rawInstruction = instruction.trim();
-    const suggestionInstruction = selectedQuickSuggestion
-      ? selectedTool.quickSuggestionInstructions?.[selectedQuickSuggestion] ?? selectedQuickSuggestion
-      : undefined;
-    const labeledSuggestionInstruction = selectedQuickSuggestion && suggestionInstruction
-      ? `${selectedQuickSuggestion}: ${suggestionInstruction}`
-      : undefined;
-    const cleanInstruction = rawInstruction && rawInstruction !== selectedQuickSuggestion
-      ? rawInstruction
-      : labeledSuggestionInstruction || rawInstruction || selectedTool.detail;
+
+    const cleanInstruction = buildDirectEditInstruction(
+      selectedTool,
+      instruction,
+      selectedQuickSuggestion
+    );
     setSelectedEdit(selectedTool.id, cleanInstruction);
     void runWithConsent();
   };
@@ -253,53 +218,15 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
         ) : null}
 
         {step === 'instructions' ? (
-          <ScrollView contentContainerStyle={styles.instructionsContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <View style={styles.instructionsIntro}>
-              <Text style={styles.instructionsDetail}>{selectedTool.detail}</Text>
-              <View style={styles.toolTagRow}>
-                {toolPromptTags[selectedTool.id].map(tag => (
-                  <Text key={tag} style={styles.toolTag}>{tag}</Text>
-                ))}
-              </View>
-            </View>
-
-            <Text style={styles.fieldLabel}>Quick suggestions</Text>
-            <QuickSuggestionPicker
-              selectedSuggestion={selectedQuickSuggestion}
-              tool={selectedTool}
-              onSelect={chooseQuickSuggestion}
-            />
-
-            <Text style={styles.fieldLabel}>Or describe it</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                multiline
-                maxLength={200}
-                onChangeText={value => {
-                  setInstruction(value);
-                  if (value.trim() !== selectedQuickSuggestion) {
-                    setSelectedQuickSuggestion(null);
-                  }
-                }}
-                placeholder={selectedTool.instructionPlaceholder ?? 'Describe what you want to achieve...'}
-                placeholderTextColor={colors.textTertiary}
-                style={styles.instructionInput}
-                textAlignVertical="top"
-                value={instruction}
-              />
-              <Text style={styles.inputCounter}>{instruction.length}/200</Text>
-            </View>
-          </ScrollView>
-        ) : null}
-
-        {step === 'instructions' ? (
-          <View style={styles.actions}>
-            <PrimaryButton 
-              title="Generate" 
-              icon={!UserManager.canUseAiTool(selectedTool.id) ? <CrownLockIcon color={colors.white} size={20} /> : undefined}
-              onPress={generateDirectEdit} 
-            />
-          </View>
+          <InstructionEditorStep
+            tool={selectedTool}
+            instruction={instruction}
+            selectedQuickSuggestion={selectedQuickSuggestion}
+            isToolLocked={!UserManager.canUseAiTool(selectedTool.id)}
+            onInstructionChange={handleInstructionChange}
+            onSelectQuickSuggestion={chooseQuickSuggestion}
+            onGenerate={generateDirectEdit}
+          />
         ) : null}
 
         <AiProcessingConsentModal
@@ -315,118 +242,6 @@ export function PhotoPreviewScreen({ onBack, onAnalyze, onOpenRecipes, onOpenPay
         />
       </View>
     </Screen>
-  );
-}
-
-function QuickSuggestionPicker({
-  tool,
-  selectedSuggestion,
-  onSelect
-}: {
-  tool: PhotoAiTool;
-  selectedSuggestion: string | null;
-  onSelect: (suggestion: string) => void;
-}) {
-  const suggestions = tool.quickSuggestions ?? [];
-
-  if (tool.id === 'enhance_photo') {
-    return (
-      <View style={styles.compositionSuggestionGrid}>
-        {suggestions.map(suggestion => {
-          const selected = selectedSuggestion === suggestion;
-          const iconSource = enhanceSuggestionIconSources[suggestion];
-          return (
-            <Pressable
-              accessibilityRole="button"
-              key={suggestion}
-              onPress={() => onSelect(suggestion)}
-              style={({ pressed }) => [
-                styles.compositionSuggestionCard,
-                selected && styles.compositionSuggestionCardSelected,
-                pressed && styles.pressed
-              ]}
-            >
-              {iconSource ? (
-                <Image source={iconSource} style={styles.compositionSuggestionIcon} resizeMode="contain" />
-              ) : null}
-              <Text
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-                numberOfLines={1}
-                style={[
-                  styles.compositionSuggestionText,
-                  selected && styles.compositionSuggestionTextSelected
-                ]}
-              >
-                {suggestion}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    );
-  }
-
-  if (tool.id === 'better_composition') {
-    return (
-      <View style={styles.compositionSuggestionGrid}>
-        {suggestions.map(suggestion => {
-          const selected = selectedSuggestion === suggestion;
-          const iconSource = compositionSuggestionIconSources[suggestion];
-          return (
-            <Pressable
-              accessibilityRole="button"
-              key={suggestion}
-              onPress={() => onSelect(suggestion)}
-              style={({ pressed }) => [
-                styles.compositionSuggestionCard,
-                selected && styles.compositionSuggestionCardSelected,
-                pressed && styles.pressed
-              ]}
-            >
-              {iconSource ? (
-                <Image source={iconSource} style={styles.compositionSuggestionIcon} resizeMode="contain" />
-              ) : null}
-              <Text
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-                numberOfLines={1}
-                style={[
-                  styles.compositionSuggestionText,
-                  selected && styles.compositionSuggestionTextSelected
-                ]}
-              >
-                {suggestion}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.quickSuggestionGrid}>
-      {suggestions.map(suggestion => {
-        const selected = selectedSuggestion === suggestion;
-        return (
-          <Pressable
-            accessibilityRole="button"
-            key={suggestion}
-            onPress={() => onSelect(suggestion)}
-            style={({ pressed }) => [
-              styles.quickSuggestion,
-              selected && styles.quickSuggestionSelected,
-              pressed && styles.pressed
-            ]}
-          >
-            <Text style={[styles.quickSuggestionText, selected && styles.quickSuggestionTextSelected]}>
-              {suggestion}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
   );
 }
 
@@ -614,79 +429,12 @@ function ToolCard({ tool, onPress }: { tool: PhotoAiTool; onPress: () => void })
   );
 }
 
-
-
-function AiProcessingConsentModal({
-  visible,
-  onCancel,
-  onContinue
-}: {
-  visible: boolean;
-  onCancel: () => void;
-  onContinue: () => void;
-}) {
-  if (!visible) return null;
-
-  return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 999, elevation: 999 }]}>
-      <View style={styles.modalRoot}>
-        <Pressable
-          accessibilityLabel="Cancel AI processing consent"
-          accessibilityRole="button"
-          onPress={onCancel}
-          style={styles.modalBackdrop}
-        />
-        <View style={styles.consentCard}>
-          <Text style={styles.consentTitle}>AI Processing Notice</Text>
-          <Text style={styles.consentBody}>
-            To provide AI-powered photo analysis and preview generation, selected photos will be securely sent to OpenAI for processing.
-          </Text>
-
-          <View style={styles.consentSection}>
-            <Text style={styles.consentSectionTitle}>Data shared:</Text>
-            <ConsentBullet text="Selected photos" />
-            <ConsentBullet text="Photography instructions" />
-          </View>
-
-          <View style={styles.consentSection}>
-            <Text style={styles.consentSectionTitle}>Purpose:</Text>
-            <ConsentBullet text="Photo analysis" />
-            <ConsentBullet text="Pose recommendations" />
-            <ConsentBullet text="AI-generated previews" />
-          </View>
-
-          <Text style={styles.consentBody}>By continuing, you consent to this processing.</Text>
-
-          <View style={styles.consentActions}>
-            <PrimaryButton title="Continue" onPress={onContinue} />
-            <PrimaryButton title="Cancel" onPress={onCancel} variant="secondary" />
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function ConsentBullet({ text }: { text: string }) {
-  return (
-    <View style={styles.consentBulletRow}>
-      <Text style={styles.consentBullet}>•</Text>
-      <Text style={styles.consentBulletText}>{text}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   previewRoot: {
     flex: 1
   },
   previewContent: {
     paddingBottom: 26,
-    paddingHorizontal: 20,
-    paddingTop: 18
-  },
-  instructionsContent: {
-    paddingBottom: 28,
     paddingHorizontal: 20,
     paddingTop: 18
   },
@@ -796,27 +544,6 @@ const styles = StyleSheet.create({
     lineHeight: 31,
     marginTop: -2
   },
-  sectionHeader: {
-    marginBottom: 14,
-    marginTop: 8
-  },
-  title: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '900',
-    marginBottom: 6
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20
-  },
-  toolGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12
-  },
   sheetRoot: {
     flex: 1,
     justifyContent: 'flex-end'
@@ -918,142 +645,10 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center'
   },
-  instructionsIntro: {
-    marginBottom: 12
-  },
-  instructionsDetail: {
-    color: colors.textMuted,
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 22,
-    marginBottom: 10,
-    textAlign: 'center'
-  },
-  toolTagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center'
-  },
-  toolTag: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '900',
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 7
-  },
-  fieldLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '900',
-    marginBottom: 8,
-    marginTop: 4
-  },
-  quickSuggestionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16
-  },
-  compositionSuggestionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 14
-  },
-  compositionSuggestionCard: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 24,
-    borderWidth: 1,
-    flexDirection: 'row',
-    minHeight: 62,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    width: '48%',
-    ...shadows.soft
-  },
-  compositionSuggestionCardSelected: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary
-  },
-  compositionSuggestionIcon: {
-    borderRadius: 10,
-    height: 38,
-    marginRight: 7,
-    width: 38
-  },
-  compositionSuggestionText: {
-    color: colors.text,
-    flex: 1,
-    fontSize: 11.5,
-    fontWeight: '900',
-    lineHeight: 14
-  },
-  compositionSuggestionTextSelected: {
-    color: colors.primary
-  },
-  quickSuggestion: {
-    backgroundColor: colors.surfaceMuted,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: 18,
-    paddingVertical: 12
-  },
-  quickSuggestionSelected: {
-    backgroundColor: '#E8F4FF',
-    borderColor: '#E8F4FF'
-  },
-  quickSuggestionText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '800'
-  },
-  quickSuggestionTextSelected: {
-    color: colors.primary
-  },
-  inputWrap: {
-    backgroundColor: '#F7F8FA',
-    borderColor: 'rgba(0,0,0,0.05)',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    minHeight: 150,
-    padding: 16,
-    ...shadows.soft
-  },
-  instructionInput: {
-    color: colors.text,
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
-    minHeight: 104
-  },
-  inputCounter: {
-    alignSelf: 'flex-end',
-    color: colors.textTertiary,
-    fontSize: 11,
-    fontWeight: '800'
-  },
-  actions: {
-    backgroundColor: colors.background,
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 8,
-    paddingHorizontal: 20,
-    paddingTop: 10
-  },
   emptyState: {
     alignItems: 'center',
     flex: 1,
-    gap: 16,
+    gap: spacing.md,
     justifyContent: 'center',
     padding: 24
   },
@@ -1061,65 +656,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: typography.body,
     textAlign: 'center'
-  },
-  modalRoot: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(11, 27, 52, 0.42)',
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject
-  },
-  consentCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    maxWidth: 420,
-    padding: 22,
-    width: '100%',
-    ...shadows.card
-  },
-  consentTitle: {
-    color: colors.text,
-    fontSize: typography.headline,
-    fontWeight: '900',
-    marginBottom: 12
-  },
-  consentBody: {
-    color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22
-  },
-  consentSection: {
-    marginTop: 18
-  },
-  consentSectionTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-    marginBottom: 8
-  },
-  consentBulletRow: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 6
-  },
-  consentBullet: {
-    color: colors.primary,
-    fontSize: 18,
-    lineHeight: 22
-  },
-  consentBulletText: {
-    color: colors.textMuted,
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 22
-  },
-  consentActions: {
-    gap: 10,
-    marginTop: 22
   },
   pressed: {
     opacity: 0.72

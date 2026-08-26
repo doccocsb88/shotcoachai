@@ -1,5 +1,6 @@
-import { CameraIntent } from '../../features/home/HomeScreen';
-import { TrackingFlowType, TrackingManager } from './TrackingManager';
+import { CameraIntent } from '../../core/navigation/navigationTypes';
+import { TrackingManager } from './TrackingManager';
+import { TrackingFlowType } from './trackingTypes';
 
 export function trackingFlowTypeFromIntent(intent: CameraIntent): TrackingFlowType {
   if (intent.type === 'coach') return 'ai_coach';
@@ -11,7 +12,7 @@ export function trackingParamsFromIntent(intent: CameraIntent, source: string) {
   if (intent.type === 'coach') {
     return {
       intent_type: intent.type,
-      coach_mode: intent.mode,
+      coach_mode: 'comprehensive',
       source
     };
   }

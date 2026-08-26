@@ -3,15 +3,16 @@ import { Alert, FlatList, Image, ImageBackground, Modal, Platform, Pressable, Sc
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { CoachMode, useAnalysisStore } from '../../core/store/analysisStore';
+import { useAnalysisStore } from '../../core/store/analysisStore';
+import { CameraIntent } from '../../core/navigation/navigationTypes';
 import { Screen } from '../../components/common/Screen';
-import { navBarBottomPadding, navBarTopPadding } from '../../constants/layout';
+import { navBarBottomPadding, useNavBarTopInset } from '../../constants/layout';
 import { colors, radius, shadows, spacing } from '../../constants/theme';
 import { PickedPhoto } from '../../models/analysis';
 import { UserAccessState, UserManager } from '../../services/user/UserManager';
 import { PHOTO_RECIPES } from '../../services/photo-recipes/photoRecipeLibrary';
 import { CrownLockIcon } from '../../components/icons/CrownLockIcon';
-import { PHOTO_AI_TOOLS, PhotoAiToolId } from '../../models/photoAiTool';
+import { PHOTO_AI_TOOLS } from '../../models/photoAiTool';
 import { ToolImageIcon } from '../../components/icons/ToolImageIcon';
 import { RecipeCard } from '../photo-recipes/components/RecipeCard';
 import { PoseCard } from '../pose-collection/components/PoseCard';
@@ -33,11 +34,6 @@ function CameraSvgIcon({ color = '#1A1A1A', size = 24 }: { color?: string; size?
     </Svg>
   );
 }
-
-export type CameraIntent =
-  | { type: 'coach', mode: CoachMode }
-  | { type: 'tool'; toolId: PhotoAiToolId }
-  | { type: 'recipe'; recipeId: string };
 
 interface Props {
   onOpenCamera: (intent: CameraIntent) => void;
@@ -82,6 +78,7 @@ export function HomeScreen({
     void handleNavigation(() => onOpenCamera({ type: 'recipe', recipeId }));
   };
 
+  const navBarTopInset = useNavBarTopInset();
   const isIpad = Platform.OS === 'ios' && width >= 768;
   const featuredRecipes = PHOTO_RECIPES.slice(0, isIpad ? 6 : 5);
   const featuredPoses = getFeaturedPoses(isIpad ? 6 : 4);
@@ -89,7 +86,7 @@ export function HomeScreen({
   return (
     <Screen scroll={false}>
       <View style={styles.root}>
-        <View style={[styles.header, { paddingTop: navBarTopPadding }]}>
+        <View style={[styles.header, { paddingTop: navBarTopInset }]}>
           <Pressable onPress={() => { void TrackingManager.home.action('menu'); onOpenMenu(); }} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
             <Text style={styles.iconText}>☰</Text>
           </Pressable>
@@ -103,7 +100,7 @@ export function HomeScreen({
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroContainer}>
-            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => { void TrackingManager.home.action('coach_hero'); void handleNavigation(() => onOpenCamera({ type: 'coach', mode: 'composition' })); }}>
+            <Pressable style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]} onPress={() => { void TrackingManager.home.action('coach_hero'); void handleNavigation(() => onOpenCamera({ type: 'coach' })); }}>
               <LinearGradient colors={['#1E3A8A', '#2563EB']} style={styles.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <View style={styles.heroContent}>
                   <View style={styles.heroLeftCol}>
@@ -165,9 +162,9 @@ export function HomeScreen({
                 pose={item}
                 onPress={() => {
                   void TrackingManager.home.action('pose_card', { pose_id: item.id });
-                  void handleNavigation(() => onOpenPose(item));
+                  void onOpenPose(item);
                 }}
-                style={styles.recipeCard}
+                style={styles.poseCard}
               />
             )}
           />
@@ -377,6 +374,10 @@ const styles = StyleSheet.create({
   recipeCard: {
     marginRight: spacing.md,
     width: 144
+  },
+  poseCard: {
+    marginRight: spacing.md,
+    width: 132
   },
   pressed: {
     opacity: 0.75

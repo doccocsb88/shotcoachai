@@ -51,8 +51,30 @@ function normalizeHistoryShape(result: any, index: number): AnalysisResult | und
     return undefined;
   }
 
+  const legacyOriginalImageUri =
+    typeof result.originalImageUri === 'string' && result.originalImageUri.length > 0
+      ? result.originalImageUri
+      : typeof result.original_image_url === 'string' && result.original_image_url.length > 0
+        ? result.original_image_url
+        : undefined;
+
+  const legacyGeneratedImageUri =
+    typeof result.generatedImageUri === 'string' && result.generatedImageUri.length > 0
+      ? result.generatedImageUri
+      : typeof result.suggestions?.[0]?.result_image_url === 'string' &&
+          result.suggestions[0].result_image_url.length > 0
+        ? result.suggestions[0].result_image_url
+        : undefined;
+
+  const legacyAnalysisId =
+    typeof result.analysisId === 'string' && result.analysisId.length > 0
+      ? result.analysisId
+      : typeof result.id === 'string' && result.id.length > 0
+        ? result.id
+        : undefined;
+
   const fallbackId =
-    [result.sourceAnalysisId, result.analysisId, result.generatedImageUri, result.originalImageUri]
+    [result.sourceAnalysisId, legacyAnalysisId, legacyGeneratedImageUri, legacyOriginalImageUri]
       .find((value): value is string => typeof value === 'string' && value.length > 0) ??
     `legacy-history:${index}`;
 
@@ -60,15 +82,24 @@ function normalizeHistoryShape(result: any, index: number): AnalysisResult | und
   const createdAt =
     typeof result.createdAt === 'string' && result.createdAt.length > 0
       ? result.createdAt
-      : new Date(0).toISOString();
+      : typeof result.created_at === 'string' && result.created_at.length > 0
+        ? result.created_at
+        : new Date(0).toISOString();
+
+  const flowType =
+    result.flowType ??
+    (result.tool_id === 'ai_coach' || legacyAnalysisId?.startsWith('direct_coach:') ? 'aiCoach' : undefined);
 
   return {
     ...result,
-    analysisId: typeof result.analysisId === 'string' && result.analysisId.length > 0 ? result.analysisId : fallbackId,
+    analysisId: legacyAnalysisId ?? fallbackId,
     sourceAnalysisId:
       typeof result.sourceAnalysisId === 'string' && result.sourceAnalysisId.length > 0
         ? result.sourceAnalysisId
         : undefined,
+    originalImageUri: legacyOriginalImageUri ?? '',
+    generatedImageUri: legacyGeneratedImageUri,
+    flowType,
     createdAt,
     suggestions
   };
@@ -109,7 +140,11 @@ async function normalizeLoadedHistory(results: AnalysisResult[]): Promise<Analys
     });
   }).slice(0, HISTORY_LIMIT);
 
-  return Promise.all(normalized.map(persistHistoryResultImages));
+  const withImages = normalized.filter(
+    result => Boolean(result.originalImageUri || result.generatedImageUri)
+  );
+
+  return Promise.all(withImages.map(persistHistoryResultImages));
 }
 
 async function persistHistoryResultImages(result: AnalysisResult): Promise<AnalysisResult> {

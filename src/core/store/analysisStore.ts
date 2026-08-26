@@ -7,6 +7,7 @@ import { loadHistory, persistHistory } from '../../services/storage/historyStora
 
 export type CameraMode = 'classic' | 'pose_ai';
 export type CoachMode = 'composition' | 'frame' | 'angle' | 'pose' | 'comprehensive';
+export const DEFAULT_COACH_MODE: CoachMode = 'comprehensive';
 
 interface AnalysisStore {
   currentPhoto?: PickedPhoto;
@@ -19,7 +20,6 @@ interface AnalysisStore {
   poseAiSelectedTemplateId?: string;
   selectedPhotoAiTool: PhotoAiToolId;
   selectedPhotoAiInstruction?: string;
-  coachMode: CoachMode;
   coachPreferences: CoachPreferences;
 
   setCurrentPhoto: (photo: PickedPhoto) => void;
@@ -35,8 +35,6 @@ interface AnalysisStore {
   setSelectedPhotoAiTool: (toolId: PhotoAiToolId) => void;
   setSelectedPhotoAiEdit: (toolId: PhotoAiToolId, instruction?: string) => void;
   setSelectedPhotoAiInstruction: (instruction?: string) => void;
-  setCoachMode: (mode: CoachMode) => void;
-  setCoachPreferences: (preferences: CoachPreferences) => void;
   clearCurrent: () => void;
 }
 
@@ -46,7 +44,6 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   historyLoaded: false,
   cameraMode: 'classic',
   selectedPhotoAiTool: DEFAULT_PHOTO_AI_TOOL_ID,
-  coachMode: 'comprehensive',
   coachPreferences: DEFAULT_COACH_PREFERENCES,
 
   setCurrentPhoto: photo =>
@@ -74,6 +71,9 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     if (get().historyLoaded) return;
     const results = await loadHistory();
     set({ recentResults: results, historyLoaded: true });
+    if (results.length > 0) {
+      await persistHistory(results);
+    }
   },
   setError: message => set({ error: message }),
   setCameraMode: mode => set({ cameraMode: mode }),
@@ -82,8 +82,6 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   setSelectedPhotoAiEdit: (toolId, instruction) =>
     set({ selectedPhotoAiTool: toolId, selectedPhotoAiInstruction: instruction }),
   setSelectedPhotoAiInstruction: instruction => set({ selectedPhotoAiInstruction: instruction }),
-  setCoachMode: mode => set({ coachMode: mode }),
-  setCoachPreferences: preferences => set({ coachPreferences: preferences }),
   clearCurrent: () =>
     set({
       currentPhoto: undefined,

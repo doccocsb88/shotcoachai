@@ -35,6 +35,10 @@ export async function requestIdfaTrackingPermission(): Promise<PermissionStatus>
 }
 
 export async function initializeGoogleMobileAds(): Promise<void> {
+  if (Platform.OS === 'ios') {
+    await requestIdfaTrackingPermission();
+  }
+
   if (!mobileAdsInitPromise) {
     mobileAdsInitPromise = mobileAds()
       .initialize()
@@ -53,6 +57,5 @@ export async function initializeGoogleMobileAds(): Promise<void> {
 }
 
 export async function prepareAdsTrackingForOnboarding(): Promise<void> {
-  await requestIdfaTrackingPermission();
   await initializeGoogleMobileAds();
 }

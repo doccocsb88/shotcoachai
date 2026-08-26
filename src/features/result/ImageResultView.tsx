@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useNavBarTopInset } from '../../constants/layout';
 import { AnalysisResult } from '../../models/analysis';
 import { ChevronLeftIcon, DownloadOutlineIcon, ShareOutlineIcon } from '../../components/icons/ResultActionIcons';
 import { saveImageToLibrary, shareImage } from '../../services/share/shareGuide';
@@ -12,6 +14,8 @@ interface Props {
 
 export function ImageResultView({ result, onBack }: Props) {
   const [isSaving, setIsSaving] = useState(false);
+  const navBarTopInset = useNavBarTopInset();
+  const safeAreaInsets = useSafeAreaInsets();
   const imageUri = result.generatedImageUri ?? result.originalImageUri;
 
   const handleShare = async () => {
@@ -37,7 +41,7 @@ export function ImageResultView({ result, onBack }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: navBarTopInset + 8, minHeight: navBarTopInset + 52 }]}>
         <Pressable onPress={onBack} hitSlop={12} style={styles.iconButton}>
           <ChevronLeftIcon color="#fff" size={28} />
         </Pressable>
@@ -49,7 +53,7 @@ export function ImageResultView({ result, onBack }: Props) {
         resizeMode="contain" 
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: safeAreaInsets.bottom + 20 }]}>
         <Pressable onPress={handleSave} style={styles.iconButton} hitSlop={12}>
           <DownloadOutlineIcon color="#fff" size={26} />
         </Pressable>
@@ -69,7 +73,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingVertical: 10,
     zIndex: 10,
   },
   footer: {
@@ -77,7 +80,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 40,
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 20,
     zIndex: 10,
   },
   image: {

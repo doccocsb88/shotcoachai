@@ -1,31 +1,34 @@
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, ActivityIndicator, AppState, Image, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { CaretLeft, Lightning, DotsThreeVertical, MagicWand, X, Images, CameraRotate, CameraSlash, LightningSlash, GearSix } from 'phosphor-react-native';
+import { Alert, ActivityIndicator, AppState, Image, Linking, Platform, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { CaretLeft, Lightning, DotsThreeVertical, MagicWand, X, Images, CameraRotate, CameraSlash, LightningSlash } from 'phosphor-react-native';
 
-import { useAnalysisStore } from '../../core/store/analysisStore';
+import { DEFAULT_COACH_MODE, useAnalysisStore } from '../../core/store/analysisStore';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius, shadows, spacing } from '../../constants/theme';
 import { PickedPhoto } from '../../models/analysis';
 import { UserAccessState, UserManager } from '../../services/user/UserManager';
-import { CameraIntent } from '../home/HomeScreen';
+import { getFreeCaptureLimit } from '../../services/user/usageLimits';
+import { CameraIntent } from '../../core/navigation/navigationTypes';
 import { getPhotoAiTool } from '../../models/photoAiTool';
 import { getPhotoRecipe } from '../../services/photo-recipes/photoRecipeLibrary';
 import { useAnalyzePhoto } from '../analysis/useAnalyzePhoto';
 import { generateEditedImage } from '../../services/openai/generateImage';
 import { DirectCoachService } from '../../services/coach/DirectCoachService';
 import { TrackingManager } from '../../services/tracking/TrackingManager';
-import { COACH_MODE_IDS, COACH_MODE_OPTIONS, getCoachModeImage, getCoachModeLabel } from './coachModeConfig';
-import { CoachSettingsSheet } from './CoachSettingsSheet';
-import { hasCoachPreferences } from '../../models/coachPreferences';
+import { logCameraLifecycle, logCameraLifecycleError } from './cameraLifecycleLog';
+import { useCameraAppLifecycle } from './useCameraAppLifecycle';
+import { useCameraReadyWatchdog } from './useCameraReadyWatchdog';
 
 const USE_DIRECT_COACH_FLOW = true;
+const comprehensiveCoachImage = require('../../../assets/coaches/comprehensive.png');
 
 
 interface Props {
   onBack: () => void;
   onPhotoSelected: () => void;
+  onCoachReferenceCreated?: (uri: string) => void;
   onOpenPaywall: () => void;
   referenceImageUri?: string | null;
   intent?: CameraIntent;
@@ -38,29 +41,33 @@ const focusTopInset = navBarTopPadding + 88;
 const focusBottomInset = dockBottomPadding + 132;
 const supportsNativeLensSelection = Platform.OS === 'android';
 
-function logCameraDebug(event: string, payload?: Record<string, unknown>) {
-  console.log('[ShotCoach][Camera]', {
-    event,
-    ...payload
-  });
+function logCoachCamera(event: string, payload?: Record<string, unknown>) {
+  logCameraLifecycle('coach', event, payload);
 }
 
 export function CameraScreen({
   onBack,
   onPhotoSelected,
+  onCoachReferenceCreated,
   onOpenPaywall,
   referenceImageUri,
   intent
 }: Props) {
   const cameraRef = useRef<CameraView>(null);
-  const scrollViewRef = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
   const setCurrentPhoto = useAnalysisStore(state => state.setCurrentPhoto);
   const cameraMode = useAnalysisStore(state => state.cameraMode);
   const setPoseAiSelectedTemplateId = useAnalysisStore(state => state.setPoseAiSelectedTemplateId);
   const [cameraPermission, requestCameraPermission, getCameraPermission] = useCameraPermissions();
-  const [isAppActive, setIsAppActive] = useState(AppState.currentState === 'active');
-  const [cameraSessionKey, setCameraSessionKey] = useState(0);
+  const intentType = intent?.type;
+  const recipeId = intent?.type === 'recipe' ? intent.recipeId : undefined;
+  const toolId = intent?.type === 'tool' ? intent.toolId : undefined;
+  const { isCameraRuntimeActive, cameraSessionKey, bumpCameraSession } = useCameraAppLifecycle({
+    scope: 'coach',
+    intentType,
+    recipeId,
+    toolId
+  });
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<CameraType>('back');
   const [lens, setLens] = useState<string | undefined>(undefined);
@@ -127,27 +134,62 @@ export function CameraScreen({
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const clearCurrent = useAnalysisStore(state => state.clearCurrent);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
-  const setCoachMode = useAnalysisStore(state => state.setCoachMode);
   const coachPreferences = useAnalysisStore(state => state.coachPreferences);
-  const setCoachPreferences = useAnalysisStore(state => state.setCoachPreferences);
   const isAnalyzing = useAnalysisStore(state => state.isAnalyzing);
-  const currentResult = useAnalysisStore(state => state.currentResult);
   const { analyze } = useAnalyzePhoto();
   const [accessState, setAccessState] = useState<UserAccessState>(UserManager.getState());
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [coachSettingsVisible, setCoachSettingsVisible] = useState(false);
   const [realtimeGeneratedImageUri, setRealtimeGeneratedImageUri] = useState<string | null>(null);
   const referenceWidth = Math.round((width * 2) / 5);
-  const initialScrollOffset = useRef(intent?.type === 'coach' ? Math.max(0, COACH_MODE_IDS.indexOf(intent.mode)) * 96 : 0).current;
   const mountErrorRetryCountRef = useRef(0);
+  const cameraPreviewEnabled = Boolean(cameraPermission?.granted && isCameraRuntimeActive);
 
-  logCameraDebug('render', {
+  const retryCameraSession = useCallback(
+    (reason: string) => {
+      if (mountErrorRetryCountRef.current >= 1) {
+        logCoachCamera('session-retry-skipped', {
+          reason,
+          cameraSessionKey,
+          intentType,
+          recipeId,
+          toolId,
+          retryCount: mountErrorRetryCountRef.current
+        });
+        return;
+      }
+
+      mountErrorRetryCountRef.current += 1;
+      logCoachCamera('session-retry', {
+        reason,
+        cameraSessionKey,
+        intentType,
+        recipeId,
+        toolId,
+        retryCount: mountErrorRetryCountRef.current
+      });
+      bumpCameraSession(reason);
+    },
+    [bumpCameraSession, cameraSessionKey, intentType, recipeId, toolId]
+  );
+
+  const { markCameraReady } = useCameraReadyWatchdog({
+    scope: 'coach',
+    enabled: cameraPreviewEnabled,
+    cameraSessionKey,
+    intentType,
+    recipeId,
+    toolId,
+    onTimeout: () => {
+      retryCameraSession('ready-timeout');
+    }
+  });
+
+  logCoachCamera('render', {
     intentType: intent?.type,
-    intentMode: intent?.type === 'coach' ? intent.mode : undefined,
     recipeId: intent?.type === 'recipe' ? intent.recipeId : undefined,
     granted: cameraPermission?.granted,
     status: cameraPermission?.status,
-    isAppActive,
+    isCameraRuntimeActive,
     cameraSessionKey,
     lens,
     availableLensesCount: availableLenses.length
@@ -160,10 +202,22 @@ export function CameraScreen({
   }, []);
 
   useEffect(() => {
-    if (intent?.type === 'coach' && currentResult && !realtimeGeneratedImageUri) {
-      // Keep it active indefinitely until the next capture, no timeout needed.
+    if (intent?.type !== 'coach') {
+      setRealtimeGeneratedImageUri(null);
     }
-  }, [currentResult, intent, realtimeGeneratedImageUri]);
+  }, [intent?.type]);
+
+  useEffect(() => {
+    if (intent?.type !== 'coach') {
+      return;
+    }
+
+    if (!referenceImageUri) {
+      setRealtimeGeneratedImageUri(null);
+    }
+  }, [intent?.type, referenceImageUri]);
+
+  const coachReferencePreviewUri = referenceImageUri ?? realtimeGeneratedImageUri;
 
   const clearRealtimeState = useCallback(() => {
     setRealtimeGeneratedImageUri(null);
@@ -171,7 +225,7 @@ export function CameraScreen({
 
   useEffect(() => {
     if (cameraPermission && !cameraPermission.granted && cameraPermission.canAskAgain) {
-      logCameraDebug('request-permission-auto', {
+      logCoachCamera('request-permission-auto', {
         granted: cameraPermission.granted,
         canAskAgain: cameraPermission.canAskAgain,
         status: cameraPermission.status
@@ -181,7 +235,7 @@ export function CameraScreen({
   }, [cameraPermission, requestCameraPermission]);
 
   useEffect(() => {
-    logCameraDebug('permission-state', {
+    logCoachCamera('permission-state', {
       granted: cameraPermission?.granted,
       canAskAgain: cameraPermission?.canAskAgain,
       status: cameraPermission?.status,
@@ -190,44 +244,10 @@ export function CameraScreen({
   }, [cameraPermission]);
 
   useEffect(() => {
-    logCameraDebug('screen-mounted', {
-      appState: AppState.currentState,
-      intentType: intent?.type,
-      intentMode: intent?.type === 'coach' ? intent.mode : undefined,
-      recipeId: intent?.type === 'recipe' ? intent.recipeId : undefined,
-      toolId: intent?.type === 'tool' ? intent.toolId : undefined
-    });
-    return () => {
-      logCameraDebug('screen-unmounted', {
-        intentType: intent?.type,
-        intentMode: intent?.type === 'coach' ? intent.mode : undefined
-      });
-    };
-  }, [intent]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', state => {
-      logCameraDebug('app-state-change', {
-        nextState: state
-      });
-      setIsAppActive(state === 'active');
-      if (state === 'active') {
-        void getCameraPermission();
-        logCameraDebug('session-reset-app-active');
-        setCameraSessionKey(current => current + 1);
-      }
-    });
-
-    return () => subscription.remove();
+    if (AppState.currentState === 'active') {
+      void getCameraPermission();
+    }
   }, [getCameraPermission]);
-
-  useEffect(() => {
-    logCameraDebug('session-key-updated', {
-      cameraSessionKey,
-      isAppActive,
-      permissionGranted: cameraPermission?.granted
-    });
-  }, [cameraPermission?.granted, cameraSessionKey, isAppActive]);
 
   useEffect(() => {
     if (!supportsNativeLensSelection) {
@@ -245,7 +265,7 @@ export function CameraScreen({
 
       const defaultWideLens = findLensByKeywords(['back camera', 'wide']);
       const nextLens = defaultWideLens ?? undefined;
-      logCameraDebug('default-lens-selected', {
+      logCoachCamera('default-lens-selected', {
         currentLens,
         nextLens,
         availableLenses
@@ -263,9 +283,10 @@ export function CameraScreen({
   };
 
   const showCaptureLimitPaywall = () => {
+    const freeCaptureLimit = getFreeCaptureLimit();
     Alert.alert(
       'Unlock unlimited captures',
-      'Free users can capture up to 3 photos. Upgrade to ShotCoach Pro for unlimited shooting.',
+      `Free users can capture up to ${freeCaptureLimit} photos. Upgrade to ShotCoach Pro for unlimited shooting.`,
       [
         { text: 'Not now', style: 'cancel' },
         { text: 'Upgrade', onPress: onOpenPaywall }
@@ -335,6 +356,71 @@ export function CameraScreen({
     setCameraFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
+  const handleCoachPhotoFlow = async (picked: PickedPhoto) => {
+    useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
+
+    const hasCoachReference = Boolean(referenceImageUri);
+    if (hasCoachReference) {
+      onPhotoSelected();
+      return;
+    }
+
+    clearRealtimeState();
+
+    try {
+      if (USE_DIRECT_COACH_FLOW) {
+        setIsGeneratingImage(true);
+        const generatedUri = await DirectCoachService.generateCoachImage(
+          picked.uri,
+          picked.mimeType,
+          DEFAULT_COACH_MODE,
+          coachPreferences
+        );
+        setRealtimeGeneratedImageUri(generatedUri);
+        onCoachReferenceCreated?.(generatedUri);
+        setCurrentResult({
+          analysisId: `direct_coach:${DEFAULT_COACH_MODE}`,
+          flowType: 'aiCoach',
+          overallAssessment: 'Visual guidance generated by AI Coach.',
+          suggestions: [{
+            title: 'Direct Image Coach',
+            concept: 'AI generated visual guidance overlay',
+            composition: '',
+            camera_angle: '',
+            changes: ['Visual overlay applied'],
+            image_prompt: ''
+          }],
+          createdAt: new Date().toISOString(),
+          originalImageUri: picked.uri,
+          originalImageMimeType: picked.mimeType,
+          suggestionGenerations: [{ suggestionIndex: 0, generatedImageUri: generatedUri }],
+          generatedImageUri: generatedUri,
+          selectedSuggestionIndex: 0
+        });
+      } else {
+        const parsed = await analyze(picked.uri, picked.mimeType);
+        const imagePrompt = parsed.suggestions[0]?.image_prompt;
+        if (imagePrompt) {
+          setIsGeneratingImage(true);
+          const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
+          setRealtimeGeneratedImageUri(generatedUri);
+          const historyResult = { ...parsed };
+          if (historyResult.suggestions?.[0]) {
+            historyResult.suggestions[0] = {
+              ...historyResult.suggestions[0],
+              result_image_url: generatedUri
+            };
+          }
+          void addRecentResult(historyResult);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   const handlePickerResult = async (result: ImagePicker.ImagePickerResult) => {
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
@@ -360,8 +446,13 @@ export function CameraScreen({
     if (cameraMode === 'pose_ai') {
       setPoseAiSelectedTemplateId(undefined);
     }
+
+    if (intent?.type === 'coach') {
+      await handleCoachPhotoFlow(picked);
+      return;
+    }
+
     clearRealtimeState();
-    
     onPhotoSelected();
   };
 
@@ -385,80 +476,23 @@ export function CameraScreen({
     if (cameraMode === 'pose_ai') {
       setPoseAiSelectedTemplateId(undefined);
     }
-    clearRealtimeState();
-    
+
     if (intent?.type === 'coach') {
-      useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
-      try {
-        if (USE_DIRECT_COACH_FLOW) {
-          setIsGeneratingImage(true);
-          const generatedUri = await DirectCoachService.generateCoachImage(
-            picked.uri,
-            picked.mimeType,
-            intent.mode as any,
-            coachPreferences
-          );
-          setRealtimeGeneratedImageUri(generatedUri);
-          setCurrentResult({
-            analysisId: `direct_coach:${intent.mode}`,
-            flowType: 'aiCoach',
-            overallAssessment: `Visual guidance generated for ${intent.mode} mode.`,
-            suggestions: [{
-              title: `Direct Image Coach (${intent.mode})`,
-              concept: 'AI generated visual guidance overlay',
-              composition: '',
-              camera_angle: '',
-              changes: ['Visual overlay applied'],
-              image_prompt: ''
-            }],
-            createdAt: new Date().toISOString(),
-            originalImageUri: picked.uri,
-            originalImageMimeType: picked.mimeType,
-            suggestionGenerations: [{ suggestionIndex: 0, generatedImageUri: generatedUri }],
-            generatedImageUri: generatedUri,
-            selectedSuggestionIndex: 0
-          });
-          const historyResult = {
-            id: Date.now().toString(),
-            original_image_url: picked.uri,
-            created_at: new Date().toISOString(),
-            tool_id: 'ai_coach',
-            suggestions: [{
-              title: "Direct Image Coach",
-              description: "Visual guidance generated directly.",
-              result_image_url: generatedUri
-            }]
-          };
-          void addRecentResult(historyResult as any);
-        } else {
-          const parsed = await analyze(picked.uri, picked.mimeType);
-          const imagePrompt = parsed.suggestions[0]?.image_prompt;
-          if (imagePrompt) {
-            setIsGeneratingImage(true);
-            const generatedUri = await generateEditedImage(imagePrompt, picked.uri, picked.mimeType, 'ai_coach');
-            setRealtimeGeneratedImageUri(generatedUri);
-            const historyResult = { ...parsed };
-            if (historyResult.suggestions?.[0]) {
-              historyResult.suggestions[0] = {
-                ...historyResult.suggestions[0],
-                result_image_url: generatedUri
-              };
-            }
-            void addRecentResult(historyResult);
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsGeneratingImage(false);
-      }
-    } else {
-      onPhotoSelected();
+      await handleCoachPhotoFlow(picked);
+      return;
     }
+
+    onPhotoSelected();
   };
 
   const renderCameraPreview = () => {
     if (!cameraPermission) {
+      logCoachCamera('render-fallback-preparing-permission', {
+        intentType,
+        recipeId,
+        toolId,
+        appState: AppState.currentState
+      });
       return (
         <View style={styles.cameraFallback}>
           <Text style={styles.cameraFallbackText}>Preparing camera</Text>
@@ -467,7 +501,7 @@ export function CameraScreen({
     }
 
     if (!cameraPermission.granted) {
-      logCameraDebug('render-fallback-no-permission', {
+      logCoachCamera('render-fallback-no-permission', {
         granted: cameraPermission.granted,
         canAskAgain: cameraPermission.canAskAgain,
         status: cameraPermission.status
@@ -495,8 +529,8 @@ export function CameraScreen({
       );
     }
 
-    if (!isAppActive) {
-      logCameraDebug('render-fallback-inactive', {
+    if (!isCameraRuntimeActive) {
+      logCoachCamera('render-fallback-inactive', {
         appState: AppState.currentState,
         cameraSessionKey
       });
@@ -507,11 +541,22 @@ export function CameraScreen({
       );
     }
 
+    logCoachCamera('render-camera-view', {
+      cameraSessionKey,
+      intentType,
+      recipeId,
+      toolId,
+      facing: cameraFacing,
+      lens,
+      zoom,
+      flashMode
+    });
+
     return (
       <CameraView
         key={cameraSessionKey}
         ref={cameraRef}
-        active={isAppActive}
+        active={isCameraRuntimeActive}
         facing={cameraFacing}
         flash={flashMode}
         style={styles.cameraView}
@@ -526,8 +571,7 @@ export function CameraScreen({
         mode="picture"
         onCameraReady={() => {
           mountErrorRetryCountRef.current = 0;
-          logCameraDebug('camera-ready', {
-            cameraSessionKey,
+          markCameraReady({
             facing: cameraFacing,
             lens,
             selectedLensProp: lens && availableLenses.includes(lens) ? lens : undefined,
@@ -536,30 +580,29 @@ export function CameraScreen({
           });
         }}
         onMountError={event => {
-          console.error('[ShotCoach][Camera][mount-error]', {
+          logCameraLifecycleError('coach', 'mount-error', {
             message: event?.message ?? 'Unknown camera mount error',
             cameraSessionKey,
-            isAppActive,
+            isCameraRuntimeActive,
             permissionGranted: cameraPermission?.granted,
             appState: AppState.currentState,
             facing: cameraFacing,
             lens,
             zoom,
-            flashMode
+            flashMode,
+            intentType,
+            recipeId,
+            toolId,
+            retryCount: mountErrorRetryCountRef.current
           });
-          if (mountErrorRetryCountRef.current >= 1) {
-            return;
-          }
-
-          mountErrorRetryCountRef.current += 1;
-          setCameraSessionKey(current => current + 1);
+          retryCameraSession('mount-error');
         }}
         onAvailableLensesChanged={(event: any) => {
           if (!supportsNativeLensSelection) {
             return;
           }
 
-          logCameraDebug('available-lenses-changed', {
+          logCoachCamera('available-lenses-changed', {
             eventLenses: event?.lenses,
             nativeEventLenses: event?.nativeEvent?.lenses
           });
@@ -597,21 +640,21 @@ export function CameraScreen({
               {UserManager.remainingFreeCaptures()} free capture{UserManager.remainingFreeCaptures() === 1 ? '' : 's'} left
             </Text>
           ) : null}
-          {(referenceImageUri || realtimeGeneratedImageUri) ? (
+          {intent?.type === 'coach' && coachReferencePreviewUri ? (
             <View style={[styles.referencePreview, { width: referenceWidth }]}>
               <Image 
-                source={{ uri: realtimeGeneratedImageUri || referenceImageUri || '' }} 
+                source={{ uri: coachReferencePreviewUri }} 
                 style={styles.referencePreviewImage} 
                 resizeMode="cover" 
               />
               <View style={styles.referencePreviewLabel}>
                 <Text style={styles.referencePreviewLabelText}>Reference</Text>
               </View>
-              {realtimeGeneratedImageUri && (
+              {!referenceImageUri && realtimeGeneratedImageUri ? (
                 <Pressable onPress={clearRealtimeState} style={styles.referencePreviewClose}>
                   <X size={20} color="rgba(255,255,255,0.6)" weight="bold" />
                 </Pressable>
-              )}
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -632,7 +675,7 @@ export function CameraScreen({
               </View>
               <View>
                 <Text style={styles.featurePillTitle}>
-                  {intent?.type === 'coach' ? getCoachModeLabel(intent.mode) :
+                  {intent?.type === 'coach' ? 'AI Coach' :
                    intent?.type === 'tool' ? (getPhotoAiTool(intent.toolId)?.shortTitle ?? 'Quick Edit') : 
                    intent?.type === 'recipe' ? (getPhotoRecipe(intent.recipeId)?.title ?? 'Recipe') : 'Quick Edit'}
                 </Text>
@@ -657,34 +700,8 @@ export function CameraScreen({
                 <LightningSlash size={24} color="#FFF" weight="bold" />
               )}
             </Pressable>
-            {intent?.type === 'coach' ? (
-              <Pressable
-                accessibilityLabel="Coach settings"
-                accessibilityRole="button"
-                onPress={() => setCoachSettingsVisible(true)}
-                style={({ pressed }) => [
-                  styles.navIconButton,
-                  hasCoachPreferences(coachPreferences) && styles.navIconButtonActive,
-                  pressed && styles.pressed
-                ]}
-              >
-                <GearSix
-                  size={24}
-                  color={hasCoachPreferences(coachPreferences) ? colors.primary : '#FFF'}
-                  weight="bold"
-                />
-                {hasCoachPreferences(coachPreferences) ? <View style={styles.settingsActiveDot} /> : null}
-              </Pressable>
-            ) : null}
           </View>
         </View>
-
-        <CoachSettingsSheet
-          visible={coachSettingsVisible}
-          preferences={coachPreferences}
-          onClose={() => setCoachSettingsVisible(false)}
-          onApply={setCoachPreferences}
-        />
 
         <View style={styles.zoomContainer}>
           <Pressable onPress={() => handleZoomSelect('0.5')} style={[styles.zoomButton, activeZoomLevel === '0.5' && styles.zoomButtonActive]}>
@@ -698,70 +715,17 @@ export function CameraScreen({
           </Pressable>
         </View>
 
-        <View style={styles.secondaryControlsRow} pointerEvents="box-none">
-          <Pressable
-            accessibilityLabel="Open photo library"
-            accessibilityRole="button"
-            onPress={choosePhoto}
-            style={({ pressed }) => [styles.galleryThumbWrap, pressed && styles.pressed]}
-          >
-            <Images size={28} color="#FFF" weight="fill" />
-          </Pressable>
-          <Pressable
-            accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
-            accessibilityRole="button"
-            disabled={isCapturing}
-            onPress={swapCamera}
-            style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
-          >
-            <CameraRotate size={28} color="#FFF" weight="bold" />
-          </Pressable>
-        </View>
-
         <View style={[styles.bottomDock, { paddingBottom: dockBottomPadding }]}>
-          {intent?.type === 'coach' && (
-            <View style={[styles.coachModeSelector, { paddingTop: spacing.sm, paddingBottom: dockBottomPadding, zIndex: 1 }]}>
-              <ScrollView
-                ref={scrollViewRef}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                snapToInterval={96} // 80 width + 16 gap
-                decelerationRate="fast"
-                scrollEventThrottle={16}
-                contentOffset={{ x: initialScrollOffset, y: 0 }}
-                onScroll={(e) => {
-                  const x = e.nativeEvent.contentOffset.x;
-                  const index = Math.max(0, Math.min(COACH_MODE_IDS.length - 1, Math.round(x / 96)));
-                  const newMode = COACH_MODE_IDS[index];
-                  if (intent.mode !== newMode) {
-                    setCoachMode(newMode as any);
-                    intent.mode = newMode as any;
-                  }
-                }}
-                contentContainerStyle={[styles.coachModeScroll, { paddingHorizontal: (width - 80) / 2 }]}
-              >
-                {COACH_MODE_OPTIONS.map((mode, index) => (
-                  <Pressable
-                    key={mode.id}
-                    onPress={() => {
-                      scrollViewRef.current?.scrollTo({ x: index * 96, animated: true });
-                    }}
-                    style={styles.coachAvatarWrap}
-                  >
-                    <Image 
-                      source={mode.image} 
-                      style={[
-                        styles.coachAvatar, 
-                        intent.mode === mode.id && { opacity: 0 }
-                      ]} 
-                    />
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          <View style={styles.leftDockContent} />
+          <View style={styles.leftDockContent}>
+            <Pressable
+              accessibilityLabel="Open photo library"
+              accessibilityRole="button"
+              onPress={choosePhoto}
+              style={({ pressed }) => [styles.galleryThumbWrap, pressed && styles.pressed]}
+            >
+              <Images size={28} color="#FFF" weight="fill" />
+            </Pressable>
+          </View>
           <Pressable
             accessibilityLabel="Capture photo"
             accessibilityRole="button"
@@ -770,15 +734,25 @@ export function CameraScreen({
             style={({ pressed }) => [styles.captureButton, { zIndex: 10 }, (pressed || isCapturing) && styles.pressed]}
           >
             {intent?.type === 'coach' ? (
-              <Image 
-                source={getCoachModeImage(intent.mode)}
-                style={styles.captureInnerImage} 
+              <Image
+                source={comprehensiveCoachImage}
+                style={styles.captureInnerImage}
               />
             ) : (
               <View style={styles.captureInner} />
             )}
           </Pressable>
-          <View style={styles.rightDockContent} />
+          <View style={styles.rightDockContent}>
+            <Pressable
+              accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
+              accessibilityRole="button"
+              disabled={isCapturing}
+              onPress={swapCamera}
+              style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
+            >
+              <CameraRotate size={28} color="#FFF" weight="bold" />
+            </Pressable>
+          </View>
         </View>
       </View>
     </Screen>
@@ -877,19 +851,6 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     width: 44
-  },
-  navIconButtonActive: {
-    borderColor: 'rgba(47, 107, 255, 0.55)',
-    borderWidth: 1
-  },
-  settingsActiveDot: {
-    backgroundColor: colors.primary,
-    borderRadius: 4,
-    height: 8,
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    width: 8
   },
   navIconButtonPlaceholder: {
     width: 44
@@ -1062,7 +1023,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     left: 0,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
     paddingTop: spacing.sm,
     position: 'absolute',
     right: 0,
@@ -1070,54 +1031,11 @@ const styles = StyleSheet.create({
   },
   leftDockContent: {
     flex: 1,
-    alignItems: 'flex-end',
-    paddingRight: 16
+    alignItems: 'flex-start'
   },
   rightDockContent: {
-    flex: 1
-  },
-  secondaryControlsRow: {
-    position: 'absolute',
-    bottom: focusBottomInset - 20,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 3
-  },
-  coachModeSelector: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    zIndex: 4,
-  },
-  coachModeScroll: {
-    alignItems: 'center',
-    gap: 16
-  },
-  coachAvatarWrap: {
-    width: 80,
-    height: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  coachAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    opacity: 0.6,
-  },
-  modeListScroll: {
-    gap: 16,
-    alignItems: 'center',
-    paddingLeft: 20
-  },
-  modeText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 14,
-    fontWeight: '700'
-  },
-  modeTextActive: {
-    color: '#FFD700'
+    flex: 1,
+    alignItems: 'flex-end'
   },
   galleryThumbWrap: {
     alignItems: 'center',

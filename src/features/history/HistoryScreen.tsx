@@ -151,9 +151,6 @@ export function HistoryScreen({ onBack, onOpenResult }: Props) {
     </Screen>
   );
 }
-
-import * as FileSystem from 'expo-file-system';
-
 function HistoryGridItem({
   item,
   isEditMode,

@@ -20,7 +20,7 @@ import {
 import { shouldDebugOpenAIFlow } from '../openai/debugOpenAIFlow';
 
 const ANALYSIS_TIMEOUT_MS = 90_000;
-const GENERATION_TIMEOUT_MS = 90_000;
+const GENERATION_TIMEOUT_MS = 300_000;
 const LOCAL_STEP_TIMEOUT_MS = 20_000;
 
 export async function analyzePhotoWithBackend(input: {
@@ -86,6 +86,7 @@ export async function generateDirectCoachImageWithBackend(input: {
   coachMode: CoachMode;
   coachPreferences?: CoachPreferences;
   client?: ApiClient;
+  signal?: AbortSignal;
 }): Promise<string> {
   const client = input.client ?? shotCoachApiClient;
   const prepared = await prepareImagePayload(input.imageUri, input.mimeType, COACH_IMAGE_PRESET);
@@ -96,7 +97,7 @@ export async function generateDirectCoachImageWithBackend(input: {
         mimeType: prepared.mimeType,
         coachMode: input.coachMode,
         coachPreferences: input.coachPreferences
-      }),
+      }, input.signal),
       GENERATION_TIMEOUT_MS,
       'Direct coach generation timeout'
     );
@@ -134,6 +135,7 @@ export async function generateEditedImageWithBackend(input: {
   evaluateQuality?: boolean;
   selectedDirection?: unknown;
   client?: ApiClient;
+  signal?: AbortSignal;
 }): Promise<{ generatedImageUri: string; qualityEvaluation?: ImageQualityEvaluation }> {
   const client = input.client ?? shotCoachApiClient;
   const prepared = await prepareImagePayload(input.originalImageUri, input.originalImageMimeType ?? 'image/jpeg');
@@ -147,7 +149,7 @@ export async function generateEditedImageWithBackend(input: {
       evaluateQuality: input.evaluateQuality ?? false,
       selectedDirection: input.selectedDirection as { title: string } | undefined,
       originalImageBase64: input.evaluateQuality ? prepared.imageBase64 : undefined
-    }),
+    }, input.signal),
     GENERATION_TIMEOUT_MS,
     'Backend image generation timeout'
   );
@@ -177,6 +179,7 @@ export async function generateToolEditedImageWithBackend(input: {
   evaluateQuality?: boolean;
   selectedDirection?: unknown;
   client?: ApiClient;
+  signal?: AbortSignal;
 }): Promise<{ generatedImageUri: string; qualityEvaluation?: ImageQualityEvaluation }> {
   const client = input.client ?? shotCoachApiClient;
   const prepared = await prepareImagePayload(input.originalImageUri, input.originalImageMimeType ?? 'image/jpeg');
@@ -189,7 +192,7 @@ export async function generateToolEditedImageWithBackend(input: {
       evaluateQuality: input.evaluateQuality ?? false,
       selectedDirection: input.selectedDirection as { title: string } | undefined,
       originalImageBase64: input.evaluateQuality ? prepared.imageBase64 : undefined
-    }),
+    }, input.signal),
     GENERATION_TIMEOUT_MS,
     'Backend tool edit timeout'
   );
@@ -217,6 +220,7 @@ export async function applyRecipeWithBackend(input: {
   evaluateQuality?: boolean;
   selectedDirection?: unknown;
   client?: ApiClient;
+  signal?: AbortSignal;
 }): Promise<{ generatedImageUri: string; qualityEvaluation?: ImageQualityEvaluation }> {
   const client = input.client ?? shotCoachApiClient;
   const prepared = await prepareImagePayload(input.originalImageUri, input.originalImageMimeType ?? 'image/jpeg');
@@ -228,7 +232,7 @@ export async function applyRecipeWithBackend(input: {
       evaluateQuality: input.evaluateQuality ?? false,
       selectedDirection: input.selectedDirection as { title: string } | undefined,
       originalImageBase64: input.evaluateQuality ? prepared.imageBase64 : undefined
-    }),
+    }, input.signal),
     GENERATION_TIMEOUT_MS,
     'Backend recipe apply timeout'
   );
@@ -273,7 +277,11 @@ async function saveGeneratedImageResponse(
   filePrefix: string
 ): Promise<string> {
   if (!response.generatedImageBase64) {
-    throw new AppError('INVALID_RESPONSE', 'No generated image returned from backend.');
+    const backendMessage = response.imageEditError?.trim();
+    throw new AppError(
+      'INVALID_RESPONSE',
+      backendMessage || 'No generated image returned from backend.'
+    );
   }
 
   return saveBase64ImageToCache(response.generatedImageBase64, filePrefix);
@@ -329,6 +337,9 @@ function summarizeImageResponse(response: GeneratedImageResponse | PromptImageEd
     size: response.size,
     generatedImageBase64Length: response.generatedImageBase64?.length ?? 0,
     promptUsedPreview: response.promptUsed?.slice(0, 280),
+    coachUsed: response.coachUsed,
+    renderPromptType: response.renderPromptType,
+    imageEditError: response.imageEditError,
     hasQualityEvaluation: 'qualityEvaluation' in response && Boolean(response.qualityEvaluation)
   };
 }

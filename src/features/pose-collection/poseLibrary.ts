@@ -1,9 +1,8 @@
 import { Pose, PoseLocationTab, PoseQuery } from '../../models/pose';
-import { POSE_CATALOG } from './poseCatalog';
-import { YOUNG_WOMEN_POSE_CATALOG } from './poseCatalogYoungWomen';
+import { getAllCollections, getAllPoses, getPoseById as getCatalogPoseById } from './poseCollectionCatalog';
 
 function publishedPoses(): Pose[] {
-  return [...POSE_CATALOG, ...YOUNG_WOMEN_POSE_CATALOG]
+  return getAllPoses()
     .filter(pose => pose.status === 'published')
     .sort((left, right) => left.sortOrder - right.sortOrder);
 }
@@ -17,6 +16,9 @@ function matchesSearch(pose: Pose, searchText: string): boolean {
     pose.subtitle,
     pose.howToPose,
     pose.primaryLocation,
+    pose.sceneCategory,
+    pose.difficulty,
+    ...(pose.mood ?? []),
     ...pose.searchTerms,
     ...pose.styles,
     ...pose.subjectTypes
@@ -33,7 +35,7 @@ function includesIfRequested<T>(selected: T[] | undefined, value: T): boolean {
 }
 
 export function getPoseById(poseId: string): Pose | undefined {
-  return publishedPoses().find(pose => pose.id === poseId);
+  return getCatalogPoseById(poseId);
 }
 
 export function getFeaturedPoses(limit = 6): Pose[] {
@@ -75,3 +77,19 @@ export function getVisibleLocationTabs(): PoseLocationTab[] {
 export function getPoseCountLabel(count: number): string {
   return count === 1 ? '1 pose' : `${count} poses`;
 }
+
+export function searchGlobalPoses(searchText: string, kind: 'all' | 'girl' | 'couple' = 'all'): Pose[] {
+  const normalizedSearch = searchText.trim();
+  if (!normalizedSearch) return [];
+
+  let results = queryPoses({ searchText: normalizedSearch });
+  if (kind === 'girl') {
+    results = results.filter(pose => pose.subjectCount === 1);
+  } else if (kind === 'couple') {
+    results = results.filter(pose => pose.subjectCount === 2);
+  }
+  return results;
+}
+
+export { getAllCollections, getCollectionTitle, getPosesForCollection } from './poseCollectionCatalog';
+export type { PoseCollection } from './poseCollectionTypes';

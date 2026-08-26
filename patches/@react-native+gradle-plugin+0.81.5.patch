@@ -1,0 +1,144 @@
+diff --git a/node_modules/@react-native/gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.bin b/node_modules/@react-native/gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.bin
+new file mode 100644
+index 0000000..d9f0685
+Binary files /dev/null and b/node_modules/@react-native/gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.bin differ
+diff --git a/node_modules/@react-native/gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.lock b/node_modules/@react-native/gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.lock
+new file mode 100644
+index 0000000..f2927fb
+Binary files /dev/null and b/node_modules/@react-native/gradle-plugin/.gradle/9.1.0/executionHistory/executionHistory.lock differ
+diff --git a/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock b/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+new file mode 100644
+index 0000000..69418ae
+Binary files /dev/null and b/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff --git a/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/cache.properties b/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/cache.properties
+new file mode 100644
+index 0000000..da8f095
+--- /dev/null
++++ b/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/cache.properties
+@@ -0,0 +1,2 @@
++#Tue Aug 25 22:55:05 GMT+07:00 2026
++gradle.version=9.1.0
+diff --git a/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/outputFiles.bin b/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/outputFiles.bin
+new file mode 100644
+index 0000000..0b003d0
+Binary files /dev/null and b/node_modules/@react-native/gradle-plugin/.gradle/buildOutputCleanup/outputFiles.bin differ
+diff --git a/node_modules/@react-native/gradle-plugin/.gradle/file-system.probe b/node_modules/@react-native/gradle-plugin/.gradle/file-system.probe
+new file mode 100644
+index 0000000..6b7fb42
+Binary files /dev/null and b/node_modules/@react-native/gradle-plugin/.gradle/file-system.probe differ
+diff --git a/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml b/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
+index 7d5e2ab..8aaf427 100644
+--- a/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
++++ b/node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml
+@@ -1,10 +1,10 @@
+ [versions]
+-agp = "8.11.0"
++agp = "8.12.2"
+ gson = "2.8.9"
+ guava = "31.0.1-jre"
+ javapoet = "1.13.0"
+ junit = "4.13.2"
+-kotlin = "2.1.20"
++kotlin = "2.3.0"
+ assertj = "3.25.1"
+ 
+ [libraries]
+diff --git a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+index f8e62cb..6b1eb12 100644
+--- a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+@@ -63,7 +63,7 @@ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+   compilerOptions {
+-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
++    apiVersion.set(KotlinVersion.KOTLIN_1_9)
+     // See comment above on JDK 11 support
+     jvmTarget.set(JvmTarget.JVM_11)
+     allWarningsAsErrors.set(
+diff --git a/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
+index bd11ca6..cd905b5 100644
+--- a/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
+@@ -53,7 +53,7 @@ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+   compilerOptions {
+-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
++    apiVersion.set(KotlinVersion.KOTLIN_1_9)
+     // See comment above on JDK 11 support
+     jvmTarget.set(JvmTarget.JVM_11)
+     allWarningsAsErrors.set(
+diff --git a/node_modules/@react-native/gradle-plugin/settings-plugin/build/pluginDescriptors/com.facebook.react.settings.properties b/node_modules/@react-native/gradle-plugin/settings-plugin/build/pluginDescriptors/com.facebook.react.settings.properties
+new file mode 100644
+index 0000000..06caa8c
+--- /dev/null
++++ b/node_modules/@react-native/gradle-plugin/settings-plugin/build/pluginDescriptors/com.facebook.react.settings.properties
+@@ -0,0 +1 @@
++implementation-class=com.facebook.react.ReactSettingsPlugin
+diff --git a/node_modules/@react-native/gradle-plugin/settings-plugin/build/resources/main/META-INF/gradle-plugins/com.facebook.react.settings.properties b/node_modules/@react-native/gradle-plugin/settings-plugin/build/resources/main/META-INF/gradle-plugins/com.facebook.react.settings.properties
+new file mode 100644
+index 0000000..06caa8c
+--- /dev/null
++++ b/node_modules/@react-native/gradle-plugin/settings-plugin/build/resources/main/META-INF/gradle-plugins/com.facebook.react.settings.properties
+@@ -0,0 +1 @@
++implementation-class=com.facebook.react.ReactSettingsPlugin
+diff --git a/node_modules/@react-native/gradle-plugin/settings.gradle.kts b/node_modules/@react-native/gradle-plugin/settings.gradle.kts
+index b3c46a3..14f1e9c 100644
+--- a/node_modules/@react-native/gradle-plugin/settings.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/settings.gradle.kts
+@@ -13,7 +13,7 @@ pluginManagement {
+   }
+ }
+ 
+-plugins { id("org.gradle.toolchains.foojay-resolver-convention").version("0.5.0") }
++plugins { id("org.gradle.toolchains.foojay-resolver-convention").version("1.0.0") }
+ 
+ include(
+     ":react-native-gradle-plugin",
+diff --git a/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts b/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
+index 4c1a1ec..b66c2ce 100644
+--- a/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
+@@ -24,7 +24,7 @@ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+   compilerOptions {
+-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
++    apiVersion.set(KotlinVersion.KOTLIN_1_9)
+     // See comment above on JDK 11 support
+     jvmTarget.set(JvmTarget.JVM_11)
+     allWarningsAsErrors.set(
+diff --git a/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts b/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
+index 5a74b56..df622f4 100644
+--- a/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
+@@ -30,7 +30,7 @@ kotlin { jvmToolchain(17) }
+ 
+ tasks.withType<KotlinCompile>().configureEach {
+   compilerOptions {
+-    apiVersion.set(KotlinVersion.KOTLIN_1_8)
++    apiVersion.set(KotlinVersion.KOTLIN_1_9)
+     // See comment above on JDK 11 support
+     jvmTarget.set(JvmTarget.JVM_11)
+     allWarningsAsErrors.set(
+diff --git a/node_modules/@react-native/gradle-plugin/shared/build/kotlin/compileKotlin/cacheable/dirty-sources.txt b/node_modules/@react-native/gradle-plugin/shared/build/kotlin/compileKotlin/cacheable/dirty-sources.txt
+new file mode 100644
+index 0000000..c36f8d8
+--- /dev/null
++++ b/node_modules/@react-native/gradle-plugin/shared/build/kotlin/compileKotlin/cacheable/dirty-sources.txt
+@@ -0,0 +1,13 @@
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/utils/Os.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelAutolinkingAndroidProjectJson.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelAutolinkingDependenciesPlatformJson.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelAutolinkingDependenciesJson.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelAutolinkingProjectJson.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelCodegenConfig.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelCodegenConfigAndroid.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/utils/JsonUtils.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelPackageJson.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/utils/KotlinStdlibCompatUtils.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/utils/TaskUtils.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelAutolinkingDependenciesPlatformAndroidJson.kt
++/Users/haivu/Documents/hai/ShotCoach AI/mobile/node_modules/@react-native/gradle-plugin/shared/src/main/kotlin/com/facebook/react/model/ModelAutolinkingConfigJson.kt
+\ No newline at end of file

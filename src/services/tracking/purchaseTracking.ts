@@ -1,21 +1,15 @@
+import { Platform } from 'react-native';
+
 import {
   PurchaseProduct,
   PurchaseProductId,
   PurchaseResult,
   RestoreResult
 } from '../purchase/PurchaseService';
+import { purchaseCommerceParams } from './trackingCommerce';
 import { TrackingManager } from './TrackingManager';
 
 type PaywallSelectSource = 'plan_card' | 'primary_cta';
-
-function productParams(product: PurchaseProduct) {
-  return {
-    item_id: product.id,
-    item_name: product.displayName,
-    item_category: product.type,
-    price_label: product.displayPrice
-  };
-}
 
 function errorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : 'unknown_error';
@@ -40,39 +34,23 @@ export const PurchaseTracking = {
   },
 
   itemSelected(product: PurchaseProduct, source: PaywallSelectSource) {
-    return TrackingManager.paywall.itemSelected(
-      product.id,
-      product.displayName,
-      product.type,
-      product.displayPrice,
-      source
-    );
+    return TrackingManager.paywall.itemSelected(product, source);
   },
 
   purchaseStarted(product: PurchaseProduct, source: PaywallSelectSource) {
-    return TrackingManager.paywall.purchaseStarted(
-      product.id,
-      product.displayName,
-      product.type,
-      product.displayPrice,
-      source
-    );
+    return TrackingManager.paywall.purchaseStarted(product, source);
   },
 
   purchaseCompleted(product: PurchaseProduct, result: PurchaseResult) {
     const transaction = result.transaction;
-    return TrackingManager.paywall.purchaseCompleted({
+    return TrackingManager.paywall.purchaseCompleted(product, {
       transaction_id: transaction?.id ?? 'unknown',
-      affiliation: 'app_store',
       product_id: product.id,
-      item_id: product.id,
-      item_name: product.displayName,
-      item_category: product.type,
-      price_label: product.displayPrice,
       original_transaction_id: transaction?.originalId ?? '',
       environment: transaction?.environment ?? '',
       ownership_type: transaction?.ownershipType ?? '',
-      expiration_date: transaction?.expirationDate ?? ''
+      expiration_date: transaction?.expirationDate ?? '',
+      platform: Platform.OS
     });
   },
 
@@ -99,7 +77,9 @@ export const PurchaseTracking = {
     return TrackingManager.paywall.restoreFailed(errorMessage(error));
   },
 
-  dismissed() {
-    return TrackingManager.paywall.dismissed();
+  dismissed(source?: string) {
+    return TrackingManager.paywall.dismissed(source);
   }
 };
+
+export { purchaseCommerceParams };

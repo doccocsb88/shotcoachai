@@ -3,11 +3,9 @@ import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView
 import { BlurView } from 'expo-blur';
 
 import { BeforeAfterSlider } from '../../components/beforeAfter/BeforeAfterSlider';
+import { PhotoResultActionDock } from '../../components/common/PhotoResultActionDock';
 import {
-  CameraOutlineIcon,
   ChevronLeftIcon,
-  DownloadOutlineIcon,
-  ShareOutlineIcon,
   XIcon
 } from '../../components/icons/ResultActionIcons';
 import { Screen } from '../../components/common/Screen';
@@ -27,23 +25,11 @@ import { UserManager } from '../../services/user/UserManager';
 import { TrackingManager, TrackingFlowType } from '../../services/tracking/TrackingManager';
 import { PHOTO_RECIPES } from '../../services/photo-recipes/photoRecipeLibrary';
 import { RecipeDetailScreen } from '../photo-recipes/RecipeDetailScreen';
-import { applyRecipeWithBackend, generateToolEditedImageWithBackend } from '../../services/api/shotCoachBackendService';
+import { applyRecipeWithBackend, generateToolEditedImageWithBackend, isBackendApiError } from '../../services/api/shotCoachBackendService';
+import { withTimeout } from '../../utils/async';
 
-const IMAGE_GENERATION_TIMEOUT_MS = 90_000;
+const IMAGE_GENERATION_TIMEOUT_MS = 300_000;
 const GENERATE_EDIT_ERROR_MESSAGE = 'We could not create your AI edit right now. Please check your connection and try again.';
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
-  });
-
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  });
-}
 
 function getDirectToolId(analysisId: string): PhotoAiToolId | undefined {
   if (!analysisId.startsWith('direct:')) return undefined;
@@ -89,6 +75,14 @@ export function GeneratedResultScreen({
   const [recipeSheetVisible, setRecipeSheetVisible] = useState(false);
   const [tipSheetVisible, setTipSheetVisible] = useState(false);
   const activeGenerationKeyRef = useRef<string | null>(null);
+  const generationAbortRef = useRef<AbortController | null>(null);
+
+  const startGeneration = (targetSuggestionIndex: number) => {
+    generationAbortRef.current?.abort();
+    const abortController = new AbortController();
+    generationAbortRef.current = abortController;
+    void generateSuggestion(targetSuggestionIndex, abortController.signal);
+  };
 
   const setCurrentResult = useAnalysisStore(state => state.setCurrentResult);
   const addRecentResult = useAnalysisStore(state => state.addRecentResult);
@@ -121,10 +115,15 @@ export function GeneratedResultScreen({
       return;
     }
     activeGenerationKeyRef.current = generationKey;
-    void generateSuggestion(suggestionIndex);
+    startGeneration(suggestionIndex);
+
+    return () => {
+      generationAbortRef.current?.abort();
+      generationAbortRef.current = null;
+    };
   }, [result.analysisId, suggestionIndex]);
 
-  const generateSuggestion = async (suggestionIndex: number) => {
+  const generateSuggestion = async (suggestionIndex: number, signal?: AbortSignal) => {
     const selected = result.suggestions[suggestionIndex];
     if (!selected) return;
     const stored = getStoredGenerationUri(result, suggestionIndex);
@@ -167,7 +166,8 @@ export function GeneratedResultScreen({
             applyRecipeWithBackend({
               recipe,
               originalImageUri: result.originalImageUri,
-              originalImageMimeType: result.originalImageMimeType
+              originalImageMimeType: result.originalImageMimeType,
+              signal
             }).then(item => item.generatedImageUri),
             IMAGE_GENERATION_TIMEOUT_MS,
             'The AI edit is taking too long. Please check your connection and try again.'
@@ -179,7 +179,8 @@ export function GeneratedResultScreen({
               toolId: directToolId,
               instruction,
               originalImageUri: result.originalImageUri,
-              originalImageMimeType: result.originalImageMimeType
+              originalImageMimeType: result.originalImageMimeType,
+              signal
             }).then(item => item.generatedImageUri),
             IMAGE_GENERATION_TIMEOUT_MS,
             'The AI edit is taking too long. Please check your connection and try again.'
@@ -218,6 +219,10 @@ export function GeneratedResultScreen({
         analysis_id: result.analysisId
       });
     } catch (error) {
+      if (signal?.aborted || (isBackendApiError(error) && error.status === 0 && error.message === 'Request aborted.')) {
+        return;
+      }
+
       console.warn('[ShotCoach][Result][generation-error]', {
         analysisId: result.analysisId,
         flowType,
@@ -239,6 +244,10 @@ export function GeneratedResultScreen({
         }
       );
     } finally {
+      if (signal?.aborted) {
+        return;
+      }
+
       activeGenerationKeyRef.current = null;
       setIsGenerating(false);
     }
@@ -273,11 +282,8 @@ export function GeneratedResultScreen({
 
   const handleRetake = () => {
     void TrackingManager.flow.resultRetake(trackingFlowType);
-    if (generatedImageUri) {
-      onRetake(generatedImageUri);
-      return;
-    }
-    onBack();
+    const referenceUri = generatedImageUri ?? result.originalImageUri;
+    onRetake(referenceUri);
   };
 
   const selectedSuggestion = result.suggestions[suggestionIndex];
@@ -335,7 +341,7 @@ export function GeneratedResultScreen({
     if (retrySuggestionIndex === null || isGenerating) {
       return;
     }
-    void generateSuggestion(retrySuggestionIndex);
+    startGeneration(retrySuggestionIndex);
   };
 
   const closeGenerationError = () => {
@@ -357,10 +363,10 @@ export function GeneratedResultScreen({
           </View>
           <View style={styles.resultHeader}>
             <Pressable
-              accessibilityLabel={openedFromHistory || !canReturnToAnalysis ? 'Back' : 'Back to creative directions'}
+              accessibilityLabel="Back"
               accessibilityRole="button"
               disabled={headerActionsDisabled}
-              onPress={returnToSuggestionPicker}
+              onPress={onBack}
               style={({ pressed }) => [
                 styles.headerIconCircle,
                 headerActionsDisabled && styles.headerIconDisabled,
@@ -446,60 +452,19 @@ export function GeneratedResultScreen({
             </View>
           </View>
 
-          <View style={styles.actionDock}>
-            <View style={styles.bottomActionsRow}>
-              <Pressable
-                accessibilityLabel="Retake — return home"
-                accessibilityRole="button"
-                disabled={headerActionsDisabled}
-                onPress={handleRetake}
-                style={({ pressed }) => [
-                  styles.sideActionButton,
-                  headerActionsDisabled && styles.headerIconDisabled,
-                  pressed && !headerActionsDisabled && styles.pressed
-                ]}
-              >
-                <CameraOutlineIcon size={20} color={colors.text} />
-                <Text style={styles.sideActionLabel}>Retake</Text>
-              </Pressable>
-
-              <Pressable
-                accessibilityLabel="Save edited photo"
-                accessibilityRole="button"
-                onPress={handleSave}
-                disabled={saveDisabled}
-                style={({ pressed }) => [
-                  styles.saveFab,
-                  saveDisabled && styles.saveButtonDisabled,
-                  pressed && !saveDisabled && styles.pressed
-                ]}
-              >
-                {busy ? (
-                  <ActivityIndicator color={colors.white} size="small" />
-                ) : (
-                  <>
-                    <DownloadOutlineIcon size={22} color={colors.white} />
-                    <Text style={styles.saveFabLabel}>Save</Text>
-                  </>
-                )}
-              </Pressable>
-
-              <Pressable
-                accessibilityLabel="Share edited photo"
-                accessibilityRole="button"
-                disabled={shareDisabled}
-                onPress={handleShare}
-                style={({ pressed }) => [
-                  styles.sideActionButton,
-                  shareDisabled && styles.headerIconDisabled,
-                  pressed && !shareDisabled && styles.pressed
-                ]}
-              >
-                <ShareOutlineIcon size={20} color={colors.text} />
-                <Text style={styles.sideActionLabel}>Share</Text>
-              </Pressable>
-            </View>
-          </View>
+          <PhotoResultActionDock
+            busy={busy}
+            retakeDisabled={headerActionsDisabled}
+            saveDisabled={saveDisabled}
+            shareDisabled={shareDisabled}
+            onRetake={handleRetake}
+            onSave={() => {
+              void handleSave();
+            }}
+            onShare={() => {
+              void handleShare();
+            }}
+          />
 
           <Modal animationType="slide" transparent visible={recipeSheetVisible} onRequestClose={() => setRecipeSheetVisible(false)}>
             <View style={styles.sheetOverlay}>
@@ -794,55 +759,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginTop: -1
-  },
-  actionDock: {
-    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
-    paddingHorizontal: 16,
-    paddingTop: 4
-  },
-  bottomActionsRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'space-between'
-  },
-  sideActionButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderColor: 'rgba(255,255,255,0.96)',
-    borderRadius: 18,
-    borderWidth: 1,
-    flex: 1,
-    gap: 3,
-    justifyContent: 'center',
-    maxWidth: 88,
-    minHeight: 62,
-    paddingVertical: 8,
-    ...shadows.soft
-  },
-  sideActionLabel: {
-    color: colors.text,
-    fontSize: 10,
-    fontWeight: '700'
-  },
-  saveFab: {
-    alignItems: 'center',
-    backgroundColor: '#2F6BFF',
-    borderRadius: 31,
-    height: 62,
-    justifyContent: 'center',
-    marginHorizontal: 2,
-    width: 62,
-    ...shadows.button
-  },
-  saveFabLabel: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: '800',
-    marginTop: 2
-  },
-  saveButtonDisabled: {
-    opacity: 0.45
   },
   analysisRoot: {
     backgroundColor: colors.background,

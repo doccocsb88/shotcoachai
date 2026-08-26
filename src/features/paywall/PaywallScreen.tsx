@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Statu
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AppWebView } from '../../components/common/AppWebView';
-import { LEGAL_URLS } from '../../constants/legal';
+import { type LegalDocumentKey } from '../../constants/legal';
 import { colors, radius, shadows, spacing } from '../../constants/theme';
 import {
   PurchaseProduct,
@@ -26,7 +26,7 @@ const heroAutoScrollIntervalMs = 2800;
 
 type LegalDocument = {
   title: string;
-  url: string;
+  documentKey: LegalDocumentKey;
 };
 
 interface Props {
@@ -231,7 +231,7 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
         accessibilityLabel="Close store"
         accessibilityRole="button"
         onPress={() => {
-          void PurchaseTracking.dismissed();
+          void PurchaseTracking.dismissed('close_button');
           onBack();
         }}
         style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
@@ -376,7 +376,7 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
             onPress={() => {
               setLegalDocument({
                 title: 'Privacy Policy',
-                url: LEGAL_URLS.privacyPolicy
+                documentKey: 'privacyPolicy'
               });
             }}
             style={({ pressed }) => [styles.legalLinkButton, pressed && styles.pressed]}
@@ -389,7 +389,7 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
             onPress={() => {
               setLegalDocument({
                 title: 'Terms of Use',
-                url: LEGAL_URLS.termsOfUse
+                documentKey: 'termsOfUse'
               });
             }}
             style={({ pressed }) => [styles.legalLinkButton, pressed && styles.pressed]}
@@ -407,7 +407,7 @@ export function PaywallScreen({ onBack, paywallType }: Props) {
       </ScrollView>
       <AppWebView
         title={legalDocument?.title ?? ''}
-        url={legalDocument?.url ?? ''}
+        documentKey={legalDocument?.documentKey}
         visible={legalDocument !== null}
         onClose={() => setLegalDocument(null)}
       />

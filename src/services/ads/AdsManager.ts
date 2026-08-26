@@ -1,6 +1,9 @@
 import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 import { Platform } from 'react-native';
+import { TrackingManager } from '../tracking/TrackingManager';
 import { UserManager } from '../user/UserManager';
+
+type InterstitialTrackingParams = Record<string, unknown>;
 
 const ANDROID_INTERSTITIAL_ID = 'ca-app-pub-9552312736312538/9488938788';
 const IOS_INTERSTITIAL_ID = 'ca-app-pub-9552312736312538/4583878265';
@@ -48,18 +51,29 @@ class AdsManagerImpl {
     this.interstitial.load();
   }
 
-  public async showInterstitialIfAppropriate(): Promise<void> {
+  public async showInterstitialIfAppropriate(
+    placement?: string,
+    trackingParams?: InterstitialTrackingParams
+  ): Promise<void> {
+    const trackSkip = (reason: string) => {
+      if (!placement) return;
+      void TrackingManager.ads.interstitialSkipped(placement, reason, trackingParams);
+    };
+
     const isPremium = UserManager.getState().isPremium;
     if (isPremium) {
+      trackSkip('premium');
       return;
     }
 
     const now = Date.now();
     if (now - this.lastAdShowTime < COOLDOWN_MS) {
+      trackSkip('cooldown');
       return;
     }
 
     if (!this.loaded || !this.interstitial) {
+      trackSkip('not_loaded');
       return;
     }
 
@@ -70,19 +84,26 @@ class AdsManagerImpl {
         unsubscribeError();
         resolve();
       });
-      
+
       const unsubscribeError = this.interstitial!.addAdEventListener(AdEventType.ERROR, () => {
+        if (placement) {
+          void TrackingManager.ads.interstitialSkipped(placement, 'show_failed', trackingParams);
+        }
         unsubscribeClosed();
         unsubscribeError();
         resolve();
       });
 
       try {
+        if (placement) {
+          void TrackingManager.ads.interstitialShown(placement, trackingParams);
+        }
         this.interstitial!.show();
       } catch (error) {
         if (__DEV__) {
           console.warn('Failed to show interstitial:', error);
         }
+        trackSkip('show_failed');
         unsubscribeClosed();
         unsubscribeError();
         resolve();

@@ -18,8 +18,9 @@ import { prepareAdsTrackingForOnboarding } from '../../services/ads/mobileAds';
 import { TrackingManager } from '../../services/tracking/TrackingManager';
 
 const HERO_PAGE_1 = require('../../../assets/onboarding/page1.jpg');
-const HERO_PAGE_2 = require('../../../assets/onboarding/page2.jpg');
-const HERO_PAGE_3 = require('../../../assets/onboarding/page3.jpg');
+const HERO_PAGE_2 = require('../../../assets/onboarding/page2.png');
+const HERO_PAGE_3 = require('../../../assets/onboarding/page3.png');
+
 interface Props {
   onDone: () => void;
 }
@@ -32,24 +33,24 @@ interface OnboardingPage {
 
 const ONBOARDING_PAGES: OnboardingPage[] = [
   {
-    title: 'AI camera guidance for every better shot',
-    subtitle: 'Get instant cues for angle, framing, perspective, pose, and light before you press shutter.',
+    title: 'Live coaching with pose references',
+    subtitle: 'Get framing cues and AI pose ideas right in your camera while you shoot.',
     hero: HERO_PAGE_1
   },
   {
-    title: 'AI edit tools to refine the photo fast',
-    subtitle: 'Enhance details, rebalance light, adjust color, improve composition, and clean up the final look.',
+    title: 'Browse pose collections',
+    subtitle: 'Explore curated pose demos and match your shot to an on-screen outline.',
     hero: HERO_PAGE_2
   },
   {
     title: 'Photo Recipes for consistent looks',
-    subtitle: 'Pick a recipe mood and apply a polished style while keeping your original composition and identity.',
+    subtitle: 'Pick a recipe mood and apply a polished grade while keeping your composition and identity.',
     hero: HERO_PAGE_3
   }
 ];
 
-const topPadding = 0;
 const bottomSafePadding = Platform.select({ ios: 28, android: 16, default: 16 }) ?? 16;
+const statusBarInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
 
 export function OnboardingScreen({ onDone }: Props) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -95,96 +96,87 @@ export function OnboardingScreen({ onDone }: Props) {
   const isIpad = Platform.OS === 'ios' && windowWidth >= 768;
   const horizontalPadding = isIpad ? 180 : Math.min(28, Math.max(20, windowWidth * 0.06));
   const continueButtonWidth = isIpad ? Math.min(windowWidth * 0.5, 680) : undefined;
-  const heroImageWidth = isIpad ? windowWidth - horizontalPadding * 2 : windowWidth;
-  const heroHeight = Math.min(Math.max(windowHeight * 0.6, 440), 620);
-  const fadeFooterOverlap = Math.max(116, bottomSafePadding + 98);
-  const bottomFadeHeight = Math.max(280, windowHeight - heroHeight + 52);
+  const heroHeight = Math.min(Math.max(windowHeight * 0.62, 440), 620);
+  const heroFadeHeight = Math.max(96, Math.round(heroHeight * 0.18));
+  const skipTop = statusBarInset + (Platform.OS === 'ios' ? 12 : 8);
+  const activePage = ONBOARDING_PAGES[pageIndex];
 
   return (
-    <View style={[styles.safe, { paddingTop: topPadding }]}>
+    <View style={styles.safe}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onDone}
+        style={({ pressed }) => [styles.skipButton, { right: horizontalPadding, top: skipTop }, pressed && styles.pressed]}
+      >
+        <Text style={styles.skipText}>Skip</Text>
+      </Pressable>
+
       <View style={styles.column}>
         <ScrollView
           ref={scrollRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          style={styles.horizontalPager}
+          style={[styles.horizontalPager, { height: heroHeight }]}
           onMomentumScrollEnd={onScrollEnd}
         >
-          {ONBOARDING_PAGES.map((page, index) => {
-            const asset = Image.resolveAssetSource(page.hero);
-
-            return (
-              <View
-                key={page.title}
+          {ONBOARDING_PAGES.map((page) => (
+            <View key={page.title} style={[styles.heroPage, { width: windowWidth, height: heroHeight }]}>
+              <Image
+                source={page.hero}
                 style={[
-                  styles.page,
-                  {
-                    width: windowWidth
-                  }
+                  styles.heroImage,
+                  isIpad ? { marginHorizontal: horizontalPadding, borderRadius: radius.lg } : null
                 ]}
-              >
-                <View style={[styles.heroShell, { height: heroHeight }]}>
-                  <View style={styles.heroImage}>
-                    <Image
-                      source={page.hero}
-                      style={[
-                        styles.heroImageContent,
-                        {
-                          left: isIpad ? horizontalPadding : 0,
-                          width: heroImageWidth,
-                          height: heroImageWidth * (asset.height / asset.width)
-                        }
-                      ]}
-                      resizeMode="stretch"
-                    />
-                  </View>
-                </View>
-                <LinearGradient
-                  colors={['rgba(247, 245, 240, 0)', '#F7F5F0']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  style={[
-                    styles.pageBottomFade,
-                    {
-                      bottom: -fadeFooterOverlap,
-                      height: bottomFadeHeight
-                    }
-                  ]}
-                  pointerEvents="none"
-                />
-
-                <View style={[styles.copyBlock, { paddingHorizontal: horizontalPadding }]}>
-                  <Text style={styles.title}>{page.title}</Text>
-                  <Text style={styles.subtitle}>{page.subtitle}</Text>
-                </View>
-              </View>
-            );
-          })}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={['rgba(247, 250, 255, 0)', colors.background]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[styles.heroFade, { height: heroFadeHeight }]}
+                pointerEvents="none"
+              />
+            </View>
+          ))}
         </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: Math.max(12, bottomSafePadding), paddingHorizontal: horizontalPadding }]}>
-          <View style={styles.dotsRow}>
-            {ONBOARDING_PAGES.map((_, i) => (
-              <Pressable key={i} onPress={() => goToPage(i)} style={styles.dotHit}>
-                <View style={[styles.dot, i === pageIndex ? styles.dotActive : styles.dotInactive]} />
-              </Pressable>
-            ))}
+        <View style={styles.contentArea}>
+          <View style={[styles.copyBlock, { paddingHorizontal: horizontalPadding }]}>
+            <Text style={styles.title}>{activePage.title}</Text>
+            <Text style={styles.subtitle}>{activePage.subtitle}</Text>
           </View>
 
-          <Pressable
-            onPress={handleContinue}
-            style={({ pressed }) => [
-              styles.continueBtn,
-              isIpad && styles.continueBtnIpad,
-              continueButtonWidth ? { width: continueButtonWidth } : null,
-              pressed && styles.pressed
+          <View style={styles.contentSpacer} />
+
+          <View
+            style={[
+              styles.footerPanel,
+              { paddingBottom: Math.max(12, bottomSafePadding), paddingHorizontal: horizontalPadding }
             ]}
           >
-            <Text style={styles.continueBtnText}>
-              {pageIndex === ONBOARDING_PAGES.length - 1 ? 'Get Started' : 'Next'}
-            </Text>
-          </Pressable>
+            <View style={styles.dotsRow}>
+              {ONBOARDING_PAGES.map((_, i) => (
+                <Pressable key={i} onPress={() => goToPage(i)} style={styles.dotHit}>
+                  <View style={[styles.dot, i === pageIndex ? styles.dotActive : styles.dotInactive]} />
+                </Pressable>
+              ))}
+            </View>
+
+            <Pressable
+              onPress={handleContinue}
+              style={({ pressed }) => [
+                styles.continueBtn,
+                isIpad && styles.continueBtnIpad,
+                continueButtonWidth ? { width: continueButtonWidth } : null,
+                pressed && styles.pressed
+              ]}
+            >
+              <Text style={styles.continueBtnText}>
+                {pageIndex === ONBOARDING_PAGES.length - 1 ? 'Get Started' : 'Next'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </View>
@@ -193,77 +185,81 @@ export function OnboardingScreen({ onDone }: Props) {
 
 const styles = StyleSheet.create({
   safe: {
-    backgroundColor: '#F7F5F0',
+    backgroundColor: colors.background,
     flex: 1
+  },
+  skipButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    position: 'absolute',
+    zIndex: 10
+  },
+  skipText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700'
   },
   column: {
     flex: 1
   },
   horizontalPager: {
-    flex: 1
+    flexGrow: 0
   },
-  page: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    overflow: 'visible',
-    paddingBottom: 12
-  },
-  pageBottomFade: {
-    elevation: 3,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    zIndex: 3
-  },
-  heroShell: {
-    marginTop: 0,
-    zIndex: 0
-  },
-  heroImage: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    overflow: 'visible',
+  heroPage: {
+    overflow: 'hidden',
     position: 'relative'
   },
-  heroImageContent: {
+  heroImage: {
+    height: '100%',
+    width: '100%'
+  },
+  heroFade: {
+    bottom: 0,
     left: 0,
     position: 'absolute',
-    top: 0
+    right: 0
   },
   copyBlock: {
     alignItems: 'center',
-    elevation: 4,
-    marginTop: 'auto',
-    paddingBottom: 8,
+    paddingBottom: 4,
     paddingHorizontal: 6,
-    paddingTop: 18,
-    zIndex: 4
+    paddingTop: 6
   },
   title: {
-    color: '#18253F',
-    fontSize: 30,
+    color: colors.text,
+    fontSize: 28,
     fontWeight: '800',
-    letterSpacing: -0.8,
-    lineHeight: 36,
+    letterSpacing: -0.6,
+    lineHeight: 32,
     textAlign: 'center'
   },
   subtitle: {
-    color: '#6F7785',
+    color: colors.textMuted,
     fontSize: 15,
     fontWeight: '600',
     lineHeight: 22,
-    marginTop: 8,
+    marginTop: 10,
     textAlign: 'center'
   },
-  footer: {
-    paddingTop: 4
+  contentArea: {
+    flex: 1
+  },
+  contentSpacer: {
+    flex: 1,
+    minHeight: 8
+  },
+  footerPanel: {
+    flexGrow: 0
   },
   dotsRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    paddingBottom: 16
+    paddingBottom: 16,
+    paddingTop: 8
   },
   dotHit: {
     padding: 6

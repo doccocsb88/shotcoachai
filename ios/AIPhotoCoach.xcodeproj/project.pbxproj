@@ -18,6 +18,8 @@
 		A1954D24D54B441FB83107EA /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 359D4090C23641F5A9870C49 /* GoogleService-Info.plist */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F11748452D0722830044C1D9 /* main.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = F11748462D0722830044C1D9 /* main.jsbundle */; };
+		F11748482D0722850044C1D9 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = F11748472D0722840044C1D9 /* assets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +40,8 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = AIPhotoCoach/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* AIPhotoCoach-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "AIPhotoCoach-Bridging-Header.h"; path = "AIPhotoCoach/AIPhotoCoach-Bridging-Header.h"; sourceTree = "<group>"; };
+		F11748462D0722830044C1D9 /* main.jsbundle */ = {isa = PBXFileReference; lastKnownFileType = text; name = main.jsbundle; path = AIPhotoCoach/main.jsbundle; sourceTree = "<group>"; };
+		F11748472D0722840044C1D9 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = AIPhotoCoach/assets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +70,8 @@
 				359D4090C23641F5A9870C49 /* GoogleService-Info.plist */,
 				B9E41257A6F6F21B3E726225 /* PrivacyInfo.xcprivacy */,
 				04B0576A3021E9BA00F5F03E /* Shot Coach AI.storekit */,
+				F11748462D0722830044C1D9 /* main.jsbundle */,
+				F11748472D0722840044C1D9 /* assets */,
 			);
 			name = AIPhotoCoach;
 			sourceTree = "<group>";
@@ -213,6 +219,8 @@
 				A1954D24D54B441FB83107EA /* GoogleService-Info.plist in Resources */,
 				4697E3832649836D0CEA8BEF /* PrivacyInfo.xcprivacy in Resources */,
 				04B0576B3021E9BA00F5F03E /* Shot Coach AI.storekit in Resources */,
+				F11748452D0722830044C1D9 /* main.jsbundle in Resources */,
+				F11748482D0722850044C1D9 /* assets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

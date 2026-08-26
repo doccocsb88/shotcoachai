@@ -1,14 +1,16 @@
 import { Image, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { AppScreenHeader } from '../../components/common/AppScreenHeader';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Screen } from '../../components/common/Screen';
 import { colors, radius, spacing } from '../../constants/theme';
 import { Pose } from '../../models/pose';
+import { PoseDetailScreenHeader } from './components/PoseDetailScreenHeader';
+import { getCollectionById } from './poseCollectionCatalog';
 
 interface Props {
   pose: Pose;
   onBack: () => void;
+  onOpenCollection?: () => void;
   onUsePose: (pose: Pose) => void;
 }
 
@@ -16,25 +18,36 @@ function chipLabel(value: string): string {
   return value.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
-export function PoseDetailScreen({ pose, onBack, onUsePose }: Props) {
+export function PoseDetailScreen({ pose, onBack, onOpenCollection, onUsePose }: Props) {
   const { height: windowHeight } = useWindowDimensions();
   const heroHeight = Math.min(280, Math.round(windowHeight * 0.34));
+  const collection = pose.collectionId ? getCollectionById(pose.collectionId) : undefined;
+  const breadcrumbLabel = collection
+    ? `${collection.title} · ${chipLabel(pose.primaryLocation)}`
+    : chipLabel(pose.primaryLocation);
+
   const chips = [
     chipLabel(pose.primaryLocation),
     pose.subjectCount === 1 ? 'Solo' : pose.subjectCount === 2 ? 'Couple' : `${pose.subjectCount}`,
     ...pose.subjectTypes.filter(type => type !== 'any').map(chipLabel),
-    chipLabel(pose.bodyPosition)
+    chipLabel(pose.bodyPosition),
+    ...(pose.difficulty ? [chipLabel(pose.difficulty)] : []),
+    ...(pose.mood ?? []).slice(0, 2).map(chipLabel)
   ];
 
   return (
     <Screen scroll={false}>
       <View style={styles.root}>
-        <AppScreenHeader title="Pose Detail" onBack={onBack} />
+        <PoseDetailScreenHeader
+          title={pose.title}
+          breadcrumbLabel={breadcrumbLabel}
+          onBack={onBack}
+          onOpenCollection={onOpenCollection}
+        />
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={[styles.heroFrame, { height: heroHeight }]}>
             <Image source={pose.browsingImage.source} style={styles.hero} resizeMode="cover" />
           </View>
-          <Text style={styles.title}>{pose.title}</Text>
           <View style={styles.chipRow}>
             {chips.map(chip => (
               <View key={chip} style={styles.chip}>
@@ -79,7 +92,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 24,
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    paddingTop: 4
   },
   heroFrame: {
     backgroundColor: colors.surfaceMuted,
@@ -91,17 +105,11 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '100%'
   },
-  title: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: '900',
-    marginTop: 16
-  },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 12
+    marginTop: 16
   },
   chip: {
     backgroundColor: colors.primaryLight,

@@ -1,10 +1,19 @@
 import {
   setTrackingUserId as firebaseSetUserId,
+  trackCommerceEvent,
   trackEvent as firebaseTrackEvent,
   trackScreenView as firebaseTrackScreenView
 } from './firebaseTracking';
+import { FunnelStepName, getFunnelStepIndex } from './trackingFunnel';
+import {
+  checkoutCommerceParams,
+  purchaseCommerceParams,
+  selectItemCommerceParams
+} from './trackingCommerce';
+import { PurchaseProduct } from '../purchase/PurchaseService';
+import { TrackingFlowType } from './trackingTypes';
 
-export type TrackingFlowType = 'ai_coach' | 'editing_tool' | 'photo_recipe' | 'pose';
+export type { TrackingFlowType };
 
 type TrackingParams = Record<string, unknown>;
 
@@ -27,6 +36,7 @@ function sanitizeParams(params?: TrackingParams): Record<string, string | number
 
   const sanitized: Record<string, string | number> = {};
   for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) continue;
     const nextValue = sanitizeValue(value);
     if (nextValue !== undefined) {
       sanitized[key.slice(0, 40)] = nextValue;
@@ -45,18 +55,39 @@ function withActiveFlow(params?: TrackingParams): TrackingParams {
 }
 
 function track(eventName: string, params?: TrackingParams) {
-  return firebaseTrackEvent(eventName, sanitizeParams(withActiveFlow(params)));
+  return firebaseTrackEvent(eventName, withActiveFlow(params));
+}
+
+function trackFunnelStep(stepName: FunnelStepName, params?: TrackingParams) {
+  if (!activeFlowId || !activeFlowType) return;
+  return track('funnel_step', {
+    step_name: stepName,
+    step_index: getFunnelStepIndex(activeFlowType, stepName),
+    ...params
+  });
+}
+
+function trackFlowStep(stepName: FunnelStepName, eventName: string, params?: TrackingParams) {
+  void trackFunnelStep(stepName, params);
+  return track(eventName, params);
 }
 
 function startFlow(flowType: TrackingFlowType, params?: TrackingParams) {
   activeFlowId = createFlowId();
   activeFlowType = flowType;
+  void trackFunnelStep('entry', params);
   return track('flow_start', { flow_type: flowType, ...params });
 }
 
 function endFlow(reason: 'completed' | 'abandoned' | 'failed', params?: TrackingParams) {
+  if (!activeFlowId) return;
   const payload = withActiveFlow({ end_reason: reason, ...params });
   void firebaseTrackEvent('flow_end', sanitizeParams(payload));
+  activeFlowId = null;
+  activeFlowType = null;
+}
+
+function clearActiveFlow() {
   activeFlowId = null;
   activeFlowType = null;
 }
@@ -100,17 +131,25 @@ export const TrackingManager = {
     collectionOpened(source: string) {
       return track('pose_collection_opened', { source });
     },
-    detailOpened(poseId: string) {
-      return track('pose_detail_opened', { pose_id: poseId });
+    detailOpened(poseId: string, source: string) {
+      return trackFlowStep('pose_detail', 'pose_detail_opened', { pose_id: poseId, source });
     },
-    cameraOpened(poseId: string) {
-      return startFlow('pose', { pose_id: poseId });
+    cameraOpened(poseId: string, source?: string) {
+      startFlow('pose', { pose_id: poseId, ...(source ? { source } : {}) });
+      void trackFunnelStep('pose_detail', { pose_id: poseId, ...(source ? { source } : {}) });
+      return trackFlowStep('camera', 'pose_camera_opened', { pose_id: poseId });
     },
     captured(poseId: string) {
-      return track('pose_captured', { pose_id: poseId });
+      return trackFlowStep('photo', 'pose_captured', { pose_id: poseId });
     },
     previewUsed(poseId: string) {
-      return track('pose_preview_used', { pose_id: poseId });
+      return trackFlowStep('outcome', 'pose_preview_used', { pose_id: poseId });
+    }
+  },
+
+  recipe: {
+    detailOpened(recipeId: string, source: string) {
+      return trackFlowStep('recipe_detail', 'recipe_detail_opened', { recipe_id: recipeId, source });
     }
   },
 
@@ -134,6 +173,7 @@ export const TrackingManager = {
 
   paywall: {
     opened(source: string, paywallType: string) {
+      void trackFunnelStep('paywall', { source, paywall_type: paywallType });
       return track('paywall_opened', { source, paywall_type: paywallType });
     },
     impression() {
@@ -145,29 +185,29 @@ export const TrackingManager = {
     productsLoadFailed(errorMessage: string) {
       return track('paywall_products_load_failed', { error_message: errorMessage });
     },
-    itemSelected(itemId: string, itemName: string, itemCategory: string, priceLabel: string, source: string) {
-      return track('select_item', {
-        item_list_id: 'shotcoach_paywall',
-        item_list_name: 'ShotCoach Paywall',
-        item_id: itemId,
-        item_name: itemName,
-        item_category: itemCategory,
-        price_label: priceLabel,
-        source
+    itemSelected(product: PurchaseProduct, source: string) {
+      void trackCommerceEvent('select_item', withActiveFlow(selectItemCommerceParams(product, source)));
+      return track('paywall_plan_selected', {
+        item_id: product.id,
+        source,
+        price_label: product.displayPrice
       });
     },
-    purchaseStarted(itemId: string, itemName: string, itemCategory: string, priceLabel: string, source: string) {
-      return track('begin_checkout', {
-        item_id: itemId,
-        item_name: itemName,
-        item_category: itemCategory,
-        price_label: priceLabel,
-        source
+    purchaseStarted(product: PurchaseProduct, source: string) {
+      void trackCommerceEvent('begin_checkout', withActiveFlow(checkoutCommerceParams(product, source)));
+      return track('paywall_checkout_started', {
+        item_id: product.id,
+        source,
+        price_label: product.displayPrice
       });
     },
-    purchaseCompleted(params: TrackingParams) {
-      void track('purchase', params);
-      return track('paywall_purchase_completed', params);
+    purchaseCompleted(product: PurchaseProduct, params: TrackingParams) {
+      const commerceParams = withActiveFlow(
+        purchaseCommerceParams(product, sanitizeParams(params) ?? {})
+      );
+      void trackCommerceEvent('purchase', commerceParams);
+      void trackFunnelStep('paywall', { conversion: 'purchase', item_id: product.id });
+      return track('paywall_purchase_completed', sanitizeParams(commerceParams));
     },
     purchaseResolved(productId: string, status: string) {
       return track('paywall_purchase_result', { product_id: productId, status });
@@ -187,8 +227,8 @@ export const TrackingManager = {
     restoreFailed(errorMessage: string) {
       return track('paywall_restore_failed', { error_message: errorMessage });
     },
-    dismissed() {
-      return track('paywall_dismissed');
+    dismissed(source?: string) {
+      return track('paywall_dismissed', source ? { source } : undefined);
     }
   },
 
@@ -198,6 +238,12 @@ export const TrackingManager = {
     },
     idfaRequested(status: string) {
       return track('idfa_permission_requested', { status });
+    },
+    interstitialShown(placement: string, params?: TrackingParams) {
+      return track('ads_interstitial_shown', { placement, ...params });
+    },
+    interstitialSkipped(placement: string, reason: string, params?: TrackingParams) {
+      return track('ads_interstitial_skipped', { placement, skip_reason: reason, ...params });
     }
   },
 
@@ -216,17 +262,24 @@ export const TrackingManager = {
   flow: {
     start: startFlow,
     end: endFlow,
+    clear: clearActiveFlow,
+    abandon() {
+      return endFlow('abandoned');
+    },
+    fail(reason: string, params?: TrackingParams) {
+      return endFlow('failed', { failure_reason: reason, ...params });
+    },
     cameraOpened(params: TrackingParams) {
-      return track('camera_opened', params);
+      return trackFlowStep('camera', 'camera_opened', params);
     },
     photoSelected(source: 'camera' | 'gallery', params?: TrackingParams) {
-      return track('photo_selected', { photo_source: source, ...params });
+      return trackFlowStep('photo', 'photo_selected', { photo_source: source, ...params });
     },
     photoRejected(reason: 'too_small' | 'permission_denied' | 'capture_failed') {
       return track('photo_rejected', { reason });
     },
     previewOpened(toolId: string) {
-      return track('preview_opened', { tool_id: toolId });
+      return trackFlowStep('preview', 'preview_opened', { tool_id: toolId });
     },
     recipeListOpened(source: string) {
       return track('recipe_list_opened', { source });
@@ -235,35 +288,37 @@ export const TrackingManager = {
       return track('recipe_selected', { recipe_id: recipeId, source });
     },
     analysisStarted(params?: TrackingParams) {
-      return track('analysis_started', params);
+      return trackFlowStep('analysis', 'analysis_started', params);
     },
     analysisCompleted(suggestionCount: number) {
-      return track('analysis_completed', { suggestion_count: suggestionCount });
+      return trackFlowStep('analysis', 'analysis_completed', { suggestion_count: suggestionCount });
     },
     analysisFailed(errorMessage: string) {
-      return track('analysis_failed', { error_message: errorMessage });
+      void trackFlowStep('analysis', 'analysis_failed', { error_message: errorMessage });
+      return endFlow('failed', { failure_reason: errorMessage, step: 'analysis' });
     },
     analysisResultViewed(suggestionCount: number) {
-      return track('analysis_result_viewed', { suggestion_count: suggestionCount });
+      return trackFlowStep('result', 'analysis_result_viewed', { suggestion_count: suggestionCount });
     },
     suggestionSelected(index: number, total: number) {
-      return track('suggestion_selected', { suggestion_index: index, suggestion_total: total });
+      return trackFlowStep('result', 'suggestion_selected', { suggestion_index: index, suggestion_total: total });
     },
     generationStarted(params?: TrackingParams) {
-      return track('generation_started', params);
+      return trackFlowStep('generation', 'generation_started', params);
     },
     generationCompleted(params?: TrackingParams) {
-      void track('generation_completed', params);
-      endFlow('completed', { step: 'generation', ...params });
+      void trackFlowStep('generation', 'generation_completed', params);
+      return endFlow('completed', { step: 'generation', ...params });
     },
     generationFailed(errorMessage: string, params?: TrackingParams) {
-      return track('generation_failed', { error_message: errorMessage, ...params });
+      void trackFlowStep('generation', 'generation_failed', { error_message: errorMessage, ...params });
+      return endFlow('failed', { failure_reason: errorMessage, step: 'generation', ...params });
     },
     resultSaved(flowType: TrackingFlowType) {
-      return track('result_saved', { result_flow_type: flowType });
+      return trackFlowStep('outcome', 'result_saved', { result_flow_type: flowType });
     },
     resultShared(flowType: TrackingFlowType) {
-      return track('result_shared', { result_flow_type: flowType });
+      return trackFlowStep('outcome', 'result_shared', { result_flow_type: flowType });
     },
     resultRetake(flowType: TrackingFlowType) {
       return track('result_retake', { result_flow_type: flowType });
