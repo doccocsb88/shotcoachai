@@ -5,17 +5,20 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from './src/constants/theme';
 import { AppNavigator } from './src/core/navigation/AppNavigator';
+import { type LaunchPaywallSource } from './src/core/navigation/navigationTypes';
 import { LoadingScreen } from './src/features/onboarding/LoadingScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 import { getOnboardingComplete, setOnboardingComplete } from './src/services/storage/onboardingStorage';
 import { TrackingManager } from './src/services/tracking/TrackingManager';
 import { prepareAdsTrackingForOnboarding } from './src/services/ads/mobileAds';
 import { FirebaseSession } from './src/services/firebase/firebaseSession';
+import { UserManager } from './src/services/user/UserManager';
 
 type AppGate = 'loading' | 'onboarding' | 'main';
 
 export default function App() {
   const [gate, setGate] = useState<AppGate>('loading');
+  const [launchPaywallSource, setLaunchPaywallSource] = useState<LaunchPaywallSource | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,16 +30,22 @@ export default function App() {
       });
       if (cancelled) return;
       try {
-        const [done] = await Promise.all([
+        const [onboardingComplete] = await Promise.all([
           getOnboardingComplete(),
           FirebaseSession.ensureReady().catch(error => {
             console.warn('[FirebaseSession] bootstrap failed', error);
+          }),
+          UserManager.ensureReady().catch(error => {
+            console.warn('[UserManager] bootstrap failed', error);
           })
         ]);
         if (!cancelled) {
-          setGate(done ? 'main' : 'onboarding');
-          if (done) {
+          if (onboardingComplete) {
+            setLaunchPaywallSource(UserManager.getState().isPremium ? null : 'app_open');
             void prepareAdsTrackingForOnboarding();
+            setGate('main');
+          } else {
+            setGate('onboarding');
           }
         }
       } catch {
@@ -56,6 +65,7 @@ export default function App() {
     void TrackingManager.onboarding.completed();
     await setOnboardingComplete();
     await prepareAdsTrackingForOnboarding();
+    setLaunchPaywallSource('onboarding');
     setGate('main');
   }, []);
 
@@ -69,7 +79,7 @@ export default function App() {
           <OnboardingScreen onDone={handleOnboardingDone} />
         ) : (
           <View style={styles.root}>
-            <AppNavigator />
+            <AppNavigator launchPaywallSource={launchPaywallSource} />
           </View>
         )}
       </View>

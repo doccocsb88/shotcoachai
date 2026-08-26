@@ -1,0 +1,47 @@
+diff --git a/node_modules/react-native/scripts/cocoapods/new_architecture.rb b/node_modules/react-native/scripts/cocoapods/new_architecture.rb
+index 7d8f8e6..cef6d2a 100644
+--- a/node_modules/react-native/scripts/cocoapods/new_architecture.rb
++++ b/node_modules/react-native/scripts/cocoapods/new_architecture.rb
+@@ -166,7 +166,7 @@ class NewArchitectureHelper
+         excluded_info_plist = ["/Pods", "Tests", "metainternal", ".bundle", "build/", "DerivedData/"]
+         projectPaths.each do |projectPath|
+             projectFolderPath = File.dirname(projectPath)
+-            infoPlistFiles = `find #{projectFolderPath} -name "Info.plist"`
++            infoPlistFiles = `find "#{projectFolderPath}" -name "Info.plist"`
+             infoPlistFiles = infoPlistFiles.split("\n").map { |f| f.strip }
+ 
+             infoPlistFiles.each do |infoPlistFile|
+diff --git a/node_modules/react-native/scripts/codegen/generate-artifacts-executor/generateRCTThirdPartyComponents.js b/node_modules/react-native/scripts/codegen/generate-artifacts-executor/generateRCTThirdPartyComponents.js
+index fdd7e95..5a9faca 100644
+--- a/node_modules/react-native/scripts/codegen/generate-artifacts-executor/generateRCTThirdPartyComponents.js
++++ b/node_modules/react-native/scripts/codegen/generate-artifacts-executor/generateRCTThirdPartyComponents.js
+@@ -138,7 +138,7 @@ function generateRCTThirdPartyComponents(
+     .flatMap(library => {
+       const components = componentsInLibraries[library];
+       return components.map(({componentName, className}) => {
+-        return `\t\t@"${componentName}": NSClassFromString(@"${className}"), // ${library}`;
++        return `\t\taddComponent(@"${componentName}", NSClassFromString(@"${className}")); // ${library}`;
+       });
+     })
+     .join('\n');
+diff --git a/node_modules/react-native/scripts/codegen/templates/RCTThirdPartyComponentsProviderMM.template b/node_modules/react-native/scripts/codegen/templates/RCTThirdPartyComponentsProviderMM.template
+index 4ce5107..1f946cb 100644
+--- a/node_modules/react-native/scripts/codegen/templates/RCTThirdPartyComponentsProviderMM.template
++++ b/node_modules/react-native/scripts/codegen/templates/RCTThirdPartyComponentsProviderMM.template
+@@ -19,9 +19,14 @@
+   static dispatch_once_t nativeComponentsToken;
+ 
+   dispatch_once(&nativeComponentsToken, ^{
+-    thirdPartyComponents = @{
+-{thirdPartyComponentsMapping}
++    NSMutableDictionary<NSString *, Class<RCTComponentViewProtocol>> *resolvedComponents = [NSMutableDictionary new];
++    void (^addComponent)(NSString *, Class) = ^(NSString *name, Class cls) {
++      if (cls) {
++        resolvedComponents[name] = cls;
++      }
+     };
++{thirdPartyComponentsMapping}
++    thirdPartyComponents = [resolvedComponents copy];
+   });
+ 
+   return thirdPartyComponents;

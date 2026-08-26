@@ -26,6 +26,7 @@ export type CameraIntent =
 
 export type CameraSource = 'home' | 'recipeList';
 export type PoseBrowseSource = 'home' | 'collection';
+export type LaunchPaywallSource = 'onboarding' | 'app_open';
 
 export type RootStackParamList = {
   Home: undefined;

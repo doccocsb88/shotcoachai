@@ -11,7 +11,7 @@ import { TrackingManager } from '../../services/tracking/TrackingManager';
 import { AppNavigationProvider, useAppNavigation } from './AppNavigationProvider';
 import { navigationRef } from './navigationRef';
 import { RootStackNavigator } from './RootStackNavigator';
-import { routeNameToTrackingScreen, type RootStackParamList } from './navigationTypes';
+import { routeNameToTrackingScreen, type LaunchPaywallSource, type RootStackParamList } from './navigationTypes';
 
 enableScreens();
 
@@ -72,9 +72,9 @@ function NavigationOverlays() {
   );
 }
 
-function AppNavigationShell() {
+function AppNavigationShell({ launchPaywallSource }: { launchPaywallSource?: LaunchPaywallSource | null }) {
   return (
-    <AppNavigationProvider>
+    <AppNavigationProvider launchPaywallSource={launchPaywallSource}>
       <View style={styles.navigationShell}>
         <RootStackNavigator />
       </View>
@@ -83,7 +83,7 @@ function AppNavigationShell() {
   );
 }
 
-export function AppNavigator() {
+export function AppNavigator({ launchPaywallSource = null }: { launchPaywallSource?: LaunchPaywallSource | null }) {
   const handleStateChange = useCallback((state: NavigationState | undefined) => {
     const routeName = getActiveRouteName(state);
     void TrackingManager.screen.view(routeNameToTrackingScreen(routeName));
@@ -100,7 +100,7 @@ export function AppNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef} onStateChange={handleStateChange} onReady={handleReady}>
-      <AppNavigationShell />
+      <AppNavigationShell launchPaywallSource={launchPaywallSource} />
     </NavigationContainer>
   );
 }

@@ -218,6 +218,8 @@ export function CameraScreen({
   }, [intent?.type, referenceImageUri]);
 
   const coachReferencePreviewUri = referenceImageUri ?? realtimeGeneratedImageUri;
+  const isCoachIntent = intent?.type === 'coach';
+  const hasCoachReference = Boolean(coachReferencePreviewUri);
 
   const clearRealtimeState = useCallback(() => {
     setRealtimeGeneratedImageUri(null);
@@ -304,6 +306,7 @@ export function CameraScreen({
   };
 
   const choosePhoto = async () => {
+    if (isCoachIntent) return;
     if (!(await ensureCaptureAllowed())) return;
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -323,7 +326,7 @@ export function CameraScreen({
   };
 
   const takePhoto = async () => {
-    if (isCapturing) return;
+    if (isCapturing || isGeneratingImage) return;
     if (!(await ensureCaptureAllowed())) return;
 
     const permission = cameraPermission?.granted
@@ -359,7 +362,6 @@ export function CameraScreen({
   const handleCoachPhotoFlow = async (picked: PickedPhoto) => {
     useAnalysisStore.getState().setSelectedPhotoAiTool('ai_coach');
 
-    const hasCoachReference = Boolean(referenceImageUri);
     if (hasCoachReference) {
       onPhotoSelected();
       return;
@@ -716,7 +718,9 @@ export function CameraScreen({
         </View>
 
         <View style={[styles.bottomDock, { paddingBottom: dockBottomPadding }]}>
-          <View style={styles.leftDockContent}>
+          {isCoachIntent ? (
+            <View style={styles.dockSideSlot} />
+          ) : (
             <Pressable
               accessibilityLabel="Open photo library"
               accessibilityRole="button"
@@ -725,13 +729,13 @@ export function CameraScreen({
             >
               <Images size={28} color="#FFF" weight="fill" />
             </Pressable>
-          </View>
+          )}
           <Pressable
             accessibilityLabel="Capture photo"
             accessibilityRole="button"
             onPress={takePhoto}
-            disabled={isCapturing}
-            style={({ pressed }) => [styles.captureButton, { zIndex: 10 }, (pressed || isCapturing) && styles.pressed]}
+            disabled={isCapturing || isGeneratingImage}
+            style={({ pressed }) => [styles.captureButton, (pressed || isCapturing || isGeneratingImage) && styles.pressed]}
           >
             {intent?.type === 'coach' ? (
               <Image
@@ -742,17 +746,15 @@ export function CameraScreen({
               <View style={styles.captureInner} />
             )}
           </Pressable>
-          <View style={styles.rightDockContent}>
-            <Pressable
-              accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
-              accessibilityRole="button"
-              disabled={isCapturing}
-              onPress={swapCamera}
-              style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
-            >
-              <CameraRotate size={28} color="#FFF" weight="bold" />
-            </Pressable>
-          </View>
+          <Pressable
+            accessibilityLabel={`Switch to ${cameraFacing === 'back' ? 'front' : 'back'} camera`}
+            accessibilityRole="button"
+            disabled={isCapturing}
+            onPress={swapCamera}
+            style={({ pressed }) => [styles.swapCameraButton, (pressed || isCapturing) && styles.pressed]}
+          >
+            <CameraRotate size={28} color="#FFF" weight="bold" />
+          </Pressable>
         </View>
       </View>
     </Screen>
@@ -901,7 +903,7 @@ const styles = StyleSheet.create({
   },
   zoomContainer: {
     position: 'absolute',
-    bottom: dockBottomPadding + 100,
+    bottom: dockBottomPadding + 92,
     alignSelf: 'center',
     flexDirection: 'row',
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1021,21 +1023,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     bottom: 0,
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     left: 0,
-    paddingHorizontal: 20,
+    paddingHorizontal: 28,
     paddingTop: spacing.sm,
     position: 'absolute',
     right: 0,
-    zIndex: 2
-  },
-  leftDockContent: {
-    flex: 1,
-    alignItems: 'flex-start'
-  },
-  rightDockContent: {
-    flex: 1,
-    alignItems: 'flex-end'
+    zIndex: 4
   },
   galleryThumbWrap: {
     alignItems: 'center',
@@ -1043,6 +1037,10 @@ const styles = StyleSheet.create({
     borderRadius: 29,
     height: 58,
     justifyContent: 'center',
+    width: 58
+  },
+  dockSideSlot: {
+    height: 58,
     width: 58
   },
   galleryIcon: {

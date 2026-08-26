@@ -20,7 +20,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "co.q7labs.shotcoachai",
       "appleTeamId": "F59XSVKP6X",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "RCTNewArchEnabled": false
+      }
     },
     "android": {
       "adaptiveIcon": {
