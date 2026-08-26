@@ -21,6 +21,7 @@ android/.gradle/
 android/.gradle-home/
 android/app/build/
 android/build/
+releases/
 ios/Pods/
 ios/build/
 design-demos/

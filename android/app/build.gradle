@@ -82,7 +82,7 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 def explicitVersionCode = findProperty('VERSION_CODE')?.toInteger()
-def computedVersionCode = explicitVersionCode ?: 12
+def computedVersionCode = explicitVersionCode ?: 13
 
 def signingStoreFilePath = System.getenv('SIGNING_KEY_STORE_FILE') ?: findProperty('SIGNING_KEY_STORE_FILE')
 def signingStorePassword = System.getenv('SIGNING_STORE_PASSWORD') ?: findProperty('SIGNING_STORE_PASSWORD')
