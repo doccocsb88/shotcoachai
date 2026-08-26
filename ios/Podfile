@@ -61,6 +61,35 @@ target 'AIPhotoCoach' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
+    # Archive compiles each pod from its own xcconfig. RN's
+    # add_ndebug_flag_to_pods_in_release only persists -DNDEBUG on the
+    # aggregate app target, so React-hermes Release still compiles the
+    # debug-only ReentrancyCheck (std::thread) and can fail on Xcode 26 libc++.
+    Dir.glob(File.join(__dir__, 'Pods/Target Support Files', '*', '*.release.xcconfig')).each do |xcconfig_path|
+      xcconfig_contents = File.read(xcconfig_path)
+      xcconfig_changed = false
+
+      %w[OTHER_CPLUSPLUSFLAGS OTHER_CFLAGS].each do |compiler_flag_setting|
+        if xcconfig_contents.match?(/^#{Regexp.escape(compiler_flag_setting)}\s*=/)
+          xcconfig_contents.sub!(/^#{Regexp.escape(compiler_flag_setting)}\s*=\s*(.*)$/) do
+            existing_flags = Regexp.last_match(1)
+            if existing_flags.include?('-DNDEBUG')
+              "#{compiler_flag_setting} = #{existing_flags}"
+            else
+              xcconfig_changed = true
+              "#{compiler_flag_setting} = #{existing_flags.rstrip} -DNDEBUG"
+            end
+          end
+        else
+          xcconfig_contents = xcconfig_contents.sub(/\n*\z/, "\n")
+          xcconfig_contents << "#{compiler_flag_setting} = $(inherited) -DNDEBUG\n"
+          xcconfig_changed = true
+        end
+      end
+
+      File.write(xcconfig_path, xcconfig_contents) if xcconfig_changed
+    end
+
     # Xcode 26 Apple Clang rejects fmt FMT_STRING consteval in React Native's fmt pod.
     installer.pods_project.targets.each do |target|
       next unless target.name == 'fmt'

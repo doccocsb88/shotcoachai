@@ -1,3 +1,16 @@
+diff --git a/node_modules/react-native/ReactCommon/hermes/executor/HermesExecutorFactory.cpp b/node_modules/react-native/ReactCommon/hermes/executor/HermesExecutorFactory.cpp
+index 0b72b72..1a7c21c 100644
+--- a/node_modules/react-native/ReactCommon/hermes/executor/HermesExecutorFactory.cpp
++++ b/node_modules/react-native/ReactCommon/hermes/executor/HermesExecutorFactory.cpp
+@@ -17,6 +17,8 @@
+ #include <hermes/inspector-modern/chrome/Registration.h>
+ #include <hermes/inspector/RuntimeAdapter.h>
+ 
++#include <thread>
++
+ using namespace facebook::hermes;
+ using namespace facebook::jsi;
+ 
 diff --git a/node_modules/react-native/scripts/cocoapods/new_architecture.rb b/node_modules/react-native/scripts/cocoapods/new_architecture.rb
 index 7d8f8e6..cef6d2a 100644
 --- a/node_modules/react-native/scripts/cocoapods/new_architecture.rb
