@@ -82,7 +82,7 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 def explicitVersionCode = findProperty('VERSION_CODE')?.toInteger()
-def computedVersionCode = explicitVersionCode ?: 13
+def computedVersionCode = explicitVersionCode ?: 14
 
 def signingStoreFilePath = System.getenv('SIGNING_KEY_STORE_FILE') ?: findProperty('SIGNING_KEY_STORE_FILE')
 def signingStorePassword = System.getenv('SIGNING_STORE_PASSWORD') ?: findProperty('SIGNING_STORE_PASSWORD')
@@ -99,13 +99,13 @@ android {
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
+    compileSdk 36
 
     namespace 'co.q7labs.shotcoachai'
     defaultConfig {
         applicationId 'co.q7labs.shotcoachai'
         minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        targetSdkVersion 36
         versionCode computedVersionCode
         versionName "0.1.2"
     }
@@ -201,3 +201,4 @@ dependencies {
 }
 
 apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'

@@ -2,6 +2,7 @@ import auth from '@react-native-firebase/auth';
 import appCheck from '@react-native-firebase/app-check';
 
 import { TrackingManager } from '../tracking/TrackingManager';
+import { setCrashlyticsUserId } from './firebaseCrashlytics';
 
 type FirebaseSessionSnapshot = {
   uid: string | null;
@@ -86,6 +87,7 @@ class FirebaseSessionManager {
       auth().onIdTokenChanged(user => {
         this.snapshot.uid = user?.uid ?? null;
         void TrackingManager.setUserId(this.snapshot.uid);
+        void setCrashlyticsUserId(this.snapshot.uid);
       });
       this.authListenerRegistered = true;
     }
@@ -96,6 +98,7 @@ class FirebaseSessionManager {
 
     this.snapshot.uid = auth().currentUser?.uid ?? null;
     void TrackingManager.setUserId(this.snapshot.uid);
+    void setCrashlyticsUserId(this.snapshot.uid);
   }
 
   private async initializeAppCheck(): Promise<void> {

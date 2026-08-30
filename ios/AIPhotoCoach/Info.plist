@@ -4,8 +4,6 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<key>RCTNewArchEnabled</key>
-	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -60,6 +58,8 @@
 	<string>Allow AI Photo Coach to pick photos for analysis.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier will be used to deliver personalized ads and measure ad performance.</string>
+	<key>RCTNewArchEnabled</key>
+	<false/>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
